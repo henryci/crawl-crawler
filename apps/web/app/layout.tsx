@@ -1,14 +1,17 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google"
+import { Geist, JetBrains_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
-const _jetbrainsMono = JetBrains_Mono({
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+})
+
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
 })
@@ -17,7 +20,6 @@ export const metadata: Metadata = {
   title: "Crawl Crawler | DCSS Analytics & Exploration",
   description:
     "Analytics and exploration tool for Dungeon Crawl Stone Soup. Parse morgue files, explore win streaks, and discover game records.",
-  generator: "v0.app",
   keywords: ["DCSS", "Dungeon Crawl Stone Soup", "roguelike", "analytics", "morgue", "streaks", "records"],
   icons: {
     icon: [
@@ -48,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geist.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased min-h-screen flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
