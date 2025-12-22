@@ -31,7 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { PlayerData, Win, ComboStats } from "dcss-player-parser";
+import type { PlayerData, Win, ComboStats, RecentGame } from "dcss-player-parser";
+import { Skull, Gamepad2 } from "lucide-react";
 
 // We'll use dynamic import for the parser to ensure it only runs client-side
 let parsePlayerPage: ((html: string) => PlayerData) | null = null;
@@ -290,6 +291,11 @@ function PlayerDataDisplay({ data }: { data: PlayerData }) {
           <ComboStatsSection data={data} />
         </TabsContent>
       </Tabs>
+
+      {/* Recent Games Section */}
+      {data.recentGames.length > 0 && (
+        <RecentGamesSection games={data.recentGames} />
+      )}
     </div>
   );
 }
@@ -1005,6 +1011,182 @@ function ComboStatsSection({ data }: { data: PlayerData }) {
             <div className="w-3 h-2 bg-muted-foreground/20 rounded" />
             <span>Games Played</span>
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecentGamesSection({ games }: { games: RecentGame[] }) {
+  const [sortField, setSortField] = useState<keyof RecentGame>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Calculate summary stats
+  const summary = useMemo(() => {
+    const totalGames = games.length;
+    const wins = games.filter(g => g.end.includes("escaped with the Orb")).length;
+    const totalScore = games.reduce((sum, g) => sum + g.score, 0);
+    const avgScore = totalGames > 0 ? Math.round(totalScore / totalGames) : 0;
+    const winRate = totalGames > 0 ? (wins / totalGames) * 100 : 0;
+    
+    return { totalGames, wins, avgScore, winRate };
+  }, [games]);
+
+  const sortedGames = useMemo(() => {
+    const sorted = [...games];
+    sorted.sort((a, b) => {
+      let aVal: string | number = a[sortField] as string | number;
+      let bVal: string | number = b[sortField] as string | number;
+      
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return sortDir === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+    return sorted;
+  }, [games, sortField, sortDir]);
+
+  const handleSort = (field: keyof RecentGame) => {
+    if (field === sortField) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: keyof RecentGame }) => {
+    if (field !== sortField) return null;
+    return sortDir === "asc" ? (
+      <ChevronUp className="w-3 h-3 inline ml-1" />
+    ) : (
+      <ChevronDown className="w-3 h-3 inline ml-1" />
+    );
+  };
+
+  const isWin = (game: RecentGame) => game.end.includes("escaped with the Orb");
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="border-b border-border">
+        <div className="flex flex-col gap-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-mana" />
+            Recent Games
+          </CardTitle>
+          
+          {/* Summary Stats */}
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/30 border border-border">
+              <span className="text-muted-foreground">Games:</span>
+              <span className="font-mono font-medium">{summary.totalGames}</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/30 border border-border">
+              <span className="text-muted-foreground">Wins:</span>
+              <span className="font-mono font-medium text-health">{summary.wins}</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/30 border border-border">
+              <span className="text-muted-foreground">Win Rate:</span>
+              <span className={`font-mono font-medium ${summary.winRate >= 5 ? "text-gold" : ""}`}>
+                {summary.winRate.toFixed(1)}%
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary/30 border border-border">
+              <span className="text-muted-foreground">Avg Score:</span>
+              <span className="font-mono font-medium">{summary.avgScore.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="cursor-pointer" onClick={() => handleSort("score")}>
+                  Score<SortIcon field="score" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("character")}>
+                  Combo<SortIcon field="character" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("god")}>
+                  God<SortIcon field="god" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("xl")}>
+                  XL<SortIcon field="xl" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("place")}>
+                  Place<SortIcon field="place" />
+                </TableHead>
+                <TableHead>End</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("turns")}>
+                  Turns<SortIcon field="turns" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("duration")}>
+                  Duration<SortIcon field="duration" />
+                </TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort("date")}>
+                  Date<SortIcon field="date" />
+                </TableHead>
+                <TableHead>Version</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedGames.map((game, idx) => {
+                const won = isWin(game);
+                return (
+                  <TableRow 
+                    key={idx} 
+                    className={`hover:bg-secondary/30 ${won ? "bg-health/5" : ""}`}
+                  >
+                    <TableCell className="font-mono">
+                      {game.morgueUrl ? (
+                        <a
+                          href={game.morgueUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`hover:underline ${won ? "text-gold" : "text-foreground"}`}
+                        >
+                          {game.score > 0 ? game.score.toLocaleString() : "—"}
+                        </a>
+                      ) : (
+                        <span className={won ? "text-gold" : ""}>
+                          {game.score > 0 ? game.score.toLocaleString() : "—"}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`font-mono ${won ? "text-health font-medium" : ""}`}>
+                        {game.character}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{game.god || "—"}</TableCell>
+                    <TableCell className="font-mono text-sm">{game.xl}</TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">{game.place || "—"}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-sm">
+                      {won ? (
+                        <span className="flex items-center gap-1 text-health">
+                          <Trophy className="w-3 h-3" />
+                          <span className="truncate">{game.end}</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <Skull className="w-3 h-3" />
+                          <span className="truncate">{game.end}</span>
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">{game.turns.toLocaleString()}</TableCell>
+                    <TableCell className="font-mono text-sm">{game.duration}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{game.date.split(" ")[0]}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{game.version}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>
