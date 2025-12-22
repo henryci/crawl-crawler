@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   User,
@@ -37,6 +37,30 @@ import type { PlayerData, Win, ComboStats } from "dcss-player-parser";
 let parsePlayerPage: ((html: string) => PlayerData) | null = null;
 
 export default function PlayerSummaryPage() {
+  return (
+    <Suspense fallback={<PlayerSummaryLoading />}>
+      <PlayerSummaryContent />
+    </Suspense>
+  );
+}
+
+function PlayerSummaryLoading() {
+  return (
+    <div className="relative min-h-[calc(100vh-8rem)]">
+      <div className="absolute inset-0 texture-noise pointer-events-none" />
+      <div className="relative mx-auto max-w-7xl px-4 py-12 lg:px-8">
+        <Card className="bg-card border-border">
+          <CardContent className="py-12 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function PlayerSummaryContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
@@ -63,12 +87,13 @@ export default function PlayerSummaryPage() {
         parsePlayerPage = module.parsePlayerPage;
       }
 
-      // Use a CORS proxy for client-side fetching
-      const corsProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+      // Use our own API route to proxy the request (avoids CORS issues)
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
       
-      const response = await fetch(corsProxyUrl);
+      const response = await fetch(proxyUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch: ${response.status} ${response.statusText}`);
       }
 
       const html = await response.text();
@@ -99,76 +124,94 @@ export default function PlayerSummaryPage() {
     await fetchAndParse(url);
   };
 
+  const [searchExpanded, setSearchExpanded] = useState(!playerData);
+
+  // Collapse search when data loads
+  useEffect(() => {
+    if (playerData) {
+      setSearchExpanded(false);
+    }
+  }, [playerData]);
+
   return (
     <div className="relative min-h-[calc(100vh-8rem)]">
       <div className="absolute inset-0 texture-noise pointer-events-none" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-md bg-health/10 border border-health/30 flex items-center justify-center">
-              <User className="w-5 h-5 text-health" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Player Summary</h1>
-              <p className="text-sm text-muted-foreground">
-                Analyze any player's DCSS career from their scoring page
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* URL Input */}
-        <Card className="bg-card border-border mb-8">
-          <CardHeader className="border-b border-border pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Search className="w-5 h-5 text-health" />
-              Enter Player Scoring Page URL
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <Input
-                type="text"
-                placeholder="https://crawl.akrasiac.org/scoring/players/playername.html"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleFetchAndParse()}
-                className="bg-secondary/50 flex-1"
-              />
-              <Button 
-                onClick={handleFetchAndParse} 
-                disabled={loading}
-                className="bg-health hover:bg-health/80 text-primary-foreground"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  "Analyze"
-                )}
-              </Button>
-            </div>
-
-            {error && (
-              <div className="mt-4 flex items-start gap-2 p-4 rounded-md bg-destructive/10 border border-destructive/20">
-                <AlertCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-destructive">Error</p>
-                  <p className="text-muted-foreground">{error}</p>
+        {/* URL Input - Collapsible */}
+        <div className="mb-6">
+          {searchExpanded ? (
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Search className="w-5 h-5 text-health" />
+                    Enter Player Scoring Page URL
+                  </CardTitle>
+                  {playerData && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchExpanded(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-              </div>
-            )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3">
+                  <Input
+                    type="text"
+                    placeholder="https://crawl.akrasiac.org/scoring/players/playername.html"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleFetchAndParse()}
+                    className="bg-secondary/50 flex-1"
+                  />
+                  <Button 
+                    onClick={handleFetchAndParse} 
+                    disabled={loading}
+                    className="bg-health hover:bg-health/80 text-primary-foreground"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Analyze"
+                    )}
+                  </Button>
+                </div>
 
-            <p className="mt-4 text-xs text-muted-foreground">
-              Enter a player scoring page URL from crawl.akrasiac.org (CAO), crawl.xtahua.com (CXC), or similar servers.
-              The page will be fetched and parsed client-side.
-            </p>
-          </CardContent>
-        </Card>
+                {error && (
+                  <div className="mt-4 flex items-start gap-2 p-4 rounded-md bg-destructive/10 border border-destructive/20">
+                    <AlertCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <p className="font-medium text-destructive">Error</p>
+                      <p className="text-muted-foreground">{error}</p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Enter a player scoring page URL from crawl.akrasiac.org (CAO), crawl.xtahua.com (CXC), or similar servers.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <button
+              onClick={() => setSearchExpanded(true)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              <span>Search for another player</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
         {/* Player Data Display */}
         {playerData && <PlayerDataDisplay data={playerData} />}
@@ -380,8 +423,8 @@ function WinsTable({ wins }: { wins: Win[] }) {
     god: "",
     minRunes: 0,
     minScore: 0,
+    maxTurns: 0,
   });
-  const [showFilters, setShowFilters] = useState(false);
 
   const sortedAndFilteredWins = useMemo(() => {
     let result = [...wins];
@@ -404,6 +447,9 @@ function WinsTable({ wins }: { wins: Win[] }) {
     }
     if (filters.minScore > 0) {
       result = result.filter((w) => w.score >= filters.minScore);
+    }
+    if (filters.maxTurns > 0) {
+      result = result.filter((w) => w.turns <= filters.maxTurns);
     }
 
     // Sort
@@ -439,85 +485,85 @@ function WinsTable({ wins }: { wins: Win[] }) {
     );
   };
 
-  const hasActiveFilters = filters.character || filters.god || filters.minRunes > 0 || filters.minScore > 0;
+  const hasActiveFilters = filters.character || filters.god || filters.minRunes > 0 || filters.minScore > 0 || filters.maxTurns > 0;
 
   return (
     <Card className="bg-card border-border">
       <CardHeader className="border-b border-border">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
-            Wins 
-            {sortedAndFilteredWins.length !== wins.length && (
-              <span className="text-muted-foreground font-normal ml-2">
-                (showing {sortedAndFilteredWins.length} of {wins.length})
-              </span>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              Wins 
+              {sortedAndFilteredWins.length !== wins.length && (
+                <span className="text-muted-foreground font-normal ml-2">
+                  (showing {sortedAndFilteredWins.length} of {wins.length})
+                </span>
+              )}
+            </CardTitle>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFilters({ character: "", god: "", minRunes: 0, minScore: 0, maxTurns: 0 })}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear filters
+              </Button>
             )}
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className={hasActiveFilters ? "border-health text-health" : ""}
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filters
-            {hasActiveFilters && <span className="ml-1">•</span>}
-          </Button>
-        </div>
+          </div>
 
-        {showFilters && (
-          <div className="grid gap-4 sm:grid-cols-4 pt-4">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Combo/Species/Background</label>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[140px] max-w-[200px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Combo</label>
               <Input
                 placeholder="e.g. MD, Fi, MiFi"
                 value={filters.character}
                 onChange={(e) => setFilters({ ...filters, character: e.target.value })}
-                className="bg-secondary/50 h-9"
+                className="bg-secondary/50 h-8 text-sm"
               />
             </div>
-            <div>
+            <div className="flex-1 min-w-[120px] max-w-[160px]">
               <label className="text-xs text-muted-foreground mb-1 block">God</label>
               <Input
-                placeholder="e.g. Trog, Makhleb"
+                placeholder="e.g. Trog"
                 value={filters.god}
                 onChange={(e) => setFilters({ ...filters, god: e.target.value })}
-                className="bg-secondary/50 h-9"
+                className="bg-secondary/50 h-8 text-sm"
               />
             </div>
-            <div>
+            <div className="w-[90px]">
               <label className="text-xs text-muted-foreground mb-1 block">Min Runes</label>
               <Input
                 type="number"
                 placeholder="0"
                 value={filters.minRunes || ""}
                 onChange={(e) => setFilters({ ...filters, minRunes: parseInt(e.target.value) || 0 })}
-                className="bg-secondary/50 h-9"
+                className="bg-secondary/50 h-8 text-sm"
               />
             </div>
-            <div>
+            <div className="w-[100px]">
               <label className="text-xs text-muted-foreground mb-1 block">Min Score</label>
               <Input
                 type="number"
                 placeholder="0"
                 value={filters.minScore || ""}
                 onChange={(e) => setFilters({ ...filters, minScore: parseInt(e.target.value) || 0 })}
-                className="bg-secondary/50 h-9"
+                className="bg-secondary/50 h-8 text-sm"
               />
             </div>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ character: "", god: "", minRunes: 0, minScore: 0 })}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Clear
-              </Button>
-            )}
+            <div className="w-[100px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Max Turns</label>
+              <Input
+                type="number"
+                placeholder="∞"
+                value={filters.maxTurns || ""}
+                onChange={(e) => setFilters({ ...filters, maxTurns: parseInt(e.target.value) || 0 })}
+                className="bg-secondary/50 h-8 text-sm"
+              />
+            </div>
           </div>
-        )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -680,6 +726,22 @@ function WinsTimeline({ wins }: { wins: Win[] }) {
 }
 
 function StreaksSection({ streaks }: { streaks: PlayerData["streaks"] }) {
+  const [sortBy, setSortBy] = useState<"length" | "start" | "end">("length");
+
+  const sortedStreaks = useMemo(() => {
+    const sorted = [...streaks];
+    sorted.sort((a, b) => {
+      if (sortBy === "length") {
+        return b.wins - a.wins;
+      } else if (sortBy === "start") {
+        return new Date(b.start).getTime() - new Date(a.start).getTime();
+      } else {
+        return new Date(b.end).getTime() - new Date(a.end).getTime();
+      }
+    });
+    return sorted;
+  }, [streaks, sortBy]);
+
   if (streaks.length === 0) {
     return (
       <Card className="bg-card border-border">
@@ -696,14 +758,32 @@ function StreaksSection({ streaks }: { streaks: PlayerData["streaks"] }) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="border-b border-border">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-gold" />
-          Win Streaks
-        </CardTitle>
+        <div className="flex flex-col gap-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-gold" />
+            Win Streaks
+          </CardTitle>
+          <div className="flex gap-2">
+            <span className="text-xs text-muted-foreground self-center mr-1">Sort:</span>
+            {(["length", "start", "end"] as const).map((sort) => (
+              <button
+                key={sort}
+                onClick={() => setSortBy(sort)}
+                className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                  sortBy === sort
+                    ? "bg-gold/20 border-gold/50 text-foreground"
+                    : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+              >
+                {sort === "length" ? "Length" : sort === "start" ? "Start Date" : "End Date"}
+              </button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="pt-6">
         <div className="space-y-4">
-          {streaks.map((streak, i) => (
+          {sortedStreaks.map((streak, i) => (
             <div
               key={i}
               className={`p-4 rounded-lg border transition-colors ${
@@ -826,54 +906,61 @@ function ComboStatsSection({ data }: { data: PlayerData }) {
   return (
     <Card className="bg-card border-border">
       <CardHeader className="border-b border-border">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex flex-col gap-4">
           <CardTitle className="text-lg flex items-center gap-2">
             <Target className="w-5 h-5 text-special" />
             Character Statistics
           </CardTitle>
-          <div className="flex gap-2 flex-wrap">
-            <div className="flex gap-1 bg-secondary/50 p-1 rounded">
+          <div className="flex flex-wrap gap-4">
+            {/* View mode tabs - matching main tab style */}
+            <div className="flex gap-2">
               {(["species", "background", "combo"] as const).map((mode) => (
-                <Button
+                <button
                   key={mode}
-                  size="sm"
-                  variant={viewMode === mode ? "default" : "ghost"}
                   onClick={() => setViewMode(mode)}
-                  className={viewMode === mode ? "bg-health text-primary-foreground" : ""}
+                  className={`px-4 py-1.5 text-sm rounded-md border transition-colors ${
+                    viewMode === mode
+                      ? "bg-health/20 border-health/50 text-foreground"
+                      : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
                 >
                   {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </Button>
+                </button>
               ))}
             </div>
-            <div className="flex gap-1 bg-secondary/50 p-1 rounded">
+            {/* Sort tabs */}
+            <div className="flex gap-2">
+              <span className="text-xs text-muted-foreground self-center mr-1">Sort:</span>
               {(["wins", "games", "winPercent"] as const).map((sort) => (
-                <Button
+                <button
                   key={sort}
-                  size="sm"
-                  variant={sortBy === sort ? "default" : "ghost"}
                   onClick={() => setSortBy(sort)}
-                  className={sortBy === sort ? "bg-mana text-primary-foreground" : ""}
+                  className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                    sortBy === sort
+                      ? "bg-gold/20 border-gold/50 text-foreground"
+                      : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
                 >
                   {sort === "winPercent" ? "Win %" : sort.charAt(0).toUpperCase() + sort.slice(1)}
-                </Button>
+                </button>
               ))}
             </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+        <div className="space-y-1">
           {displayData.map((item) => (
             <div
               key={item.name}
-              className="flex items-center gap-4 p-2 rounded hover:bg-secondary/30 transition-colors"
+              className="flex items-center gap-4 py-1.5 px-2 rounded hover:bg-secondary/30 transition-colors"
             >
-              <span className="w-16 font-mono text-sm font-medium text-foreground">
+              <span className="w-14 font-mono text-sm font-medium text-foreground">
                 {item.name}
               </span>
               
               {/* Bar */}
-              <div className="flex-1 h-6 bg-secondary/30 rounded overflow-hidden relative">
+              <div className="flex-1 h-5 bg-secondary/30 rounded overflow-hidden relative">
                 {/* Games bar */}
                 <div
                   className="absolute inset-y-0 left-0 bg-muted-foreground/20"
@@ -889,14 +976,14 @@ function ComboStatsSection({ data }: { data: PlayerData }) {
               </div>
 
               {/* Stats */}
-              <div className="flex gap-4 text-sm">
-                <div className="w-16 text-right">
-                  <span className="text-health font-medium">{item.wins}</span>
+              <div className="flex gap-3 text-sm">
+                <div className="w-14 text-right font-mono">
+                  <span className="text-health">{item.wins}</span>
                   <span className="text-muted-foreground">/{item.games}</span>
                 </div>
-                <div className="w-16 text-right">
+                <div className="w-12 text-right font-mono">
                   {item.wins > 0 ? (
-                    <span className={item.winPercent >= 10 ? "text-gold font-medium" : "text-muted-foreground"}>
+                    <span className={item.winPercent >= 10 ? "text-gold" : "text-muted-foreground"}>
                       {item.winPercent.toFixed(1)}%
                     </span>
                   ) : (
@@ -909,13 +996,13 @@ function ComboStatsSection({ data }: { data: PlayerData }) {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 pt-4 border-t border-border flex gap-6 text-sm text-muted-foreground">
+        <div className="mt-4 pt-3 border-t border-border flex gap-6 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 bg-health/60 rounded" />
+            <div className="w-3 h-2 bg-health/60 rounded" />
             <span>Wins</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 bg-muted-foreground/20 rounded" />
+            <div className="w-3 h-2 bg-muted-foreground/20 rounded" />
             <span>Games Played</span>
           </div>
         </div>
