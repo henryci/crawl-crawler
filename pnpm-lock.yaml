@@ -119,6 +119,9 @@ importers:
       dcss-morgue-parser:
         specifier: workspace:*
         version: link:../../packages/dcss-morgue-parser
+      dcss-player-parser:
+        specifier: workspace:*
+        version: link:../../packages/dcss-player-parser
       embla-carousel-react:
         specifier: 8.5.1
         version: 8.5.1(react@19.2.0)
@@ -194,6 +197,18 @@ importers:
         version: 5.9.3
 
   packages/dcss-morgue-parser:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.27
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.27)(lightningcss@1.30.2)
+
+  packages/dcss-player-parser:
     devDependencies:
       '@types/node':
         specifier: ^20.10.0

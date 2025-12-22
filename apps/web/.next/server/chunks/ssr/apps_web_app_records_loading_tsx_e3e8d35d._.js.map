@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../../apps/web/app/records/loading.tsx"],"sourcesContent":["export default function Loading() {\n  return null\n}\n"],"names":[],"mappings":"uCAAe,SAAS,IACtB,OAAO,IACT"}

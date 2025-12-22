@@ -1,9 +1,0 @@
-{
-  "/_global-error/page": "app/_global-error/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/appeal/page": "app/appeal/page.js",
-  "/morgue/page": "app/morgue/page.js",
-  "/page": "app/page.js",
-  "/records/page": "app/records/page.js",
-  "/streaks/page": "app/streaks/page.js"
-}

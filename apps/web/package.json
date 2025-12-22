@@ -44,6 +44,7 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "dcss-morgue-parser": "workspace:*",
+    "dcss-player-parser": "workspace:*",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",

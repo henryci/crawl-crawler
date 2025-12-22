@@ -253,10 +253,6 @@ npm run build
 npm test
 ```
 
-## License
-
-MIT
-
 ## Contributing
 
 Contributions are welcome! Please ensure:

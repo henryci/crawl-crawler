@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { FileText, Trophy, TrendingUp, MessageSquare, ArrowRight, Terminal } from "lucide-react"
+import { FileText, Trophy, TrendingUp, MessageSquare, ArrowRight, Terminal, User } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -28,6 +28,14 @@ const tools = [
     icon: Trophy,
     color: "text-mana",
     borderColor: "border-mana/30 hover:border-mana/50",
+  },
+  {
+    title: "Player Summary",
+    description: "Get a comprehensive summary of any player's DCSS career and statistics.",
+    href: "/player",
+    icon: User,
+    color: "text-health",
+    borderColor: "border-health/30 hover:border-health/50",
   },
   {
     title: "Data Format Appeal",
