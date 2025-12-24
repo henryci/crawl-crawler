@@ -117,6 +117,13 @@ export function RecentGamesSection({ games }: RecentGamesSectionProps) {
                   Place
                   <SortIcon active={isSortedBy("place" as keyof RecentGame)} direction={sortDir} />
                 </TableHead>
+                <TableHead
+                  className="cursor-pointer"
+                  onClick={() => handleSort("runes" as keyof RecentGame)}
+                >
+                  Runes
+                  <SortIcon active={isSortedBy("runes" as keyof RecentGame)} direction={sortDir} />
+                </TableHead>
                 <TableHead>End</TableHead>
                 <TableHead
                   className="cursor-pointer"
@@ -178,6 +185,15 @@ export function RecentGamesSection({ games }: RecentGamesSectionProps) {
                     <TableCell className="font-mono text-sm">{game.xl}</TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       {game.place || "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {game.runes !== null ? (
+                        <span className={game.runes === 15 ? "text-health font-medium" : ""}>
+                          {game.runes}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate text-sm">
                       {won ? (

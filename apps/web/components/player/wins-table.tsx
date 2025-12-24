@@ -23,7 +23,7 @@ interface WinsTableProps {
 }
 
 function getRunesBadgeClass(runes: number): string {
-  if (runes >= 15) return "bg-gold/20 border-gold/30 text-gold";
+  if (runes >= 15) return "bg-health/20 border-health/30 text-health";
   if (runes >= 5) return "bg-mana/20 border-mana/30 text-mana";
   return "bg-secondary/50 border-border text-muted-foreground";
 }
