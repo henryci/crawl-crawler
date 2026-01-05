@@ -4,16 +4,14 @@ import { useState, useMemo, useCallback } from "react";
 
 type SortDirection = "asc" | "desc";
 
-interface UseSortableOptions<T, K extends keyof T> {
+interface UseSortableOptions<K> {
   /** Initial field to sort by */
   initialField: K;
   /** Initial sort direction */
   initialDirection?: SortDirection;
-  /** Custom comparator function (optional) */
-  comparator?: (a: T[K], b: T[K], direction: SortDirection) => number;
 }
 
-interface UseSortableReturn<T, K extends keyof T> {
+interface UseSortableReturn<T, K> {
   /** Currently sorted data */
   sortedData: T[];
   /** Current sort field */
@@ -51,11 +49,11 @@ function defaultComparator<T>(a: T, b: T, direction: SortDirection): number {
  * );
  * ```
  */
-export function useSortable<T extends Record<string, unknown>, K extends keyof T>(
+export function useSortable<T, K extends keyof T>(
   data: T[],
-  options: UseSortableOptions<T, K>
+  options: UseSortableOptions<K>
 ): UseSortableReturn<T, K> {
-  const { initialField, initialDirection = "asc", comparator } = options;
+  const { initialField, initialDirection = "asc" } = options;
 
   const [sortField, setSortField] = useState<K>(initialField);
   const [sortDir, setSortDir] = useState<SortDirection>(initialDirection);
@@ -78,14 +76,10 @@ export function useSortable<T extends Record<string, unknown>, K extends keyof T
       const aVal = a[sortField];
       const bVal = b[sortField];
 
-      if (comparator) {
-        return comparator(aVal, bVal, sortDir);
-      }
-
       return defaultComparator(aVal, bVal, sortDir);
     });
     return sorted;
-  }, [data, sortField, sortDir, comparator]);
+  }, [data, sortField, sortDir]);
 
   const isSortedBy = useCallback((field: K) => field === sortField, [sortField]);
 

@@ -1,394 +1,505 @@
-import { Trophy, Search, Filter, Medal, Crown, Zap, Skull, Clock, ArrowUpDown } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import {
+  Trophy,
+  Loader2,
+  AlertCircle,
+  Ghost,
+  Calendar,
+  X,
+  ExternalLink,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
-import { AlertBanner } from "@/components/alert-banner";
+import { SortIcon } from "@/components/sort-icon";
+import { useSortable } from "@/hooks/use-sortable";
+import type {
+  ComboRecordsWithAnalytics,
+  ComboRecord,
+} from "dcss-combo-records-parser";
+import {
+  getSpeciesName,
+  getBackgroundName,
+  isSpeciesRemoved,
+  isBackgroundRemoved,
+  isRecordLegacy,
+} from "dcss-combo-records-parser";
 
-// Mock records data
-const mockFastestWins = [
-  {
-    rank: 1,
-    player: "Yermak",
-    time: "0:27:34",
-    turns: 8234,
-    species: "Felid",
-    background: "Transmuter",
-    version: "0.32",
-    date: "2024-10-15",
-  },
-  {
-    rank: 2,
-    player: "elliott",
-    time: "0:31:12",
-    turns: 9102,
-    species: "Spriggan",
-    background: "Berserker",
-    version: "0.32",
-    date: "2024-09-28",
-  },
-  {
-    rank: 3,
-    player: "p0werm0de",
-    time: "0:33:45",
-    turns: 10234,
-    species: "Felid",
-    background: "Chaos Knight",
-    version: "0.31",
-    date: "2024-08-12",
-  },
-  {
-    rank: 4,
-    player: "Ge0ff",
-    time: "0:35:22",
-    turns: 11456,
-    species: "Gargoyle",
-    background: "Fighter",
-    version: "0.32",
-    date: "2024-10-01",
-  },
-  {
-    rank: 5,
-    player: "MrMan",
-    time: "0:38:01",
-    turns: 12890,
-    species: "Minotaur",
-    background: "Berserker",
-    version: "0.32",
-    date: "2024-09-15",
-  },
-];
+type SortField = keyof ComboRecord;
 
-const mockHighScores = [
-  {
-    rank: 1,
-    player: "manman",
-    score: 12847234,
-    species: "Deep Elf",
-    background: "Conjurer",
-    god: "Vehumet",
-    version: "0.30",
-    date: "2024-03-22",
-  },
-  {
-    rank: 2,
-    player: "Yermak",
-    score: 11234567,
-    species: "Minotaur",
-    background: "Fighter",
-    god: "Okawaru",
-    version: "0.31",
-    date: "2024-06-15",
-  },
-  {
-    rank: 3,
-    player: "Ge0ff",
-    score: 10456789,
-    species: "Gargoyle",
-    background: "Earth Elementalist",
-    god: "Jiyva",
-    version: "0.32",
-    date: "2024-10-08",
-  },
-  {
-    rank: 4,
-    player: "SilvereR",
-    score: 9876543,
-    species: "Vine Stalker",
-    background: "Monk",
-    god: "Wu Jian",
-    version: "0.32",
-    date: "2024-09-01",
-  },
-  {
-    rank: 5,
-    player: "Implojin",
-    score: 9234567,
-    species: "Formicid",
-    background: "Venom Mage",
-    god: "Kikubaaqudgha",
-    version: "0.31",
-    date: "2024-07-20",
-  },
-];
+// Age thresholds in days
+const AGE_ANCIENT_DAYS = 2555; // ~7 years
+const AGE_VERY_OLD_DAYS = 1825; // ~5 years
+const AGE_OLD_DAYS = 1095; // ~3 years
 
-const recordCategories = [
-  { id: "fastest", label: "Fastest Wins", icon: Zap },
-  { id: "highscore", label: "High Scores", icon: Crown },
-  { id: "kills", label: "Most Kills", icon: Skull },
-  { id: "turns", label: "Fewest Turns", icon: Clock },
-];
+function getRunesBadgeClass(runes: number): string {
+  if (runes >= 15) return "bg-health/20 border-health/30 text-health";
+  if (runes >= 5) return "bg-mana/20 border-mana/30 text-mana";
+  return "bg-secondary/50 border-border text-muted-foreground";
+}
+
+function formatDate(dateStr: string): string {
+  return dateStr.split("T")[0];
+}
+
+function formatFetchedAt(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function daysSince(dateStr: string): number {
+  const date = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getAgeClass(days: number): string {
+  if (days >= AGE_ANCIENT_DAYS) return "text-special font-bold";
+  if (days >= AGE_VERY_OLD_DAYS) return "text-danger";
+  if (days >= AGE_OLD_DAYS) return "text-gold";
+  return "text-muted-foreground";
+}
 
 export default function RecordsPage() {
+  const [data, setData] = useState<ComboRecordsWithAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await fetch("/data/combo-records.json");
+        if (!response.ok) throw new Error("Failed to load combo records data");
+        const json = await response.json();
+        setData(json);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+    return (
+      <PageWrapper>
+        <PageHeader
+          title="Combo Records"
+          subtitle="Analyzing top combo scores..."
+          icon={Trophy}
+          variant="gold"
+        />
+        <Card className="bg-card border-border">
+          <CardContent className="py-12 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-gold" />
+            <p className="mt-4 text-muted-foreground">Loading combo records...</p>
+          </CardContent>
+        </Card>
+      </PageWrapper>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <PageWrapper>
+        <PageHeader
+          title="Combo Records"
+          subtitle="Top combo score analytics"
+          icon={Trophy}
+          variant="gold"
+        />
+        <Card className="bg-card border-border">
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">Failed to Load Data</h3>
+            <p className="text-muted-foreground">{error || "No data available"}</p>
+          </CardContent>
+        </Card>
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper>
-      {/* Header */}
       <PageHeader
-        title="Records Explorer"
-        subtitle="Discover game records and achievements"
+        title="Combo Records"
+        subtitle={`${data.totalRecords.toLocaleString()} combo high scores`}
         icon={Trophy}
-        variant="mana"
+        variant="gold"
       />
 
-      {/* Coming Soon Notice */}
-      <AlertBanner
-        title="Coming Soon"
-        message="Live records integration is under development. Below is a preview with sample data showing the intended functionality."
-        variant="mana"
-      />
+      {/* Last Updated Banner */}
+      {data.fetchedAt && (
+        <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4" />
+          <span>Data last updated: {formatFetchedAt(data.fetchedAt)}</span>
+        </div>
+      )}
 
-      {/* Filters */}
-      <Card className="mb-6 bg-card border-border">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            Search & Filter
+      {/* Main Records Table */}
+      <RecordsTable data={data} />
+
+      {/* Data Source Info */}
+      <div className="mt-8 text-center text-xs text-muted-foreground">
+        <p>
+          Data from{" "}
+          <a
+            href={data.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-mana hover:underline"
+          >
+            crawl.akrasiac.org
+          </a>
+        </p>
+      </div>
+    </PageWrapper>
+  );
+}
+
+function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
+  const [filters, setFilters] = useState({
+    search: "",
+    species: "all",
+    background: "all",
+    hideLegacy: true,
+  });
+
+  const filteredRecords = useMemo(() => {
+    let result = [...data.records];
+
+    // Hide legacy by default
+    if (filters.hideLegacy) {
+      result = result.filter(
+        (r) => !isRecordLegacy(r.species, r.background, data.legacyConfig, r.version)
+      );
+    }
+
+    if (filters.search) {
+      const search = filters.search.toLowerCase();
+      result = result.filter(
+        (r) =>
+          r.character.toLowerCase().includes(search) ||
+          r.player.toLowerCase().includes(search) ||
+          r.god.toLowerCase().includes(search) ||
+          getSpeciesName(r.species, data.legacyConfig, r.version).toLowerCase().includes(search) ||
+          getBackgroundName(r.background, data.legacyConfig, r.version).toLowerCase().includes(search)
+      );
+    }
+    if (filters.species !== "all") {
+      result = result.filter((r) => r.species === filters.species);
+    }
+    if (filters.background !== "all") {
+      result = result.filter((r) => r.background === filters.background);
+    }
+
+    return result;
+  }, [data, filters]);
+
+  const { sortedData, sortDir, handleSort, isSortedBy } = useSortable(filteredRecords, {
+    initialField: "score" as SortField,
+    initialDirection: "desc",
+  });
+
+  const hasActiveFilters =
+    filters.search || filters.species !== "all" || filters.background !== "all" || !filters.hideLegacy;
+
+  // Get unique species and backgrounds for dropdowns
+  const uniqueSpecies = useMemo(() => {
+    const species = [...new Set(data.records.map((r) => r.species))];
+    return species
+      .map((sp) => ({
+        code: sp,
+        name: getSpeciesName(sp, data.legacyConfig),
+        isRemoved: isSpeciesRemoved(sp, data.legacyConfig),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  const uniqueBackgrounds = useMemo(() => {
+    const backgrounds = [...new Set(data.records.map((r) => r.background))];
+    return backgrounds
+      .map((bg) => ({
+        code: bg,
+        name: getBackgroundName(bg, data.legacyConfig),
+        isRemoved: isBackgroundRemoved(bg, data.legacyConfig),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  // Count legacy records
+  const legacyCount = useMemo(() => {
+    return data.records.filter(
+      (r) => isRecordLegacy(r.species, r.background, data.legacyConfig, r.version)
+    ).length;
+  }, [data]);
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="border-b border-border">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              {sortedData.length === data.records.length
+                ? `All ${data.records.length} Records`
+                : `${sortedData.length} of ${data.records.length} Records`}
           </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Player Name</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Search player..." className="pl-9 bg-secondary border-border font-mono" />
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setFilters({
+                    search: "",
+                    species: "all",
+                    background: "all",
+                    hideLegacy: true,
+                  })
+                }
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Reset filters
+              </Button>
+            )}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Species</label>
-              <Select>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="All species" />
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[180px] max-w-[280px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Search</label>
+              <Input
+                placeholder="Combo, player, god, race, class..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="bg-secondary/50 h-9 text-sm"
+              />
+            </div>
+            <div className="w-[180px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Species</label>
+              <Select
+                value={filters.species}
+                onValueChange={(v) => setFilters({ ...filters, species: v })}
+              >
+                <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Species</SelectItem>
-                  <SelectItem value="minotaur">Minotaur</SelectItem>
-                  <SelectItem value="gargoyle">Gargoyle</SelectItem>
-                  <SelectItem value="deep-elf">Deep Elf</SelectItem>
-                  <SelectItem value="felid">Felid</SelectItem>
-                  <SelectItem value="spriggan">Spriggan</SelectItem>
+                  {uniqueSpecies.map((sp) => (
+                    <SelectItem
+                      key={sp.code}
+                      value={sp.code}
+                      className={sp.isRemoved ? "text-muted-foreground" : ""}
+                    >
+                      {sp.name} ({sp.code}){sp.isRemoved && " ⚰️"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Background</label>
-              <Select>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="All backgrounds" />
+            <div className="w-[180px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Background</label>
+              <Select
+                value={filters.background}
+                onValueChange={(v) => setFilters({ ...filters, background: v })}
+              >
+                <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Backgrounds</SelectItem>
-                  <SelectItem value="fighter">Fighter</SelectItem>
-                  <SelectItem value="berserker">Berserker</SelectItem>
-                  <SelectItem value="conjurer">Conjurer</SelectItem>
-                  <SelectItem value="monk">Monk</SelectItem>
+                  {uniqueBackgrounds.map((bg) => (
+                    <SelectItem
+                      key={bg.code}
+                      value={bg.code}
+                      className={bg.isRemoved ? "text-muted-foreground" : ""}
+                    >
+                      {bg.name} ({bg.code}){bg.isRemoved && " ⚰️"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Version</label>
-              <Select>
-                <SelectTrigger className="bg-secondary border-border">
-                  <SelectValue placeholder="All versions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Versions</SelectItem>
-                  <SelectItem value="0.32">0.32</SelectItem>
-                  <SelectItem value="0.31">0.31</SelectItem>
-                  <SelectItem value="0.30">0.30</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={filters.hideLegacy}
+                  onChange={(e) => setFilters({ ...filters, hideLegacy: e.target.checked })}
+                  className="w-4 h-4 rounded border-border bg-secondary accent-health"
+                />
+                <span className="text-muted-foreground">
+                  Hide legacy ({legacyCount})
+                </span>
+              </label>
             </div>
           </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Apply Filters</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Records Tabs */}
-      <Tabs defaultValue="fastest" className="space-y-6">
-        <TabsList className="bg-secondary border border-border p-1 h-auto flex-wrap">
-          {recordCategories.map((category) => (
-            <TabsTrigger
-              key={category.id}
-              value={category.id}
-              className="flex items-center gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground"
-            >
-              <category.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{category.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {/* Fastest Wins Tab */}
-        <TabsContent value="fastest">
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-gold" />
-                  Fastest Wins (Real Time)
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <ArrowUpDown className="w-4 h-4 mr-2" />
-                  Sort
-                </Button>
               </div>
-              <CardDescription>Quickest victories by real-world time</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-border overflow-hidden">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                      <TableHead className="w-16 font-mono text-muted-foreground">#</TableHead>
-                      <TableHead className="font-mono text-muted-foreground">Player</TableHead>
-                      <TableHead className="font-mono text-muted-foreground text-center">Time</TableHead>
-                      <TableHead className="font-mono text-muted-foreground text-center hidden sm:table-cell">
+            <TableHeader className="sticky top-0 bg-card z-10">
+              <TableRow className="hover:bg-transparent">
+                <TableHead
+                  className="cursor-pointer hover:text-foreground w-[70px]"
+                  onClick={() => handleSort("score" as SortField)}
+                >
+                  Score
+                  <SortIcon active={isSortedBy("score" as SortField)} direction={sortDir} />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("character" as SortField)}
+                >
+                  Combo
+                  <SortIcon active={isSortedBy("character" as SortField)} direction={sortDir} />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("player" as SortField)}
+                >
+                  Player
+                  <SortIcon active={isSortedBy("player" as SortField)} direction={sortDir} />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("runes" as SortField)}
+                >
+                  Runes
+                  <SortIcon active={isSortedBy("runes" as SortField)} direction={sortDir} />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("turns" as SortField)}
+                >
                         Turns
+                  <SortIcon active={isSortedBy("turns" as SortField)} direction={sortDir} />
                       </TableHead>
-                      <TableHead className="font-mono text-muted-foreground hidden md:table-cell">
-                        Character
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("god" as SortField)}
+                >
+                  God
+                  <SortIcon active={isSortedBy("god" as SortField)} direction={sortDir} />
                       </TableHead>
-                      <TableHead className="font-mono text-muted-foreground hidden lg:table-cell text-right">
+                <TableHead
+                  className="cursor-pointer hover:text-foreground"
+                  onClick={() => handleSort("date" as SortField)}
+                >
                         Date
+                  <SortIcon active={isSortedBy("date" as SortField)} direction={sortDir} />
                       </TableHead>
+                <TableHead className="w-[60px]">Ver</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockFastestWins.map((record) => (
-                      <TableRow key={record.rank} className="hover:bg-secondary/30">
-                        <TableCell className="font-mono">
-                          {record.rank === 1 && <Medal className="w-4 h-4 text-gold" />}
-                          {record.rank === 2 && <Medal className="w-4 h-4 text-muted-foreground" />}
-                          {record.rank === 3 && <Medal className="w-4 h-4 text-amber-700" />}
-                          {record.rank > 3 && <span className="text-muted-foreground">{record.rank}</span>}
-                        </TableCell>
-                        <TableCell className="font-mono text-foreground">{record.player}</TableCell>
-                        <TableCell className="text-center">
-                          <span className="font-mono text-lg font-bold text-gold">{record.time}</span>
-                        </TableCell>
-                        <TableCell className="text-center hidden sm:table-cell">
-                          <span className="font-mono text-muted-foreground">{record.turns.toLocaleString()}</span>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {record.species} {record.background}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-right">
-                          <span className="font-mono text-xs text-muted-foreground">{record.date}</span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              {sortedData.map((record) => {
+                const isLegacy = isRecordLegacy(
+                  record.species,
+                  record.background,
+                  data.legacyConfig,
+                  record.version
+                );
+                const ageDays = daysSince(record.date);
+                const ageYears = (ageDays / 365).toFixed(1);
 
-        {/* High Scores Tab */}
-        <TabsContent value="highscore">
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-gold" />
-                  High Scores
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <ArrowUpDown className="w-4 h-4 mr-2" />
-                  Sort
-                </Button>
+                return (
+                  <TableRow
+                    key={`${record.character}-${record.rank}`}
+                    className={`hover:bg-secondary/30 ${isLegacy ? "opacity-60" : ""}`}
+                  >
+                    <TableCell className="font-mono text-gold">
+                      {(record.score / 1000000).toFixed(1)}M
+                        </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={record.morgueUrl || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-health hover:underline inline-flex items-center gap-1"
+                        >
+                          {record.character}
+                          <ExternalLink className="w-3 h-3 opacity-50" />
+                        </a>
+                        {isLegacy && (
+                          <span title="Legacy combo (removed species, background, or restricted combination)">
+                            <Ghost className="w-3 h-3 text-special" />
+                          </span>
+                        )}
               </div>
-              <CardDescription>Highest scoring victories of all time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                      <TableHead className="w-16 font-mono text-muted-foreground">#</TableHead>
-                      <TableHead className="font-mono text-muted-foreground">Player</TableHead>
-                      <TableHead className="font-mono text-muted-foreground text-right">Score</TableHead>
-                      <TableHead className="font-mono text-muted-foreground hidden md:table-cell">
-                        Character
-                      </TableHead>
-                      <TableHead className="font-mono text-muted-foreground hidden lg:table-cell">God</TableHead>
-                      <TableHead className="font-mono text-muted-foreground hidden lg:table-cell text-right">
-                        Date
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockHighScores.map((record) => (
-                      <TableRow key={record.rank} className="hover:bg-secondary/30">
-                        <TableCell className="font-mono">
-                          {record.rank === 1 && <Medal className="w-4 h-4 text-gold" />}
-                          {record.rank === 2 && <Medal className="w-4 h-4 text-muted-foreground" />}
-                          {record.rank === 3 && <Medal className="w-4 h-4 text-amber-700" />}
-                          {record.rank > 3 && <span className="text-muted-foreground">{record.rank}</span>}
+                      <div className="text-xs text-muted-foreground">
+                        {getSpeciesName(record.species, data.legacyConfig, record.version)}{" "}
+                        {getBackgroundName(record.background, data.legacyConfig, record.version)}
+              </div>
                         </TableCell>
-                        <TableCell className="font-mono text-foreground">{record.player}</TableCell>
-                        <TableCell className="text-right">
-                          <span className="font-mono text-lg font-bold text-gold">
-                            {record.score.toLocaleString()}
-                          </span>
+                    <TableCell>
+                      <a
+                        href={record.playerUrl || "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-mana hover:underline"
+                      >
+                        {record.player}
+                      </a>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {record.species} {record.background}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Badge variant="outline" className="font-mono text-special border-special/30">
-                            {record.god}
+                    <TableCell>
+                      <Badge variant="outline" className={getRunesBadgeClass(record.runes)}>
+                        {record.runes}
                           </Badge>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-right">
-                          <span className="font-mono text-xs text-muted-foreground">{record.date}</span>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {record.turns.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm max-w-[140px] truncate">
+                      {record.god || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">{formatDate(record.date)}</div>
+                      <div className={`text-xs ${getAgeClass(ageDays)}`}>{ageYears}y ago</div>
                         </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{record.version}</TableCell>
                       </TableRow>
-                    ))}
+                );
+              })}
                   </TableBody>
                 </Table>
               </div>
+        {sortedData.length === 0 && (
+          <div className="p-8 text-center text-muted-foreground">
+            No records match your filters.
+          </div>
+        )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Placeholder tabs */}
-        <TabsContent value="kills">
-          <Card className="bg-card border-border">
-            <CardContent className="py-12 text-center">
-              <Skull className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Most Kills Records</h3>
-              <p className="text-muted-foreground">Coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="turns">
-          <Card className="bg-card border-border">
-            <CardContent className="py-12 text-center">
-              <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">Fewest Turns Records</h3>
-              <p className="text-muted-foreground">Coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </PageWrapper>
   );
 }

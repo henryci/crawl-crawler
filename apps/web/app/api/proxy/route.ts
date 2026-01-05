@@ -59,11 +59,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const html = await response.text();
+    const text = await response.text();
 
-    return new NextResponse(html, {
+    // Determine content type based on URL or response
+    const contentType = targetUrl.endsWith('.txt')
+      ? 'text/plain; charset=utf-8'
+      : 'text/html; charset=utf-8';
+
+    return new NextResponse(text, {
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Type': contentType,
       },
     });
   } catch (error) {

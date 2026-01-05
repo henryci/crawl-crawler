@@ -1,43 +1,77 @@
-import { FileText, LinkIcon, User, Map, Swords, Clock } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import {
+  FileText,
+  LinkIcon,
+  User,
+  Swords,
+  Clock,
+  Shield,
+  Sparkles,
+  BookOpen,
+  Map,
+  Loader2,
+  AlertCircle,
+  Trophy,
+  Gem,
+  Scroll,
+  Wand2,
+  Crown,
+  Heart,
+  Droplet,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
-import { AlertBanner } from "@/components/alert-banner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
 
-// Sample morgue data to show intended layout
-const sampleMorgueData = {
-  character: {
-    name: "Atomikkrab",
-    title: "Spellweaver",
-    species: "Deep Elf",
-    background: "Conjurer",
-    level: 27,
-    god: "Vehumet",
-    piety: "******",
-  },
-  stats: {
-    hp: "0/187",
-    mp: "45/45",
-    ac: 12,
-    ev: 24,
-    sh: 0,
-    str: 8,
-    int: 38,
-    dex: 18,
-  },
-  game: {
-    turns: 78234,
-    time: "4:23:15",
-    version: "0.32.1",
-    result: "Escaped with the Orb!",
-    score: 892145,
-  },
-};
+type LoadingState = "idle" | "loading" | "success" | "error";
 
 export default function MorgueViewerPage() {
+  const [url, setUrl] = useState("");
+  const [loadingState, setLoadingState] = useState<LoadingState>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [morgueData, setMorgueData] = useState<MorgueData | null>(null);
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+
+  async function handleParseMorgue() {
+    if (!url.trim()) {
+      setError("Please enter a morgue file URL");
+      return;
+    }
+
+    setLoadingState("loading");
+    setError(null);
+    setMorgueData(null);
+
+    try {
+      // Use the proxy route to fetch the morgue file (avoids CORS)
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Failed to fetch morgue file: ${response.status}`);
+      }
+
+      const morgueText = await response.text();
+
+      // Parse the morgue file client-side
+      const result = parseMorgue(morgueText);
+      setParseResult(result);
+      setMorgueData(result.data);
+      setLoadingState("success");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setLoadingState("error");
+    }
+  }
+
   return (
     <PageWrapper>
       {/* Header */}
@@ -61,153 +95,59 @@ export default function MorgueViewerPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleParseMorgue()}
               placeholder="https://crawl.akrasiac.org/rawdata/username/morgue-username-date.txt"
               className="font-mono text-sm bg-secondary border-border flex-1"
             />
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Parse Morgue</Button>
+            <Button
+              onClick={handleParseMorgue}
+              disabled={loadingState === "loading"}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {loadingState === "loading" ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Parsing...
+                </>
+              ) : (
+                "Parse Morgue"
+              )}
+            </Button>
           </div>
 
-          {/* Coming Soon Notice */}
-          <div className="mt-4">
-            <AlertBanner
-              title="Coming Soon"
-              message="Morgue parsing functionality is under development. Below is a preview of how parsed data will be displayed."
-              variant="mana"
-            />
-          </div>
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-destructive/10 border-destructive/20">
+              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">Error</p>
+                <p className="text-muted-foreground">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Parse Warnings */}
+          {parseResult && !parseResult.success && morgueData && (
+            <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-gold/10 border-gold/20">
+              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-gold" />
+              <div className="text-sm">
+                <p className="font-medium text-gold">Parse Warnings</p>
+                <p className="text-muted-foreground">
+                  Some sections could not be fully parsed: {morgueData.parseErrors.join(", ")}
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Sample Parsed Data Display */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="h-px flex-1 bg-border" />
-          <span>Sample Output Preview</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
+      {/* Parsed Morgue Display */}
+      {morgueData && <MorgueDisplay data={morgueData} />}
 
-        {/* Character Overview */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Character Info */}
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <User className="w-4 h-4 text-gold" />
-                Character
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-sm space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Name</span>
-                <span className="text-foreground">{sampleMorgueData.character.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Title</span>
-                <span className="text-gold">{sampleMorgueData.character.title}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Species</span>
-                <span className="text-foreground">{sampleMorgueData.character.species}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Background</span>
-                <span className="text-foreground">{sampleMorgueData.character.background}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Level</span>
-                <span className="text-health">{sampleMorgueData.character.level}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">God</span>
-                <span className="text-special">
-                  {sampleMorgueData.character.god} {sampleMorgueData.character.piety}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Stats */}
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Swords className="w-4 h-4 text-danger" />
-                Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">HP</span>
-                  <span className="text-danger">{sampleMorgueData.stats.hp}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">MP</span>
-                  <span className="text-mana">{sampleMorgueData.stats.mp}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">AC</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.ac}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">EV</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.ev}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">SH</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.sh}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Str</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.str}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Int</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.int}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Dex</span>
-                  <span className="text-foreground">{sampleMorgueData.stats.dex}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Game Info */}
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="w-4 h-4 text-mana" />
-                Game
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="font-mono text-sm space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Result</span>
-                <Badge variant="outline" className="text-health border-health/30 bg-health/10">
-                  Victory
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Score</span>
-                <span className="text-gold">{sampleMorgueData.game.score.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Turns</span>
-                <span className="text-foreground">{sampleMorgueData.game.turns.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Time</span>
-                <span className="text-foreground">{sampleMorgueData.game.time}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Version</span>
-                <span className="text-muted-foreground">{sampleMorgueData.game.version}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* What is a Morgue File */}
+      {/* Info Section (show when no data loaded) */}
+      {!morgueData && (
         <Card className="bg-secondary/30 border-border">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -235,7 +175,586 @@ export default function MorgueViewerPage() {
             </p>
           </CardContent>
         </Card>
-      </div>
+      )}
     </PageWrapper>
+  );
+}
+
+/**
+ * Main component to display parsed morgue data.
+ */
+function MorgueDisplay({ data }: { data: MorgueData }) {
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview" className="gap-1.5">
+            <User className="w-4 h-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="equipment" className="gap-1.5">
+            <Shield className="w-4 h-4" />
+            Equipment
+          </TabsTrigger>
+          <TabsTrigger value="skills" className="gap-1.5">
+            <BookOpen className="w-4 h-4" />
+            Skills
+          </TabsTrigger>
+          <TabsTrigger value="spells" className="gap-1.5">
+            <Wand2 className="w-4 h-4" />
+            Spells
+          </TabsTrigger>
+          <TabsTrigger value="dungeon" className="gap-1.5">
+            <Map className="w-4 h-4" />
+            Dungeon
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <OverviewTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="equipment">
+          <EquipmentTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="skills">
+          <SkillsTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="spells">
+          <SpellsTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="dungeon">
+          <DungeonTab data={data} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/**
+ * Overview tab with character info, stats, and game summary.
+ */
+function OverviewTab({ data }: { data: MorgueData }) {
+  const stats = data.endingStats;
+  const isVictory = (data.runesCollected ?? 0) >= 3 && data.runesList?.length === data.runesCollected;
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Character Info Card */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <User className="w-4 h-4 text-gold" />
+            Character
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="font-mono text-sm space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Name</span>
+            <span className="text-foreground">{data.playerName ?? "Unknown"}</span>
+          </div>
+          {data.title && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Title</span>
+              <span className="text-gold">{data.title}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Race</span>
+            <span className="text-foreground">{data.race ?? "Unknown"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Background</span>
+            <span className="text-foreground">{data.background ?? "Unknown"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Level</span>
+            <span className="text-health">{data.characterLevel ?? "?"}</span>
+          </div>
+          {stats?.god && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">God</span>
+              <span className="text-special">
+                {stats.god}
+                {stats.piety !== null && (
+                  <span className="ml-1">{"\u2605".repeat(stats.piety)}</span>
+                )}
+              </span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Stats Card */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Swords className="w-4 h-4 text-danger" />
+            Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="font-mono text-sm">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Heart className="w-3 h-3" /> HP
+              </span>
+              <span className="text-danger">
+                {stats?.hpCurrent ?? "?"}/{stats?.hpMax ?? "?"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Droplet className="w-3 h-3" /> MP
+              </span>
+              <span className="text-mana">
+                {stats?.mpCurrent ?? "?"}/{stats?.mpMax ?? "?"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">AC</span>
+              <span className="text-foreground">{stats?.ac ?? "?"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">EV</span>
+              <span className="text-foreground">{stats?.ev ?? "?"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">SH</span>
+              <span className="text-foreground">{stats?.sh ?? "?"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Gold</span>
+              <span className="text-gold">{stats?.gold?.toLocaleString() ?? "?"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Str</span>
+              <span className="text-foreground">{stats?.str ?? "?"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Int</span>
+              <span className="text-foreground">{stats?.int ?? "?"}</span>
+            </div>
+            <div className="flex justify-between col-span-2">
+              <span className="text-muted-foreground">Dex</span>
+              <span className="text-foreground">{stats?.dex ?? "?"}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Game Info Card */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="w-4 h-4 text-mana" />
+            Game
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="font-mono text-sm space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-muted-foreground">Result</span>
+            <Badge
+              variant="outline"
+              className={
+                isVictory
+                  ? "text-health border-health/30 bg-health/10"
+                  : "text-danger border-danger/30 bg-danger/10"
+              }
+            >
+              {isVictory ? "Victory" : "Death"}
+            </Badge>
+          </div>
+          {data.score !== null && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Score</span>
+              <span className="text-gold">{data.score.toLocaleString()}</span>
+            </div>
+          )}
+          {data.totalTurns !== null && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Turns</span>
+              <span className="text-foreground">{data.totalTurns.toLocaleString()}</span>
+            </div>
+          )}
+          {data.gameDuration && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Time</span>
+              <span className="text-foreground">{data.gameDuration}</span>
+            </div>
+          )}
+          {data.version && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Version</span>
+              <span className="text-muted-foreground">{data.version}</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Runes Card (if any collected) */}
+      {data.runesCollected !== null && data.runesCollected > 0 && (
+        <Card className="bg-card border-border md:col-span-2 lg:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-gold" />
+              Runes ({data.runesCollected}/{data.runesPossible ?? 15})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {data.runesList?.map((rune) => (
+                <Badge
+                  key={rune}
+                  variant="outline"
+                  className="text-special border-special/30 bg-special/10 font-mono text-xs"
+                >
+                  {rune}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gems Card (0.32+) */}
+      {data.gemsCollected !== null && data.gemsCollected > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Gem className="w-4 h-4 text-special" />
+              Gems ({data.gemsCollected})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {data.gemsList?.map((gem) => (
+                <Badge
+                  key={gem}
+                  variant="outline"
+                  className="text-mana border-mana/30 bg-mana/10 font-mono text-xs"
+                >
+                  {gem}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gods Worshipped */}
+      {data.godsWorshipped && data.godsWorshipped.length > 0 && (
+        <Card className="bg-card border-border lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Crown className="w-4 h-4 text-special" />
+              Gods Worshipped
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {data.godsWorshipped.map((god, i) => (
+                <Badge
+                  key={i}
+                  variant="outline"
+                  className={
+                    god.endedTurn === null
+                      ? "text-special border-special/30 bg-special/10 font-mono text-xs"
+                      : "text-muted-foreground border-border bg-muted/50 font-mono text-xs"
+                  }
+                >
+                  {god.god}
+                  {god.endedTurn === null && " (current)"}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Equipment tab showing all worn items.
+ */
+function EquipmentTab({ data }: { data: MorgueData }) {
+  const equipment = data.equipment;
+
+  if (!equipment) {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <Shield className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No equipment data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const slots = [
+    { name: "Weapon", value: equipment.weapon, icon: Swords },
+    { name: "Body Armour", value: equipment.bodyArmour, icon: Shield },
+    { name: "Shield", value: equipment.shield, icon: Shield },
+    { name: "Helmet", value: equipment.helmet, icon: Crown },
+    { name: "Cloak", value: equipment.cloak, icon: Sparkles },
+    { name: "Gloves", value: equipment.gloves, icon: Sparkles },
+    { name: "Boots", value: equipment.boots, icon: Sparkles },
+    { name: "Amulet", value: equipment.amulet, icon: Gem },
+    { name: "Left Ring", value: equipment.ringLeft, icon: Gem },
+    { name: "Right Ring", value: equipment.ringRight, icon: Gem },
+  ];
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {slots.map((slot) => {
+        const Icon = slot.icon;
+        return (
+          <Card
+            key={slot.name}
+            className={`bg-card border-border ${!slot.value ? "opacity-50" : ""}`}
+          >
+            <CardContent className="p-4 flex items-start gap-3">
+              <div className="p-2 rounded-md bg-secondary">
+                <Icon className="w-4 h-4 text-gold" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">{slot.name}</p>
+                <p className="font-mono text-sm text-foreground truncate">
+                  {slot.value || "Empty"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Skills tab showing skill levels.
+ */
+function SkillsTab({ data }: { data: MorgueData }) {
+  const skills = data.endingSkills;
+
+  if (!skills || Object.keys(skills).length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No skill data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Sort skills by level descending
+  const sortedSkills = Object.entries(skills).sort(([, a], [, b]) => b - a);
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-mana" />
+          Skills
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {sortedSkills.map(([skill, level]) => (
+            <div
+              key={skill}
+              className="flex items-center justify-between p-2 rounded bg-secondary/50"
+            >
+              <span className="text-sm text-foreground">{skill}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-mana rounded-full transition-all"
+                    style={{ width: `${Math.min((level / 27) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="font-mono text-sm text-mana w-8 text-right">{level.toFixed(1)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Spells tab showing memorized spells.
+ */
+function SpellsTab({ data }: { data: MorgueData }) {
+  const spells = data.endingSpells;
+
+  if (!spells || spells.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <Scroll className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No spells memorized</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Wand2 className="w-4 h-4 text-special" />
+          Spells ({spells.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {spells.map((spell) => (
+            <div
+              key={spell.slot}
+              className="flex items-center gap-4 p-3 rounded bg-secondary/50"
+            >
+              <span className="font-mono text-muted-foreground w-6">{spell.slot})</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-foreground">{spell.name}</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {spell.schools.map((school) => (
+                    <Badge
+                      key={school}
+                      variant="outline"
+                      className="text-xs text-muted-foreground border-border"
+                    >
+                      {school}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-mono text-sm text-special">Lv {spell.level ?? "?"}</p>
+                <p className="font-mono text-xs text-muted-foreground">{spell.failure}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Dungeon tab showing branches visited.
+ */
+function DungeonTab({ data }: { data: MorgueData }) {
+  const branches = data.branches;
+
+  if (!branches || Object.keys(branches).length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          <Map className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No dungeon data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Sort branches by deepest level descending
+  const sortedBranches = Object.entries(branches).sort(
+    ([, a], [, b]) => (b.deepest ?? 0) - (a.deepest ?? 0)
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Branch Overview */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Map className="w-4 h-4 text-health" />
+            Branches Explored ({data.branchesVisitedCount ?? Object.keys(branches).length})
+          </CardTitle>
+          {data.levelsSeenCount !== null && (
+            <CardDescription className="font-mono">
+              {data.levelsSeenCount} total levels seen
+            </CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedBranches.map(([branch, info]) => (
+              <div
+                key={branch}
+                className="flex items-center justify-between p-3 rounded bg-secondary/50"
+              >
+                <span className="text-foreground font-medium">{branch}</span>
+                <span className="font-mono text-sm text-muted-foreground">
+                  {info.levelsSeen ?? info.deepest ?? "?"}/{info.levelsTotal ?? "?"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* XP Progression */}
+      {data.xpProgression && Object.keys(data.xpProgression).length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-gold" />
+              XP Progression
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              {Object.entries(data.xpProgression)
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([xl, info]) => (
+                  <div
+                    key={xl}
+                    className="flex items-center justify-between p-2 rounded bg-secondary/50 font-mono text-sm"
+                  >
+                    <span className="text-health">XL {xl}</span>
+                    <span className="text-muted-foreground">{info.location}</span>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top Levels by Time */}
+      {data.topLevelsByTime && data.topLevelsByTime.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Clock className="w-4 h-4 text-mana" />
+              Most Time Spent (Top 10)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {data.topLevelsByTime.slice(0, 10).map((level, i) => (
+                <div
+                  key={level.level}
+                  className="flex items-center gap-4 p-2 rounded bg-secondary/50"
+                >
+                  <span className="font-mono text-muted-foreground w-6">{i + 1}.</span>
+                  <span className="flex-1 font-medium text-foreground">{level.level}</span>
+                  <span className="font-mono text-sm text-mana">
+                    {level.time.toLocaleString()} deca
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }

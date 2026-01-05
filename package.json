@@ -8,7 +8,9 @@
     "start": "pnpm --filter @crawl-crawler/web start",
     "lint": "pnpm -r lint",
     "build:parser": "pnpm --filter dcss-morgue-parser build",
-    "test:parser": "pnpm --filter dcss-morgue-parser test"
+    "test:parser": "pnpm --filter dcss-morgue-parser test",
+    "build:combo-parser": "pnpm --filter dcss-combo-records-parser build",
+    "download:combo-records": "pnpm --filter dcss-combo-records-parser build && node packages/dcss-combo-records-parser/dist/cli.js --output apps/web/public/data/combo-records.json"
   },
   "devDependencies": {
     "typescript": "^5"
