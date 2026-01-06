@@ -188,6 +188,7 @@ export default function RecordsPage() {
 function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
   const [filters, setFilters] = useState({
     search: "",
+    player: "",
     species: "all",
     background: "all",
     hideLegacy: true,
@@ -201,6 +202,12 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
       result = result.filter(
         (r) => !isRecordLegacy(r.species, r.background, data.legacyConfig, r.version)
       );
+    }
+
+    // Filter by player name (exact or partial match)
+    if (filters.player) {
+      const playerSearch = filters.player.toLowerCase();
+      result = result.filter((r) => r.player.toLowerCase().includes(playerSearch));
     }
 
     if (filters.search) {
@@ -230,7 +237,7 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
   });
 
   const hasActiveFilters =
-    filters.search || filters.species !== "all" || filters.background !== "all" || !filters.hideLegacy;
+    filters.search || filters.player || filters.species !== "all" || filters.background !== "all" || !filters.hideLegacy;
 
   // Get unique species and backgrounds for dropdowns
   const uniqueSpecies = useMemo(() => {
@@ -279,6 +286,7 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
                 onClick={() =>
                   setFilters({
                     search: "",
+                    player: "",
                     species: "all",
                     background: "all",
                     hideLegacy: true,
@@ -296,9 +304,18 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
             <div className="flex-1 min-w-[180px] max-w-[280px]">
               <label className="text-xs text-muted-foreground mb-1 block">Search</label>
               <Input
-                placeholder="Combo, player, god, race, class..."
+                placeholder="Combo, god, race, class..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="bg-secondary/50 h-9 text-sm"
+              />
+            </div>
+            <div className="w-[140px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Player</label>
+              <Input
+                placeholder="Player name..."
+                value={filters.player}
+                onChange={(e) => setFilters({ ...filters, player: e.target.value })}
                 className="bg-secondary/50 h-9 text-sm"
               />
             </div>
