@@ -123,7 +123,7 @@ function MorgueViewerContent() {
   const [error, setError] = useState<string | null>(null);
   const [morgueData, setMorgueData] = useState<MorgueData | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
+  const [lastLoadedUrl, setLastLoadedUrl] = useState<string | null>(null);
 
   const fetchAndParse = useCallback(async (targetUrl: string) => {
     if (!targetUrl.trim()) {
@@ -152,20 +152,20 @@ function MorgueViewerContent() {
       setParseResult(result);
       setMorgueData(result.data);
       setLoadingState("success");
+      setLastLoadedUrl(targetUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoadingState("error");
     }
   }, []);
 
-  // Auto-load if URL is provided in query params
+  // Auto-load when URL param changes (including browser back/forward navigation)
   useEffect(() => {
-    if (urlFromParams && !hasAutoLoaded) {
+    if (urlFromParams && urlFromParams !== lastLoadedUrl) {
       setUrl(urlFromParams);
-      setHasAutoLoaded(true);
       fetchAndParse(urlFromParams);
     }
-  }, [urlFromParams, hasAutoLoaded, fetchAndParse]);
+  }, [urlFromParams, lastLoadedUrl, fetchAndParse]);
 
   const handleParseMorgue = async () => {
     // Update URL params when user clicks Parse

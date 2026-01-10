@@ -63,7 +63,7 @@ function PlayerSummaryContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<PlayerData | null>(null);
-  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
+  const [lastLoadedUrl, setLastLoadedUrl] = useState<string | null>(null);
 
   const fetchAndParse = useCallback(async (targetUrl: string) => {
     if (!targetUrl) {
@@ -95,6 +95,7 @@ function PlayerSummaryContent() {
       const html = await response.text();
       const data = parsePlayerPage(html);
       setPlayerData(data);
+      setLastLoadedUrl(targetUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -102,14 +103,13 @@ function PlayerSummaryContent() {
     }
   }, []);
 
-  // Auto-load if URL is provided in query params
+  // Auto-load when URL param changes (including browser back/forward navigation)
   useEffect(() => {
-    if (urlFromParams && !hasAutoLoaded) {
+    if (urlFromParams && urlFromParams !== lastLoadedUrl) {
       setUrl(urlFromParams);
-      setHasAutoLoaded(true);
       fetchAndParse(urlFromParams);
     }
-  }, [urlFromParams, hasAutoLoaded, fetchAndParse]);
+  }, [urlFromParams, lastLoadedUrl, fetchAndParse]);
 
   const handleFetchAndParse = async () => {
     // Update URL params when user clicks Analyze
