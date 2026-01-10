@@ -24,6 +24,9 @@ import {
   Bug,
   ChevronRight,
   ChevronDown,
+  Wind,
+  Footprints,
+  Hand,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -568,9 +571,9 @@ function EquipmentTab({ data }: { data: MorgueData }) {
     { name: "Body Armour", value: equipment.bodyArmour, icon: Shield },
     { name: "Shield", value: equipment.shield, icon: Shield },
     { name: "Helmet", value: equipment.helmet, icon: Crown },
-    { name: "Cloak", value: equipment.cloak, icon: Sparkles },
-    { name: "Gloves", value: equipment.gloves, icon: Sparkles },
-    { name: "Boots", value: equipment.boots, icon: Sparkles },
+    { name: "Cloak", value: equipment.cloak, icon: Wind },
+    { name: "Gloves", value: equipment.gloves, icon: Hand },
+    { name: "Boots", value: equipment.boots, icon: Footprints },
     { name: "Amulet", value: equipment.amulet, icon: Gem },
     { name: "Left Ring", value: equipment.ringLeft, icon: Gem },
     { name: "Right Ring", value: equipment.ringRight, icon: Gem },
