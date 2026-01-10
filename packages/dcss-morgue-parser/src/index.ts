@@ -25,6 +25,7 @@ export type {
   BranchTimeStats,
   TopLevelTime,
   SkillProgression,
+  SkillsByXlSource,
 } from './types.js';
 
 export { ParseError } from './types.js';

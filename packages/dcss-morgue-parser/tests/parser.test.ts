@@ -341,6 +341,11 @@ describe('parseMorgue', () => {
       expect(Object.keys(data.skillsByXl || {})).toContain('Axes');
     });
 
+    it('marks skillsByXlSource as notes for older morgues', () => {
+      // This morgue (0.17) doesn't have the skill table, so it's derived from notes
+      expect(data.skillsByXlSource).toBe('notes');
+    });
+
     it('correctly maps skill levels to XL based on turn', () => {
       // From the notes:
       // Turn 438: Reached skill level 4 in Armour (before XL 3 at turn 584)

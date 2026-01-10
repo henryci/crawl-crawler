@@ -165,6 +165,13 @@ export interface TopLevelTime {
 export type SkillProgression = Record<string, number>;
 
 /**
+ * Source of skill progression data.
+ * - 'table': From the skill table at the end of morgue (0.23+, more accurate)
+ * - 'notes': Derived from "Reached skill level X in Y" entries in Notes section
+ */
+export type SkillsByXlSource = 'table' | 'notes' | null;
+
+/**
  * Complete parsed morgue file data.
  */
 export interface MorgueData {
@@ -226,6 +233,8 @@ export interface MorgueData {
   endingSkills: Record<string, number> | null;
   /** Skill progression by XL (skill name -> XL -> level) */
   skillsByXl: Record<string, SkillProgression> | null;
+  /** Source of skillsByXl data: 'table' (0.23+) or 'notes' (derived from log) */
+  skillsByXlSource: SkillsByXlSource;
   /** Memorized spells at game end */
   endingSpells: Spell[] | null;
   /** Gods worshipped during the game */

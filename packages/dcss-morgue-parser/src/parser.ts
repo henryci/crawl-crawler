@@ -83,6 +83,7 @@ export function parseMorgue(content: string): ParseResult {
     equipment: null,
     endingSkills: null,
     skillsByXl: null,
+    skillsByXlSource: null,
     endingSpells: null,
     godsWorshipped: null,
     branches: null,
@@ -142,6 +143,10 @@ export function parseMorgue(content: string): ParseResult {
     const skills = extractSkills(content);
     result.endingSkills = Object.keys(skills.endingSkills).length > 0 ? skills.endingSkills : null;
     result.skillsByXl = skills.skillsByXl;
+    // If we got skillsByXl from the table format, mark the source
+    if (result.skillsByXl) {
+      result.skillsByXlSource = 'table';
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     result.parseErrors.push(`skills: ${message}`);
@@ -181,6 +186,9 @@ export function parseMorgue(content: string): ParseResult {
     // try to build it from notes section skill level events
     if (!result.skillsByXl && notes.skillLevelEvents.length > 0 && result.xpProgression) {
       result.skillsByXl = buildSkillsByXlFromNotes(notes.skillLevelEvents, result.xpProgression);
+      if (result.skillsByXl) {
+        result.skillsByXlSource = 'notes';
+      }
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
