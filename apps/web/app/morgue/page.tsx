@@ -23,6 +23,7 @@ import {
   Bug,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Wind,
   Footprints,
   Hand,
@@ -32,7 +33,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageWrapper } from "@/components/page-wrapper";
-import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
 
@@ -132,76 +132,102 @@ function MorgueViewerContent() {
     await fetchAndParse(url);
   };
 
+  const [formExpanded, setFormExpanded] = useState(!morgueData);
+
+  // Collapse form when data loads
+  useEffect(() => {
+    if (morgueData) {
+      setFormExpanded(false);
+    }
+  }, [morgueData]);
+
   return (
     <PageWrapper>
-      {/* Header */}
-      <PageHeader
-        title="Morgue Viewer"
-        subtitle="Parse and visualize DCSS morgue files"
-        icon={FileText}
-        variant="health"
-      />
+      {/* URL Input Section - Collapsible */}
+      <div className="mb-6">
+        {formExpanded ? (
+          <Card className="bg-card border-border">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <LinkIcon className="w-5 h-5 text-mana" />
+                  Load Morgue File
+                </CardTitle>
+                {morgueData && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormExpanded(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              <CardDescription>Enter the URL to a DCSS morgue file to parse and display its contents</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleParseMorgue()}
+                  placeholder="https://crawl.akrasiac.org/rawdata/username/morgue-username-date.txt"
+                  className="font-mono text-sm bg-secondary border-border flex-1"
+                />
+                <Button
+                  onClick={handleParseMorgue}
+                  disabled={loadingState === "loading"}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {loadingState === "loading" ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Parsing...
+                    </>
+                  ) : (
+                    "Parse Morgue"
+                  )}
+                </Button>
+              </div>
 
-      {/* URL Input Section */}
-      <Card className="mb-8 bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <LinkIcon className="w-4 h-4 text-mana" />
-            Load Morgue File
-          </CardTitle>
-          <CardDescription>Enter the URL to a DCSS morgue file to parse and display its contents</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleParseMorgue()}
-              placeholder="https://crawl.akrasiac.org/rawdata/username/morgue-username-date.txt"
-              className="font-mono text-sm bg-secondary border-border flex-1"
-            />
-            <Button
-              onClick={handleParseMorgue}
-              disabled={loadingState === "loading"}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {loadingState === "loading" ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Parsing...
-                </>
-              ) : (
-                "Parse Morgue"
+              {/* Error Message */}
+              {error && (
+                <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-destructive/10 border-destructive/20">
+                  <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
+                  <div className="text-sm">
+                    <p className="font-medium text-destructive">Error</p>
+                    <p className="text-muted-foreground">{error}</p>
+                  </div>
+                </div>
               )}
-            </Button>
-          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-destructive/10 border-destructive/20">
-              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
-              <div className="text-sm">
-                <p className="font-medium text-destructive">Error</p>
-                <p className="text-muted-foreground">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Parse Warnings */}
-          {parseResult && !parseResult.success && morgueData && (
-            <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-gold/10 border-gold/20">
-              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-gold" />
-              <div className="text-sm">
-                <p className="font-medium text-gold">Parse Warnings</p>
-                <p className="text-muted-foreground">
-                  Some sections could not be fully parsed: {morgueData.parseErrors.join(", ")}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              {/* Parse Warnings */}
+              {parseResult && !parseResult.success && morgueData && (
+                <div className="mt-4 flex items-start gap-2 p-4 rounded-md border bg-gold/10 border-gold/20">
+                  <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-gold" />
+                  <div className="text-sm">
+                    <p className="font-medium text-gold">Parse Warnings</p>
+                    <p className="text-muted-foreground">
+                      Some sections could not be fully parsed: {morgueData.parseErrors.join(", ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <button
+            onClick={() => setFormExpanded(true)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <LinkIcon className="w-4 h-4" />
+            <span>Load another morgue file</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
       {/* Parsed Morgue Display */}
       {morgueData && <MorgueDisplay data={morgueData} />}
@@ -482,38 +508,13 @@ function OverviewTab({ data }: { data: MorgueData }) {
         </Card>
       )}
 
-      {/* Gems Card (0.32+) */}
-      {gemsCollected > 0 && (
+      {/* Gods Worshipped */}
+      {data.godsWorshipped && data.godsWorshipped.length > 0 && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Gem className="w-4 h-4 text-special" />
-              Gems ({gemsCollected})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {data.gemsList?.map((gem) => (
-                <Badge
-                  key={gem}
-                  variant="outline"
-                  className="text-mana border-mana/30 bg-mana/10 font-mono text-xs"
-                >
-                  {gem}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Gods Worshipped */}
-      {data.godsWorshipped && data.godsWorshipped.length > 0 && (
-        <Card className="bg-card border-border lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
               <Crown className="w-4 h-4 text-special" />
-              Gods Worshipped
+              Gods
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -536,6 +537,33 @@ function OverviewTab({ data }: { data: MorgueData }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Gems Card (always shown) */}
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gem className="w-4 h-4 text-special" />
+            Gems {gemsCollected > 0 && `(${gemsCollected})`}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {gemsCollected > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {data.gemsList?.map((gem) => (
+                <Badge
+                  key={gem}
+                  variant="outline"
+                  className="text-mana border-mana/30 bg-mana/10 font-mono text-xs"
+                >
+                  {gem}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No gems collected</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Compact Equipment Section */}
       <EquipmentSection data={data} />
