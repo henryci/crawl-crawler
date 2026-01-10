@@ -299,6 +299,83 @@ describe('parseMorgue', () => {
       expect(data.parserVersion).toBeDefined();
     });
   });
+
+  describe('older morgue file (0.17 - henryci) with skillsByXl from notes', () => {
+    let data: MorgueData;
+
+    beforeAll(() => {
+      const content = loadMorgue('morgue-henryci-20151114-075948.txt');
+      const result = parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.17.0-23-g0de4337');
+      expect(data.isWebtiles).toBe(false);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('henryci');
+      expect(data.title).toBe('Conqueror');
+      expect(data.race).toBe('Minotaur');
+      expect(data.background).toBe('Fighter');
+      expect(data.characterLevel).toBe(27);
+    });
+
+    it('extracts ending skills', () => {
+      expect(data.endingSkills).not.toBeNull();
+      expect(data.endingSkills?.['Fighting']).toBe(27);
+      expect(data.endingSkills?.['Axes']).toBe(27);
+      expect(data.endingSkills?.['Armour']).toBe(27);
+      expect(data.endingSkills?.['Dodging']).toBe(27);
+      expect(data.endingSkills?.['Shields']).toBe(27);
+      expect(data.endingSkills?.['Invocations']).toBe(27);
+    });
+
+    it('builds skillsByXl from notes section', () => {
+      expect(data.skillsByXl).not.toBeNull();
+      // Should have skills with XL progression
+      expect(Object.keys(data.skillsByXl || {})).toContain('Fighting');
+      expect(Object.keys(data.skillsByXl || {})).toContain('Armour');
+      expect(Object.keys(data.skillsByXl || {})).toContain('Shields');
+      expect(Object.keys(data.skillsByXl || {})).toContain('Axes');
+    });
+
+    it('correctly maps skill levels to XL based on turn', () => {
+      // From the notes:
+      // Turn 438: Reached skill level 4 in Armour (before XL 3 at turn 584)
+      // So Armour 4 should be at XL 2
+      expect(data.skillsByXl?.['Armour']?.['2']).toBe(4);
+
+      // Turn 2448: skill level 5 in Fighting, same turn as XL 6
+      // XL 6 is reached at turn 2448, so Fighting 5 should be at XL 6
+      expect(data.skillsByXl?.['Fighting']?.['6']).toBe(5);
+
+      // Turn 8114: skill level 10 in Armour (XL 10 was reached at turn 7649)
+      expect(data.skillsByXl?.['Armour']?.['10']).toBe(10);
+    });
+
+    it('handles skills with only one milestone', () => {
+      // Evocations was trained later - should have progression entries
+      expect(data.skillsByXl?.['Evocations']).toBeDefined();
+    });
+
+    it('keeps highest skill level when multiple events at same XL', () => {
+      // At turn 2448, multiple skill level 5 events happen at XL 6
+      // Fighting, Armour, Shields all reach level 5
+      expect(data.skillsByXl?.['Fighting']?.['6']).toBe(5);
+      expect(data.skillsByXl?.['Armour']?.['6']).toBe(5);
+      expect(data.skillsByXl?.['Shields']?.['6']).toBe(5);
+    });
+
+    it('extracts xpProgression', () => {
+      expect(data.xpProgression).not.toBeNull();
+      expect(data.xpProgression?.['1']).toBeDefined();
+      expect(data.xpProgression?.['27']).toBeDefined();
+      expect(data.xpProgression?.['1']?.turn).toBe(0);
+      expect(data.xpProgression?.['1']?.location).toBe('D:1');
+    });
+  });
 });
 
 describe('utility functions', () => {
@@ -359,9 +436,19 @@ describe('utility functions', () => {
   });
 
   describe('cleanGodName', () => {
-    it('removes epithets', () => {
+    it('removes epithets after god name', () => {
       expect(cleanGodName('Makhleb the Destroyer')).toBe('Makhleb');
       expect(cleanGodName('Trog the Wrathful')).toBe('Trog');
+      expect(cleanGodName('Lugonu the Unformed')).toBe('Lugonu');
+    });
+
+    it('removes title prefixes before god name', () => {
+      expect(cleanGodName('Warmaster Okawaru')).toBe('Okawaru');
+      expect(cleanGodName('The Warmaster Okawaru')).toBe('Okawaru');
+      expect(cleanGodName('Stormbringer Qazlal')).toBe('Qazlal');
+      expect(cleanGodName('The Healer Elyvilon')).toBe('Elyvilon');
+      expect(cleanGodName('Madash Fedhas')).toBe('Fedhas');
+      expect(cleanGodName('Ym Sagoz Gozag')).toBe('Gozag');
     });
 
     it('handles multi-word god names', () => {
@@ -369,6 +456,15 @@ describe('utility functions', () => {
       expect(cleanGodName('the Shining One')).toBe('the Shining One');
       expect(cleanGodName('Sif Muna')).toBe('Sif Muna');
       expect(cleanGodName('Nemelex Xobeh')).toBe('Nemelex Xobeh');
+      expect(cleanGodName('The Wu Jian Council')).toBe('Wu Jian');
+      expect(cleanGodName('Wu Jian Council')).toBe('Wu Jian');
+    });
+
+    it('handles plain god names without titles', () => {
+      expect(cleanGodName('Okawaru')).toBe('Okawaru');
+      expect(cleanGodName('Vehumet')).toBe('Vehumet');
+      expect(cleanGodName('Xom')).toBe('Xom');
+      expect(cleanGodName('Kikubaaqudgha')).toBe('Kikubaaqudgha');
     });
   });
 

@@ -18,6 +18,7 @@ import {
   extractGods,
   extractBranches,
   extractNotes,
+  buildSkillsByXlFromNotes,
   extractActions,
   extractTimeTables,
 } from './extractors/index.js';
@@ -170,11 +171,17 @@ export function parseMorgue(content: string): ParseResult {
     result.parseErrors.push(`branches: ${message}`);
   }
 
-  // Extract notes (XP progression)
+  // Extract notes (XP progression and skill level events)
   try {
     const notes = extractNotes(content);
     result.xpProgression =
       Object.keys(notes.xpProgression).length > 0 ? notes.xpProgression : null;
+
+    // If we didn't get skillsByXl from the table format (older morgues),
+    // try to build it from notes section skill level events
+    if (!result.skillsByXl && notes.skillLevelEvents.length > 0 && result.xpProgression) {
+      result.skillsByXl = buildSkillsByXlFromNotes(notes.skillLevelEvents, result.xpProgression);
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     result.parseErrors.push(`notes: ${message}`);

@@ -12,7 +12,7 @@ export { extractSkills, type SkillsData } from './skills.js';
 export { extractSpells } from './spells.js';
 export { extractGods } from './gods.js';
 export { extractBranches } from './branches.js';
-export { extractNotes, type NotesData } from './notes.js';
+export { extractNotes, buildSkillsByXlFromNotes, type NotesData, type SkillLevelEvent } from './notes.js';
 export { extractActions } from './actions.js';
 export { extractTimeTables, type TimeTablesData } from './time-tables.js';
 

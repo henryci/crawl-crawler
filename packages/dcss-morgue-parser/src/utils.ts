@@ -88,6 +88,11 @@ export const PATTERNS = {
   xpReached: /Reached XP level\s+(\d+)/,
 
   /**
+   * Skill level reached: "Reached skill level 5 in Fighting"
+   */
+  skillReached: /Reached skill level\s+(\d+)\s+in\s+(.+)/,
+
+  /**
    * God worship: "Became a worshipper of Makhleb the Destroyer"
    */
   becameWorshipper: /Became a worshipper of\s+(.+?)(?:\s+the|\s*$)/,
@@ -352,34 +357,86 @@ export const KNOWN_GODS = new Map([
   ['ru', 'Ru'],
   ['sif muna', 'Sif Muna'],
   ['the shining one', 'the Shining One'],
+  ['shining one', 'the Shining One'],
   ['trog', 'Trog'],
   ['uskayaw', 'Uskayaw'],
   ['vehumet', 'Vehumet'],
   ['wu jian', 'Wu Jian'],
+  ['the wu jian council', 'Wu Jian'],
+  ['wu jian council', 'Wu Jian'],
   ['xom', 'Xom'],
   ['yredelemnul', 'Yredelemnul'],
   ['zin', 'Zin'],
 ]);
 
 /**
- * Clean a god name by removing epithets.
+ * God title prefixes that appear before the god name.
+ * e.g., "Warmaster Okawaru" -> title is "Warmaster"
+ */
+const GOD_TITLE_PREFIXES = new Set([
+  'the shackled',      // Ashenzari
+  'the shepherd',      // Beogh
+  'the contemplative', // Cheibriados
+  'the shadowed',      // Dithmenos
+  'the healer',        // Elyvilon
+  'madash',            // Fedhas
+  'ym sagoz the greedy', // Gozag
+  'ym sagoz',          // Gozag (shorter form)
+  'the forgotten',     // Hepliaklqana
+  'the dying flame',   // Ignis
+  'the shapeless',     // Jiyva
+  'the unformed',      // Lugonu
+  'the destroyer',     // Makhleb
+  'the warmaster',     // Okawaru
+  'warmaster',         // Okawaru (without "the")
+  'stormbringer',      // Qazlal
+  'the awakened',      // Ru
+  'the loreminder',    // Sif Muna
+  'the wrathful',      // Trog
+  'the reveler',       // Uskayaw
+  'the unpredictable', // Xom
+  'the dark',          // Yredelemnul
+  'the law-giver',     // Zin
+]);
+
+/**
+ * Clean a god name by removing epithets/titles.
  *
- * Handles multi-word god names like "Sif Muna" and "The Shining One".
+ * Handles:
+ * - Titles before god name: "Warmaster Okawaru" -> "Okawaru"
+ * - Epithets after god name: "Makhleb the Destroyer" -> "Makhleb"
+ * - Multi-word god names: "Sif Muna", "The Shining One", "Wu Jian Council"
  *
- * @param godStr - Raw god name string (may include epithet like "the Destroyer")
- * @returns Clean god name
+ * @param godStr - Raw god name string (may include epithet/title)
+ * @returns Clean canonical god name
  */
 export function cleanGodName(godStr: string): string {
   if (!godStr) {
     return godStr;
   }
 
-  const lowerStr = godStr.toLowerCase();
+  const lowerStr = godStr.toLowerCase().trim();
 
-  // Check if it matches a known god name (handles multi-word names)
-  for (const [lowerGod, canonicalGod] of KNOWN_GODS) {
-    if (lowerStr.startsWith(lowerGod)) {
+  // First, check if any known god name appears anywhere in the string
+  // Sort by length descending to match longer names first (e.g., "Nemelex Xobeh" before "Xobeh")
+  const sortedGods = Array.from(KNOWN_GODS.entries()).sort(
+    ([a], [b]) => b.length - a.length
+  );
+
+  for (const [lowerGod, canonicalGod] of sortedGods) {
+    if (lowerStr.includes(lowerGod)) {
       return canonicalGod;
+    }
+  }
+
+  // If no known god found, try to extract by removing known title prefixes
+  for (const prefix of GOD_TITLE_PREFIXES) {
+    if (lowerStr.startsWith(prefix + ' ')) {
+      const remainder = godStr.slice(prefix.length).trim();
+      if (remainder) {
+        // Recursively clean in case there are multiple prefixes
+        return cleanGodName(remainder);
+      }
     }
   }
 
@@ -390,9 +447,8 @@ export function cleanGodName(godStr: string): string {
     return parts[0].trim();
   }
 
-  // If no epithet, return first word for safety
-  const firstWord = godStr.split(/\s+/)[0];
-  return firstWord ?? godStr;
+  // If nothing matched, return as-is
+  return godStr.trim();
 }
 
 /**
