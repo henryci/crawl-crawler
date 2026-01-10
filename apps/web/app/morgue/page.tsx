@@ -357,11 +357,13 @@ function OverviewTab({ data }: { data: MorgueData }) {
                 <Heart className="w-3 h-3" /> HP
               </span>
               <span className={
-                stats?.hpCurrent != null && stats?.hpMax != null && stats.hpCurrent >= stats.hpMax
-                  ? "text-health"
-                  : stats?.hpCurrent != null && stats?.hpMax != null && stats.hpCurrent / stats.hpMax < 0.5
-                    ? "text-danger"
-                    : "text-gold"
+                stats?.hpCurrent == null || stats?.hpMax == null
+                  ? "text-foreground"
+                  : stats.hpCurrent >= stats.hpMax
+                    ? "text-health"
+                    : stats.hpCurrent / stats.hpMax < 0.5
+                      ? "text-danger"
+                      : "text-gold"
               }>
                 {stats?.hpCurrent ?? "?"}/{stats?.hpMax ?? "?"}
               </span>
@@ -398,7 +400,7 @@ function OverviewTab({ data }: { data: MorgueData }) {
               <span className="text-muted-foreground">Int</span>
               <span className="text-foreground">{stats?.int ?? "?"}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between col-span-2">
               <span className="text-muted-foreground">Dex</span>
               <span className="text-foreground">{stats?.dex ?? "?"}</span>
             </div>
@@ -480,13 +482,38 @@ function OverviewTab({ data }: { data: MorgueData }) {
         </Card>
       )}
 
-      {/* Gods Worshipped */}
-      {data.godsWorshipped && data.godsWorshipped.length > 0 && (
+      {/* Gems Card (0.32+) */}
+      {gemsCollected > 0 && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
+              <Gem className="w-4 h-4 text-special" />
+              Gems ({gemsCollected})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {data.gemsList?.map((gem) => (
+                <Badge
+                  key={gem}
+                  variant="outline"
+                  className="text-mana border-mana/30 bg-mana/10 font-mono text-xs"
+                >
+                  {gem}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gods Worshipped */}
+      {data.godsWorshipped && data.godsWorshipped.length > 0 && (
+        <Card className="bg-card border-border lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
               <Crown className="w-4 h-4 text-special" />
-              Gods
+              Gods Worshipped
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -509,33 +536,6 @@ function OverviewTab({ data }: { data: MorgueData }) {
           </CardContent>
         </Card>
       )}
-
-      {/* Gems Card (always shown) */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Gem className="w-4 h-4 text-special" />
-            Gems {gemsCollected > 0 && `(${gemsCollected})`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {gemsCollected > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {data.gemsList?.map((gem) => (
-                <Badge
-                  key={gem}
-                  variant="outline"
-                  className="text-mana border-mana/30 bg-mana/10 font-mono text-xs"
-                >
-                  {gem}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No gems collected</p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Compact Equipment Section */}
       <EquipmentSection data={data} />
