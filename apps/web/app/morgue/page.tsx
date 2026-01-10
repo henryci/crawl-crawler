@@ -518,6 +518,18 @@ function OverviewTab({ data }: { data: MorgueData }) {
               <span className="text-foreground">{formatDuration(data.gameDurationSeconds)}</span>
             </div>
           )}
+          {data.startDate && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Started</span>
+              <span className="text-foreground">{data.startDate}</span>
+            </div>
+          )}
+          {data.endDate && (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Ended</span>
+              <span className="text-foreground">{data.endDate}</span>
+            </div>
+          )}
           {data.version && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Version</span>
