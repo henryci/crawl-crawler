@@ -368,8 +368,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {/* Character Info Card */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
+      <Card className="bg-card border-border py-4 gap-3">
+        <CardHeader className="pb-0">
           <CardTitle className="text-base flex items-center gap-2">
             <User className="w-4 h-4 text-gold" />
             Character
@@ -413,8 +413,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
       </Card>
 
       {/* Stats Card */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
+      <Card className="bg-card border-border py-4 gap-3">
+        <CardHeader className="pb-0">
           <CardTitle className="text-base flex items-center gap-2">
             <Swords className="w-4 h-4 text-danger" />
             Stats
@@ -479,8 +479,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
       </Card>
 
       {/* Game Info Card */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
+      <Card className="bg-card border-border py-4 gap-3">
+        <CardHeader className="pb-0">
           <CardTitle className="text-base flex items-center gap-2">
             <Clock className="w-4 h-4 text-mana" />
             Game
@@ -529,8 +529,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
 
       {/* Runes Card (if any collected) */}
       {runesCollected > 0 && (
-        <Card className="bg-card border-border md:col-span-2 lg:col-span-1">
-          <CardHeader className="pb-3">
+        <Card className="bg-card border-border md:col-span-2 lg:col-span-1 py-4 gap-3">
+          <CardHeader className="pb-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Trophy className="w-4 h-4 text-gold" />
               Runes ({runesCollected}/{data.runesPossible ?? 15})
@@ -554,8 +554,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
 
       {/* Gods Worshipped */}
       {data.godsWorshipped && data.godsWorshipped.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3">
+        <Card className="bg-card border-border py-4 gap-3">
+          <CardHeader className="pb-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Crown className="w-4 h-4 text-special" />
               Gods
@@ -583,8 +583,8 @@ function OverviewTab({ data }: { data: MorgueData }) {
       )}
 
       {/* Gems Card (always shown) */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
+      <Card className="bg-card border-border py-4 gap-3">
+        <CardHeader className="pb-0">
           <CardTitle className="text-base flex items-center gap-2">
             <Gem className="w-4 h-4 text-special" />
             Gems {gemsCollected > 0 && `(${gemsCollected})`}
@@ -649,8 +649,8 @@ function EquipmentSection({ data }: { data: MorgueData }) {
   }
 
   return (
-    <Card className="bg-card border-border md:col-span-2 lg:col-span-3">
-      <CardHeader className="pb-3">
+    <Card className="bg-card border-border md:col-span-2 lg:col-span-3 py-4 gap-3">
+      <CardHeader className="pb-0">
         <CardTitle className="text-base flex items-center gap-2">
           <Shield className="w-4 h-4 text-gold" />
           Equipment
@@ -743,8 +743,8 @@ function SpellsSection({ data }: { data: MorgueData }) {
   }
 
   return (
-    <Card className="bg-card border-border md:col-span-2 lg:col-span-3">
-      <CardHeader className="pb-3">
+    <Card className="bg-card border-border md:col-span-2 lg:col-span-3 py-4 gap-3">
+      <CardHeader className="pb-0">
         <CardTitle className="text-base flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-special" />
           Spells ({spells.length})
