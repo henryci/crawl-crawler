@@ -12,6 +12,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -238,28 +239,37 @@ function PlayerDataDisplay({ data }: { data: PlayerData }) {
         <TabsList className="bg-transparent gap-2 p-0">
           <TabsTrigger
             value="wins"
-            className="border border-border bg-secondary/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
           >
             <Trophy className="w-4 h-4 mr-2" />
             Wins ({data.wins.length})
           </TabsTrigger>
+          {data.recentGames.length > 0 && (
+            <TabsTrigger
+              value="recent"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Recent Games ({data.recentGames.length})
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="timeline"
-            className="border border-border bg-secondary/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
           >
             <Calendar className="w-4 h-4 mr-2" />
             Timeline
           </TabsTrigger>
           <TabsTrigger
             value="streaks"
-            className="border border-border bg-secondary/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             Streaks ({data.streaks.length})
           </TabsTrigger>
           <TabsTrigger
             value="combos"
-            className="border border-border bg-secondary/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
           >
             <Target className="w-4 h-4 mr-2" />
             Combo Stats
@@ -281,10 +291,13 @@ function PlayerDataDisplay({ data }: { data: PlayerData }) {
         <TabsContent value="combos" className="mt-6">
           <ComboStatsSection data={data} />
         </TabsContent>
-      </Tabs>
 
-      {/* Recent Games Section */}
-      {data.recentGames.length > 0 && <RecentGamesSection games={data.recentGames} />}
+        {data.recentGames.length > 0 && (
+          <TabsContent value="recent" className="mt-6">
+            <RecentGamesSection games={data.recentGames} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

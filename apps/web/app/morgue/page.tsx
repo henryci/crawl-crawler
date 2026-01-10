@@ -317,38 +317,50 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview" className="gap-1.5">
-            <User className="w-4 h-4" />
+        <TabsList className="bg-transparent gap-2 p-0 mb-6">
+          <TabsTrigger
+            value="overview"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+          >
+            <User className="w-4 h-4 mr-2" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="skills" className="gap-1.5">
-            <BookOpen className="w-4 h-4" />
+          <TabsTrigger
+            value="skills"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
             Skills
           </TabsTrigger>
-          <TabsTrigger value="dungeon" className="gap-1.5">
-            <Map className="w-4 h-4" />
+          <TabsTrigger
+            value="dungeon"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+          >
+            <Map className="w-4 h-4 mr-2" />
             Dungeon
           </TabsTrigger>
-          <TabsTrigger value="debug" className="gap-1.5">
-            <Bug className="w-4 h-4" />
+          <TabsTrigger
+            value="debug"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+          >
+            <Bug className="w-4 h-4 mr-2" />
             Debug
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="mt-6">
           <OverviewTab data={data} />
         </TabsContent>
 
-        <TabsContent value="skills">
+        <TabsContent value="skills" className="mt-6">
           <SkillsTab data={data} />
         </TabsContent>
 
-        <TabsContent value="dungeon">
+        <TabsContent value="dungeon" className="mt-6">
           <DungeonTab data={data} />
         </TabsContent>
 
-        <TabsContent value="debug">
+        <TabsContent value="debug" className="mt-6">
           <DebugTab data={data} />
         </TabsContent>
       </Tabs>
