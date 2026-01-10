@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileText,
   LinkIcon,
@@ -36,14 +37,40 @@ import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-pars
 type LoadingState = "idle" | "loading" | "success" | "error";
 
 export default function MorgueViewerPage() {
-  const [url, setUrl] = useState("");
+  return (
+    <Suspense fallback={<MorgueViewerLoading />}>
+      <MorgueViewerContent />
+    </Suspense>
+  );
+}
+
+function MorgueViewerLoading() {
+  return (
+    <PageWrapper>
+      <Card className="bg-card border-border">
+        <CardContent className="py-12 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </CardContent>
+      </Card>
+    </PageWrapper>
+  );
+}
+
+function MorgueViewerContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const urlFromParams = searchParams.get("url") || "";
+  const [url, setUrl] = useState(urlFromParams);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [morgueData, setMorgueData] = useState<MorgueData | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
 
-  async function handleParseMorgue() {
-    if (!url.trim()) {
+  const fetchAndParse = useCallback(async (targetUrl: string) => {
+    if (!targetUrl.trim()) {
       setError("Please enter a morgue file URL");
       return;
     }
@@ -54,7 +81,7 @@ export default function MorgueViewerPage() {
 
     try {
       // Use the proxy route to fetch the morgue file (avoids CORS)
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
       const response = await fetch(proxyUrl);
 
       if (!response.ok) {
@@ -73,7 +100,25 @@ export default function MorgueViewerPage() {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoadingState("error");
     }
-  }
+  }, []);
+
+  // Auto-load if URL is provided in query params
+  useEffect(() => {
+    if (urlFromParams && !hasAutoLoaded) {
+      setUrl(urlFromParams);
+      setHasAutoLoaded(true);
+      fetchAndParse(urlFromParams);
+    }
+  }, [urlFromParams, hasAutoLoaded, fetchAndParse]);
+
+  const handleParseMorgue = async () => {
+    // Update URL params when user clicks Parse
+    const newParams = new URLSearchParams();
+    newParams.set("url", url);
+    router.push(`/morgue?${newParams.toString()}`, { scroll: false });
+
+    await fetchAndParse(url);
+  };
 
   return (
     <PageWrapper>
