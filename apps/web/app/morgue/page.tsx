@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Trophy,
   Gem,
-  Scroll,
   Wand2,
   Crown,
   Heart,
@@ -253,17 +252,9 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
             <User className="w-4 h-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="equipment" className="gap-1.5">
-            <Shield className="w-4 h-4" />
-            Equipment
-          </TabsTrigger>
           <TabsTrigger value="skills" className="gap-1.5">
             <BookOpen className="w-4 h-4" />
             Skills
-          </TabsTrigger>
-          <TabsTrigger value="spells" className="gap-1.5">
-            <Wand2 className="w-4 h-4" />
-            Spells
           </TabsTrigger>
           <TabsTrigger value="dungeon" className="gap-1.5">
             <Map className="w-4 h-4" />
@@ -279,16 +270,8 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
           <OverviewTab data={data} />
         </TabsContent>
 
-        <TabsContent value="equipment">
-          <EquipmentTab data={data} />
-        </TabsContent>
-
         <TabsContent value="skills">
           <SkillsTab data={data} />
-        </TabsContent>
-
-        <TabsContent value="spells">
-          <SpellsTab data={data} />
         </TabsContent>
 
         <TabsContent value="dungeon">
@@ -545,64 +528,74 @@ function OverviewTab({ data }: { data: MorgueData }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Compact Equipment Section */}
+      <EquipmentSection data={data} />
+
+      {/* Compact Spells Section */}
+      <SpellsSection data={data} />
     </div>
   );
 }
 
 /**
- * Equipment tab showing all worn items.
+ * Compact equipment section for the Overview tab.
  */
-function EquipmentTab({ data }: { data: MorgueData }) {
+function EquipmentSection({ data }: { data: MorgueData }) {
   const equipment = data.equipment;
 
   if (!equipment) {
-    return (
-      <Card className="bg-card border-border">
-        <CardContent className="py-8 text-center text-muted-foreground">
-          <Shield className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p>No equipment data available</p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const slots = [
     { name: "Weapon", value: equipment.weapon, icon: Swords },
-    { name: "Body Armour", value: equipment.bodyArmour, icon: Shield },
+    { name: "Armour", value: equipment.bodyArmour, icon: Shield },
     { name: "Shield", value: equipment.shield, icon: Shield },
     { name: "Helmet", value: equipment.helmet, icon: Crown },
     { name: "Cloak", value: equipment.cloak, icon: Wind },
     { name: "Gloves", value: equipment.gloves, icon: Hand },
     { name: "Boots", value: equipment.boots, icon: Footprints },
     { name: "Amulet", value: equipment.amulet, icon: Gem },
-    { name: "Left Ring", value: equipment.ringLeft, icon: Gem },
-    { name: "Right Ring", value: equipment.ringRight, icon: Gem },
+    { name: "Ring L", value: equipment.ringLeft, icon: Gem },
+    { name: "Ring R", value: equipment.ringRight, icon: Gem },
   ];
 
+  // Filter to only show equipped items
+  const equippedSlots = slots.filter((slot) => slot.value);
+
+  if (equippedSlots.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {slots.map((slot) => {
-        const Icon = slot.icon;
-        return (
-          <Card
-            key={slot.name}
-            className={`bg-card border-border ${!slot.value ? "opacity-50" : ""}`}
-          >
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className="p-2 rounded-md bg-secondary">
-                <Icon className="w-4 h-4 text-gold" />
+    <Card className="bg-card border-border md:col-span-2 lg:col-span-3">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Shield className="w-4 h-4 text-gold" />
+          Equipment
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-1">
+          {equippedSlots.map((slot) => {
+            const Icon = slot.icon;
+            return (
+              <div
+                key={slot.name}
+                className="flex items-center gap-2 p-2 rounded bg-secondary/50"
+              >
+                <Icon className="w-4 h-4 text-gold shrink-0" />
+                <span className="text-xs text-muted-foreground w-14 shrink-0">{slot.name}</span>
+                <span className="font-mono text-xs text-foreground">
+                  {slot.value}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">{slot.name}</p>
-                <p className="font-mono text-sm text-foreground truncate">
-                  {slot.value || "Empty"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -660,56 +653,33 @@ function SkillsTab({ data }: { data: MorgueData }) {
 }
 
 /**
- * Spells tab showing memorized spells.
+ * Compact spells section for the Overview tab.
  */
-function SpellsTab({ data }: { data: MorgueData }) {
+function SpellsSection({ data }: { data: MorgueData }) {
   const spells = data.endingSpells;
 
   if (!spells || spells.length === 0) {
-    return (
-      <Card className="bg-card border-border">
-        <CardContent className="py-8 text-center text-muted-foreground">
-          <Scroll className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p>No spells memorized</p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader>
+    <Card className="bg-card border-border md:col-span-2 lg:col-span-3">
+      <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Wand2 className="w-4 h-4 text-special" />
           Spells ({spells.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {spells.map((spell) => (
             <div
               key={spell.slot}
-              className="flex items-center gap-4 p-3 rounded bg-secondary/50"
+              className="flex items-center gap-2 p-2 rounded bg-secondary/50"
             >
-              <span className="font-mono text-muted-foreground w-6">{spell.slot})</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground">{spell.name}</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {spell.schools.map((school) => (
-                    <Badge
-                      key={school}
-                      variant="outline"
-                      className="text-xs text-muted-foreground border-border"
-                    >
-                      {school}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-mono text-sm text-special">Lv {spell.level ?? "?"}</p>
-                <p className="font-mono text-xs text-muted-foreground">{spell.failure}</p>
-              </div>
+              <span className="font-mono text-xs text-muted-foreground w-5">{spell.slot})</span>
+              <span className="text-sm text-foreground truncate flex-1">{spell.name}</span>
+              <span className="font-mono text-xs text-special shrink-0">L{spell.level ?? "?"}</span>
             </div>
           ))}
         </div>
