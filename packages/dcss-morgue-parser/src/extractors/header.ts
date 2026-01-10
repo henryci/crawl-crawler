@@ -330,14 +330,23 @@ function extractRunes(content: string, result: HeaderData): void {
 
 /**
  * Extract rune names from the inventory section (for older morgue formats).
+ *
+ * Only searches within the Inventory section to avoid matching runes
+ * mentioned elsewhere (e.g., Message History, Notes).
  */
 function extractRunesFromInventory(content: string, result: HeaderData): void {
+  // Find the Inventory section
+  const inventorySection = findInventorySection(content);
+  if (!inventorySection) {
+    return;
+  }
+
   // Look for "X rune of Zot" items in the inventory
   const runePattern = /[a-zA-Z] - (?:an? )?(\w+) rune of Zot/g;
   const runes: string[] = [];
 
   let runeMatch;
-  while ((runeMatch = runePattern.exec(content)) !== null) {
+  while ((runeMatch = runePattern.exec(inventorySection)) !== null) {
     if (runeMatch[1]) {
       runes.push(runeMatch[1]);
     }
@@ -346,6 +355,46 @@ function extractRunesFromInventory(content: string, result: HeaderData): void {
   if (runes.length > 0) {
     result.runesList = runes;
   }
+}
+
+/**
+ * Find the Inventory section in the morgue file.
+ *
+ * The Inventory section typically starts with "Inventory:" and ends
+ * at the next major section (Skills, Spells, Notes, etc.).
+ */
+function findInventorySection(content: string): string | null {
+  // Look for "Inventory:" header
+  const inventoryMatch = /^Inventory:?\s*$/m.exec(content);
+  if (!inventoryMatch) {
+    return null;
+  }
+
+  const start = inventoryMatch.index;
+
+  // Find end - next major section
+  // These are common section headers that come after Inventory
+  const endMarkers = [
+    '\nYou had ',          // "You had X experience left" or "You had X spell levels left"
+    '\n   Skills:',        // Skills section
+    '\nSkills:',           // Skills section (alternate format)
+    '\nYou knew the following spells:', // Spells section
+    '\nYour Spells',       // Spells section (alternate format)
+    '\nDungeon Overview',  // Dungeon overview section
+    '\nNotes',             // Notes section
+    '\nAction',            // Action counts section
+    '\nMessage History',   // Message history section
+  ];
+
+  let end = content.length;
+  for (const marker of endMarkers) {
+    const idx = content.indexOf(marker, start);
+    if (idx !== -1 && idx < end) {
+      end = idx;
+    }
+  }
+
+  return content.slice(start, end);
 }
 
 /**

@@ -298,6 +298,46 @@ describe('parseMorgue', () => {
     });
   });
 
+  describe('older morgue file (0.7 - henryci) with runes from inventory', () => {
+    let data: MorgueData;
+
+    beforeAll(() => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const result = parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.7.2-1-gedacb19');
+      expect(data.isWebtiles).toBe(false);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('henryci');
+      expect(data.title).toBe('Thanatomancer');
+      expect(data.race).toBe('Kenku');
+      expect(data.background).toBe('Necromancer');
+      expect(data.characterLevel).toBe(27);
+    });
+
+    it('extracts runes without duplicates from message history', () => {
+      // This morgue has runes mentioned in both Inventory and Message History
+      // The parser should only extract from Inventory to avoid duplicates
+      expect(data.runesPossible).toBe(15);
+      expect(data.runesList).toHaveLength(15);
+      // Verify no duplicates
+      const uniqueRunes = [...new Set(data.runesList)];
+      expect(uniqueRunes).toHaveLength(15);
+      // Verify specific runes are present
+      expect(data.runesList).toContain('barnacled');
+      expect(data.runesList).toContain('serpentine');
+      expect(data.runesList).toContain('obsidian');
+      expect(data.runesList).toContain('silver');
+      expect(data.runesList).toContain('slimy');
+      expect(data.runesList).toContain('abyssal');
+    });
+  });
+
   describe('older morgue file (0.17 - henryci) with skillsByXl from notes', () => {
     let data: MorgueData;
 
