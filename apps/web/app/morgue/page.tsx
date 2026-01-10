@@ -48,6 +48,50 @@ function formatDuration(seconds: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Get the color classes for a rune based on its name.
+ * Colors match the in-game rune display.
+ */
+function getRuneColorClasses(runeName: string): string {
+  const name = runeName.toLowerCase();
+  
+  // Green runes
+  if (["decaying", "serpentine", "slimy", "glowing"].includes(name)) {
+    return "text-health border-health/30 bg-health/10";
+  }
+  // Red runes
+  if (["demonic", "fiery"].includes(name)) {
+    return "text-danger border-danger/30 bg-danger/10";
+  }
+  // Cyan runes
+  if (["icy"].includes(name)) {
+    return "text-cyan-400 border-cyan-400/30 bg-cyan-400/10";
+  }
+  // Blue runes
+  if (["iron", "gossamer"].includes(name)) {
+    return "text-mana border-mana/30 bg-mana/10";
+  }
+  // Magenta/purple runes
+  if (["abyssal", "magical"].includes(name)) {
+    return "text-fuchsia-400 border-fuchsia-400/30 bg-fuchsia-400/10";
+  }
+  // Gold/yellow runes
+  if (["golden"].includes(name)) {
+    return "text-gold border-gold/30 bg-gold/10";
+  }
+  // Brown/orange runes
+  if (["obsidian", "barnacled"].includes(name)) {
+    return "text-orange-400 border-orange-400/30 bg-orange-400/10";
+  }
+  // White/gray runes (silver, dark, bone)
+  if (["silver", "dark", "bone"].includes(name)) {
+    return "text-foreground border-foreground/30 bg-foreground/10";
+  }
+  
+  // Default fallback
+  return "text-special border-special/30 bg-special/10";
+}
+
 export default function MorgueViewerPage() {
   return (
     <Suspense fallback={<MorgueViewerLoading />}>
@@ -498,7 +542,7 @@ function OverviewTab({ data }: { data: MorgueData }) {
                 <Badge
                   key={rune}
                   variant="outline"
-                  className="text-special border-special/30 bg-special/10 font-mono text-xs"
+                  className={`font-mono text-xs ${getRuneColorClasses(rune)}`}
                 >
                   {rune}
                 </Badge>
