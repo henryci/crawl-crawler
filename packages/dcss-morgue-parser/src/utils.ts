@@ -88,9 +88,9 @@ export const PATTERNS = {
   xpReached: /Reached XP level\s+(\d+)/,
 
   /**
-   * Skill level reached: "Reached skill level 5 in Fighting"
+   * Skill level reached: "Reached skill level 5 in Fighting" (newer) or "Reached skill 5 in Fighting" (older)
    */
-  skillReached: /Reached skill level\s+(\d+)\s+in\s+(.+)/,
+  skillReached: /Reached skill(?: level)?\s+(\d+)\s+in\s+(.+)/,
 
   /**
    * God worship: "Became a worshipper of Makhleb the Destroyer"

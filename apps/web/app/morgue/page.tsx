@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, Suspense } from "react";
+import { useState, useCallback, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileText,
@@ -680,10 +680,41 @@ function EquipmentSection({ data }: { data: MorgueData }) {
 }
 
 /**
- * Skills tab showing skill levels.
+ * Color palette for skills - distinct, visually appealing colors
+ */
+const SKILL_COLORS = [
+  "#22d3ee", // cyan
+  "#f472b6", // pink
+  "#a78bfa", // violet
+  "#34d399", // emerald
+  "#fb923c", // orange
+  "#facc15", // yellow
+  "#60a5fa", // blue
+  "#f87171", // red
+  "#4ade80", // green
+  "#c084fc", // purple
+  "#2dd4bf", // teal
+  "#fbbf24", // amber
+  "#818cf8", // indigo
+  "#fb7185", // rose
+  "#38bdf8", // sky
+  "#a3e635", // lime
+];
+
+/**
+ * Get a consistent color for a skill based on its index
+ */
+function getSkillColor(index: number): string {
+  return SKILL_COLORS[index % SKILL_COLORS.length];
+}
+
+/**
+ * Skills tab showing skill levels and progression visualization.
  */
 function SkillsTab({ data }: { data: MorgueData }) {
   const skills = data.endingSkills;
+  const skillsByXl = data.skillsByXl;
+  const [progressionView, setProgressionView] = useState<"chart" | "table">("chart");
 
   if (!skills || Object.keys(skills).length === 0) {
     return (
@@ -698,37 +729,582 @@ function SkillsTab({ data }: { data: MorgueData }) {
 
   // Sort skills by level descending
   const sortedSkills = Object.entries(skills).sort(([, a], [, b]) => b - a);
+  const hasProgression = skillsByXl && Object.keys(skillsByXl).length > 0;
 
   return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-mana" />
-          Skills
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedSkills.map(([skill, level]) => (
-            <div
-              key={skill}
-              className="flex items-center justify-between p-2 rounded bg-secondary/50"
-            >
-              <span className="text-sm text-foreground">{skill}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-mana rounded-full transition-all"
-                    style={{ width: `${Math.min((level / 27) * 100, 100)}%` }}
-                  />
+    <div className="space-y-6">
+      {/* Final Skills Grid */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-mana" />
+            Skills
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {sortedSkills.map(([skill, level]) => (
+              <div
+                key={skill}
+                className="flex items-center justify-between p-2 rounded bg-secondary/50"
+              >
+                <span className="text-sm text-foreground">{skill}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-mana rounded-full transition-all"
+                      style={{ width: `${Math.min((level / 27) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-sm text-mana w-8 text-right">{level.toFixed(1)}</span>
                 </div>
-                <span className="font-mono text-sm text-mana w-8 text-right">{level.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Skill Progression */}
+      {hasProgression && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-gold" />
+                Skill Progression
+              </CardTitle>
+              <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
+                <button
+                  onClick={() => setProgressionView("chart")}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    progressionView === "chart"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Chart
+                </button>
+                <button
+                  onClick={() => setProgressionView("table")}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    progressionView === "table"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Table
+                </button>
               </div>
             </div>
-          ))}
+          </CardHeader>
+          <CardContent>
+            {progressionView === "chart" ? (
+              <SkillProgressionChart
+                skillsByXl={skillsByXl}
+                endingSkills={skills}
+                maxXl={data.characterLevel ?? 27}
+              />
+            ) : (
+              <SkillProgressionTable
+                skillsByXl={skillsByXl}
+                endingSkills={skills}
+                maxXl={data.characterLevel ?? 27}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Interactive skill progression chart showing how skills developed over XL.
+ */
+function SkillProgressionChart({
+  skillsByXl,
+  endingSkills,
+  maxXl,
+}: {
+  skillsByXl: Record<string, Record<string, number>>;
+  endingSkills: Record<string, number>;
+  maxXl: number;
+}) {
+  const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+  const [selectedSkills, setSelectedSkills] = useState<Set<string>>(new Set());
+  const [hoveredXl, setHoveredXl] = useState<number | null>(null);
+
+  // Sort skills by final level descending
+  const sortedSkillNames = Object.keys(endingSkills).sort(
+    (a, b) => (endingSkills[b] ?? 0) - (endingSkills[a] ?? 0)
+  );
+
+  // Build complete progression data for each skill
+  const progressionData = useMemo(() => {
+    const data: Record<string, { xl: number; level: number }[]> = {};
+
+    for (const skillName of sortedSkillNames) {
+      const progression = skillsByXl[skillName];
+      if (!progression) continue;
+
+      const points: { xl: number; level: number }[] = [];
+      let lastKnownLevel = 0;
+
+      // Fill in all XL values from 1 to maxXl
+      for (let xl = 1; xl <= maxXl; xl++) {
+        const xlStr = String(xl);
+        if (progression[xlStr] !== undefined) {
+          lastKnownLevel = progression[xlStr];
+        }
+        points.push({ xl, level: lastKnownLevel });
+      }
+
+      data[skillName] = points;
+    }
+
+    return data;
+  }, [skillsByXl, sortedSkillNames, maxXl]);
+
+  // Get all XL values for the x-axis
+  const xlValues = useMemo(() => {
+    const values: number[] = [];
+    for (let xl = 1; xl <= maxXl; xl++) {
+      values.push(xl);
+    }
+    return values;
+  }, [maxXl]);
+
+  // Chart dimensions
+  const chartHeight = 300;
+  const chartPadding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const chartWidth = xlValues.length * 30; // 30px per XL point
+
+  // Scales
+  const maxSkillLevel = 27;
+  const xScale = (xl: number) =>
+    chartPadding.left + ((xl - 1) / (maxXl - 1 || 1)) * (chartWidth - chartPadding.left - chartPadding.right);
+  const yScale = (level: number) =>
+    chartHeight - chartPadding.bottom - (level / maxSkillLevel) * (chartHeight - chartPadding.top - chartPadding.bottom);
+
+  // Generate SVG path for a skill
+  const generatePath = (skillName: string) => {
+    const points = progressionData[skillName];
+    if (!points || points.length === 0) return "";
+
+    return points
+      .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.xl)} ${yScale(p.level)}`)
+      .join(" ");
+  };
+
+  // Generate area path for a skill (for filled area under the line)
+  const generateAreaPath = (skillName: string) => {
+    const points = progressionData[skillName];
+    if (!points || points.length === 0) return "";
+
+    const linePath = points
+      .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(p.xl)} ${yScale(p.level)}`)
+      .join(" ");
+
+    // Close the path along the bottom
+    const lastPoint = points[points.length - 1];
+    const firstPoint = points[0];
+    return `${linePath} L ${xScale(lastPoint.xl)} ${yScale(0)} L ${xScale(firstPoint.xl)} ${yScale(0)} Z`;
+  };
+
+  // Toggle skill selection
+  const toggleSkill = (skillName: string) => {
+    setSelectedSkills((prev) => {
+      const next = new Set(prev);
+      if (next.has(skillName)) {
+        next.delete(skillName);
+      } else {
+        next.add(skillName);
+      }
+      return next;
+    });
+  };
+
+  // Determine which skills to show (all if none selected, otherwise only selected)
+  const visibleSkills = selectedSkills.size > 0 ? sortedSkillNames.filter((s) => selectedSkills.has(s)) : sortedSkillNames;
+
+  // Get skill level at a specific XL for tooltip
+  const getSkillAtXl = (skillName: string, xl: number) => {
+    const points = progressionData[skillName];
+    if (!points) return 0;
+    const point = points.find((p) => p.xl === xl);
+    return point?.level ?? 0;
+  };
+
+  return (
+    <div>
+      {/* Skill Legend / Filter */}
+      <div className="flex flex-wrap gap-2 mb-4">
+          {sortedSkillNames.slice(0, 12).map((skillName, idx) => {
+            const color = getSkillColor(idx);
+            const isSelected = selectedSkills.has(skillName);
+            const isVisible = selectedSkills.size === 0 || isSelected;
+            const isHovered = hoveredSkill === skillName;
+
+            return (
+              <button
+                key={skillName}
+                onClick={() => toggleSkill(skillName)}
+                onMouseEnter={() => setHoveredSkill(skillName)}
+                onMouseLeave={() => setHoveredSkill(null)}
+                className={`
+                  flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all
+                  ${isVisible ? "opacity-100" : "opacity-40"}
+                  ${isHovered || isSelected ? "ring-1 ring-offset-1 ring-offset-background" : ""}
+                `}
+                style={{
+                  backgroundColor: `${color}20`,
+                  color: color,
+                  borderColor: color,
+                  ...(isHovered || isSelected ? { ringColor: color } : {}),
+                }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                {skillName}
+                <span className="opacity-70">{endingSkills[skillName]?.toFixed(0)}</span>
+              </button>
+            );
+          })}
+          {sortedSkillNames.length > 12 && (
+            <span className="text-xs text-muted-foreground self-center">
+              +{sortedSkillNames.length - 12} more
+            </span>
+          )}
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Chart Container */}
+        <div className="relative overflow-x-auto">
+          <svg
+            width={Math.max(chartWidth, 600)}
+            height={chartHeight}
+            className="block"
+            onMouseLeave={() => setHoveredXl(null)}
+          >
+            {/* Background grid */}
+            <defs>
+              <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-border/30" />
+              </pattern>
+            </defs>
+            <rect
+              x={chartPadding.left}
+              y={chartPadding.top}
+              width={chartWidth - chartPadding.left - chartPadding.right}
+              height={chartHeight - chartPadding.top - chartPadding.bottom}
+              fill="url(#grid)"
+              className="opacity-50"
+            />
+
+            {/* Y-axis labels */}
+            {[0, 5, 10, 15, 20, 25, 27].map((level) => (
+              <g key={level}>
+                <line
+                  x1={chartPadding.left}
+                  y1={yScale(level)}
+                  x2={chartWidth - chartPadding.right}
+                  y2={yScale(level)}
+                  className="stroke-border/50"
+                  strokeDasharray="4 4"
+                />
+                <text
+                  x={chartPadding.left - 8}
+                  y={yScale(level)}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fill-muted-foreground text-xs font-mono"
+                >
+                  {level}
+                </text>
+              </g>
+            ))}
+
+            {/* X-axis labels */}
+            {xlValues.filter((xl) => xl === 1 || xl % 5 === 0 || xl === maxXl).map((xl) => (
+              <text
+                key={xl}
+                x={xScale(xl)}
+                y={chartHeight - chartPadding.bottom + 20}
+                textAnchor="middle"
+                className="fill-muted-foreground text-xs font-mono"
+              >
+                {xl}
+              </text>
+            ))}
+
+            {/* X-axis title */}
+            <text
+              x={(chartWidth + chartPadding.left - chartPadding.right) / 2}
+              y={chartHeight - 5}
+              textAnchor="middle"
+              className="fill-muted-foreground text-xs"
+            >
+              Experience Level (XL)
+            </text>
+
+            {/* Skill lines - render in reverse order so higher skills are on top */}
+            {[...visibleSkills].reverse().map((skillName, i) => {
+              const idx = sortedSkillNames.indexOf(skillName);
+              const color = getSkillColor(idx);
+              const isHighlighted = hoveredSkill === skillName || (selectedSkills.size > 0 && selectedSkills.has(skillName));
+              const opacity = hoveredSkill
+                ? hoveredSkill === skillName
+                  ? 1
+                  : 0.2
+                : selectedSkills.size > 0
+                  ? selectedSkills.has(skillName)
+                    ? 1
+                    : 0.2
+                  : 0.7;
+
+              return (
+                <g
+                  key={skillName}
+                  onMouseEnter={() => setHoveredSkill(skillName)}
+                  onMouseLeave={() => setHoveredSkill(null)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {/* Area fill */}
+                  <path
+                    d={generateAreaPath(skillName)}
+                    fill={color}
+                    opacity={opacity * 0.15}
+                    className="transition-opacity duration-150"
+                  />
+                  {/* Line */}
+                  <path
+                    d={generatePath(skillName)}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={isHighlighted ? 3 : 2}
+                    opacity={opacity}
+                    className="transition-all duration-150"
+                  />
+                </g>
+              );
+            })}
+
+            {/* Interactive hover overlay for XL */}
+            {xlValues.map((xl) => (
+              <rect
+                key={xl}
+                x={xScale(xl) - 15}
+                y={chartPadding.top}
+                width={30}
+                height={chartHeight - chartPadding.top - chartPadding.bottom}
+                fill="transparent"
+                onMouseEnter={() => setHoveredXl(xl)}
+              />
+            ))}
+
+            {/* Vertical line at hovered XL */}
+            {hoveredXl !== null && (
+              <line
+                x1={xScale(hoveredXl)}
+                y1={chartPadding.top}
+                x2={xScale(hoveredXl)}
+                y2={chartHeight - chartPadding.bottom}
+                className="stroke-foreground/50"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+              />
+            )}
+
+            {/* Points at hovered XL */}
+            {hoveredXl !== null &&
+              visibleSkills.map((skillName) => {
+                const idx = sortedSkillNames.indexOf(skillName);
+                const color = getSkillColor(idx);
+                const level = getSkillAtXl(skillName, hoveredXl);
+                if (level === 0) return null;
+
+                return (
+                  <circle
+                    key={skillName}
+                    cx={xScale(hoveredXl)}
+                    cy={yScale(level)}
+                    r={hoveredSkill === skillName ? 6 : 4}
+                    fill={color}
+                    stroke="var(--background)"
+                    strokeWidth={2}
+                    className="transition-all duration-150"
+                  />
+                );
+              })}
+          </svg>
+
+          {/* Tooltip */}
+          {hoveredXl !== null && (
+            <div
+              className="absolute bg-card border border-border rounded-lg shadow-lg p-3 pointer-events-none z-10"
+              style={{
+                left: Math.min(xScale(hoveredXl) + 10, chartWidth - 200),
+                top: chartPadding.top,
+              }}
+            >
+              <div className="font-mono text-sm font-medium text-foreground mb-2">
+                XL {hoveredXl}
+              </div>
+              <div className="space-y-1">
+                {visibleSkills
+                  .filter((s) => getSkillAtXl(s, hoveredXl) > 0)
+                  .slice(0, 8)
+                  .map((skillName) => {
+                    const idx = sortedSkillNames.indexOf(skillName);
+                    const color = getSkillColor(idx);
+                    const level = getSkillAtXl(skillName, hoveredXl);
+
+                    return (
+                      <div key={skillName} className="flex items-center gap-2 text-xs">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
+                        <span className="text-muted-foreground flex-1">{skillName}</span>
+                        <span className="font-mono" style={{ color }}>
+                          {level.toFixed(0)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                {visibleSkills.filter((s) => getSkillAtXl(s, hoveredXl) > 0).length > 8 && (
+                  <div className="text-xs text-muted-foreground">
+                    +{visibleSkills.filter((s) => getSkillAtXl(s, hoveredXl) > 0).length - 8} more
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+      {selectedSkills.size > 0 && (
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedSkills(new Set())}
+            className="text-xs text-muted-foreground"
+          >
+            Clear selection
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Skill progression table showing skills by XL.
+ */
+function SkillProgressionTable({
+  skillsByXl,
+  endingSkills,
+  maxXl,
+}: {
+  skillsByXl: Record<string, Record<string, number>>;
+  endingSkills: Record<string, number>;
+  maxXl: number;
+}) {
+  // Sort skills by final level descending
+  const sortedSkillNames = Object.keys(endingSkills).sort(
+    (a, b) => (endingSkills[b] ?? 0) - (endingSkills[a] ?? 0)
+  );
+
+  // Build XL columns - show key XL milestones
+  const xlColumns = useMemo(() => {
+    const columns: number[] = [];
+    for (let xl = 1; xl <= maxXl; xl++) {
+      // Show XL 1, then every 3 levels, and always show max XL
+      if (xl === 1 || xl % 3 === 0 || xl === maxXl) {
+        columns.push(xl);
+      }
+    }
+    // Ensure max XL is included
+    if (!columns.includes(maxXl)) {
+      columns.push(maxXl);
+    }
+    return columns;
+  }, [maxXl]);
+
+  // Get skill level at a specific XL (carrying forward from previous XL)
+  const getSkillAtXl = (skillName: string, targetXl: number): number => {
+    const progression = skillsByXl[skillName];
+    if (!progression) return 0;
+
+    let lastKnownLevel = 0;
+    for (let xl = 1; xl <= targetXl; xl++) {
+      const xlStr = String(xl);
+      if (progression[xlStr] !== undefined) {
+        lastKnownLevel = progression[xlStr];
+      }
+    }
+    return lastKnownLevel;
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left py-2 px-3 font-medium text-muted-foreground sticky left-0 bg-card">
+              Skill
+            </th>
+            {xlColumns.map((xl) => (
+              <th
+                key={xl}
+                className="text-center py-2 px-2 font-mono text-muted-foreground min-w-[40px]"
+              >
+                {xl}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedSkillNames.map((skillName, idx) => {
+            const color = getSkillColor(idx);
+            return (
+              <tr key={skillName} className="border-b border-border/50 hover:bg-secondary/30">
+                <td className="py-2 px-3 sticky left-0 bg-card">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: color }}
+                    />
+                    <span className="text-foreground">{skillName}</span>
+                  </div>
+                </td>
+                {xlColumns.map((xl) => {
+                  const level = getSkillAtXl(skillName, xl);
+                  const prevLevel = xl > 1 ? getSkillAtXl(skillName, xlColumns[xlColumns.indexOf(xl) - 1] ?? 1) : 0;
+                  const isNew = level > 0 && level !== prevLevel;
+
+                  return (
+                    <td
+                      key={xl}
+                      className={`text-center py-2 px-2 font-mono ${
+                        level === 0
+                          ? "text-muted-foreground/30"
+                          : isNew
+                            ? "text-foreground font-medium"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {level > 0 ? level : "–"}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
