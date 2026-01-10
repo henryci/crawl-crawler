@@ -389,10 +389,6 @@ function OverviewTab({ data }: { data: MorgueData }) {
               <span className="text-foreground">{stats?.sh ?? "?"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Gold</span>
-              <span className="text-gold">{stats?.gold?.toLocaleString() ?? "?"}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-muted-foreground">Str</span>
               <span className="text-foreground">{stats?.str ?? "?"}</span>
             </div>
@@ -400,9 +396,13 @@ function OverviewTab({ data }: { data: MorgueData }) {
               <span className="text-muted-foreground">Int</span>
               <span className="text-foreground">{stats?.int ?? "?"}</span>
             </div>
-            <div className="flex justify-between col-span-2">
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Dex</span>
               <span className="text-foreground">{stats?.dex ?? "?"}</span>
+            </div>
+            <div className="flex justify-between col-span-2">
+              <span className="text-muted-foreground">Gold</span>
+              <span className="text-gold">{stats?.gold?.toLocaleString() ?? "?"}</span>
             </div>
           </div>
         </CardContent>
