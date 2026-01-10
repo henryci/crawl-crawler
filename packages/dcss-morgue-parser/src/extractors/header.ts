@@ -351,9 +351,12 @@ function extractRunesFromInventory(content: string, result: HeaderData): void {
 /**
  * Extract gem information (0.32+ only).
  *
- * Format: "$: 3/3 gems: glittering amethyst, scintillating tourmaline, ..."
+ * Formats:
+ * - Modern: "$: 3/3 gems: glittering amethyst, scintillating tourmaline, ..."
+ * - Header: "... and 1 gem on Jan 10, 2026!"
  */
 function extractGems(content: string, result: HeaderData): void {
+  // Try modern format first: "$: X/Y gems: ..."
   const match = PATTERNS.gems.exec(content);
   if (match) {
     result.gemsCollected = parseIntSafe(match[1]);
@@ -366,6 +369,41 @@ function extractGems(content: string, result: HeaderData): void {
         .filter((g) => g.length > 0);
       result.gemsList = gemsList;
     }
+    return;
+  }
+
+  // Try header format: "... and X gem(s) on DATE!"
+  const headerGemMatch = /\.\.\.\s+and\s+(\d+)\s+gems?\s+on\s+(.+?)!/i.exec(content);
+  if (headerGemMatch) {
+    result.gemsCollected = parseIntSafe(headerGemMatch[1]);
+    // Extract gem names from Notes section
+    extractGemsFromNotes(content, result);
+  }
+}
+
+/**
+ * Extract gem names from the Notes section.
+ *
+ * Format: "115442 | Slime:5  | Got a starry gem with 179 turns to spare"
+ */
+function extractGemsFromNotes(content: string, result: HeaderData): void {
+  // Look for "Got a X gem" entries in the Notes section
+  const gemPattern = /Got (?:a |an )?(.+?)\s+gem(?:\s+with|\s*$)/gi;
+  const gems: string[] = [];
+
+  let gemMatch;
+  while ((gemMatch = gemPattern.exec(content)) !== null) {
+    if (gemMatch[1]) {
+      // Clean up the gem name (e.g., "starry" -> "starry gem")
+      const gemName = gemMatch[1].trim();
+      if (gemName && !gems.includes(gemName)) {
+        gems.push(gemName);
+      }
+    }
+  }
+
+  if (gems.length > 0) {
+    result.gemsList = gems;
   }
 }
 

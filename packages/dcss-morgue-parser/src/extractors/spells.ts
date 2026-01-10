@@ -94,6 +94,7 @@ function findSpellsSection(content: string): string | null {
 /**
  * Parse a single spell line.
  *
+ * Format (0.33+ with Damage): "a - Sandblast             Erth           100%       2d20      0%          1"
  * Format (newer): "a - Sandblast             Conj/Erth      #######      1%          1"
  * Format (older): "b - Lehudib's Crystal Sp  Erth/Conj      #########.     Excellent   8"
  *
@@ -101,15 +102,49 @@ function findSpellsSection(content: string): string | null {
  */
 function parseSpellLine(line: string): Spell | null {
   // Match spell line pattern
-  // slot - name    schools    power    failure/success    level    [hunger]
+  // slot - name    schools    power    [damage]    failure/success    level    [hunger]
   // The failure/success field can be:
   // - Percentage like "1%" or "N/A"
   // - Word like "Excellent", "Perfect", "Great", "Good", "Poor", "Very Poor", "Terrible"
+  // The power field can be:
+  // - Hash marks like "#######" or "####."
+  // - Percentage like "100%" or "70%"
+  // - N/A
 
-  // Try newer format first (percentage failure)
+  // Try 0.33+ format with Damage column (power is percentage)
+  // slot - name    schools    power%    damage    failure%    level
+  const damageFormatPattern =
+    /^([a-zA-Z])\s+-\s+(.+?)\s{2,}([\w/]+)\s+(\d+%|N\/A)\s+(\S+)\s+(\d+%|N\/A)\s+(\d+)/;
+  let match = damageFormatPattern.exec(line.trim());
+
+  if (match) {
+    const slot = match[1];
+    const name = match[2]?.trim();
+    const schoolsStr = match[3];
+    // match[4] is power, match[5] is damage
+    const failure = match[6];
+    const level = parseIntSafe(match[7]);
+
+    if (!slot || !name || !schoolsStr || !failure) {
+      return null;
+    }
+
+    const schoolAbbrevs = schoolsStr.split('/');
+    const schools = schoolAbbrevs.map((s) => expandSchoolAbbreviation(s.trim()));
+
+    return {
+      slot,
+      name,
+      schools,
+      level,
+      failure,
+    };
+  }
+
+  // Try newer format (percentage failure, hash power)
   const newerPattern =
     /^([a-zA-Z])\s+-\s+(.+?)\s{2,}([\w/]+)\s+([#.]+|N\/A)\s+(\d+%|N\/A)\s+(\d+)/;
-  let match = newerPattern.exec(line.trim());
+  match = newerPattern.exec(line.trim());
 
   if (!match) {
     // Try older format (word-based success)

@@ -233,6 +233,7 @@ const SCHOOL_MAP: Record<string, string> = {
   Erth: 'Earth',
   Alch: 'Alchemy',
   Pois: 'Poison',
+  Frge: 'Forgecraft', // Added in 0.33
   Ench: 'Enchantments', // Older versions
   Chrm: 'Charms', // Older versions
 };
