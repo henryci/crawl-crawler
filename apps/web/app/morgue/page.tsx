@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   FileText,
   LinkIcon,
@@ -20,6 +20,9 @@ import {
   Crown,
   Heart,
   Droplet,
+  Bug,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -208,6 +211,10 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
             <Map className="w-4 h-4" />
             Dungeon
           </TabsTrigger>
+          <TabsTrigger value="debug" className="gap-1.5">
+            <Bug className="w-4 h-4" />
+            Debug
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -228,6 +235,10 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
 
         <TabsContent value="dungeon">
           <DungeonTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="debug">
+          <DebugTab data={data} />
         </TabsContent>
       </Tabs>
     </div>
@@ -755,6 +766,224 @@ function DungeonTab({ data }: { data: MorgueData }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+/**
+ * Debug tab showing raw JSON data with expand/collapse functionality.
+ */
+function DebugTab({ data }: { data: MorgueData }) {
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(["root"]));
+
+  const togglePath = useCallback((path: string) => {
+    setExpandedPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandAll = useCallback(() => {
+    const paths = new Set<string>(["root"]);
+    const collectPaths = (obj: unknown, currentPath: string) => {
+      if (obj && typeof obj === "object") {
+        paths.add(currentPath);
+        if (Array.isArray(obj)) {
+          obj.forEach((item, i) => collectPaths(item, `${currentPath}[${i}]`));
+        } else {
+          Object.keys(obj).forEach((key) =>
+            collectPaths((obj as Record<string, unknown>)[key], `${currentPath}.${key}`)
+          );
+        }
+      }
+    };
+    collectPaths(data, "root");
+    setExpandedPaths(paths);
+  }, [data]);
+
+  const collapseAll = useCallback(() => {
+    setExpandedPaths(new Set(["root"]));
+  }, []);
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bug className="w-4 h-4 text-muted-foreground" />
+            Raw JSON Data
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={expandAll}>
+              Expand All
+            </Button>
+            <Button variant="outline" size="sm" onClick={collapseAll}>
+              Collapse All
+            </Button>
+          </div>
+        </div>
+        <CardDescription>
+          Parsed morgue data as JSON. Click on objects and arrays to expand/collapse.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="font-mono text-sm bg-secondary/50 rounded-lg p-4 overflow-x-auto max-h-[70vh] overflow-y-auto">
+          <JsonNode
+            data={data}
+            path="root"
+            expandedPaths={expandedPaths}
+            onToggle={togglePath}
+            isLast={true}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Recursive component to render JSON nodes with expand/collapse.
+ */
+function JsonNode({
+  data,
+  path,
+  expandedPaths,
+  onToggle,
+  keyName,
+  isLast,
+}: {
+  data: unknown;
+  path: string;
+  expandedPaths: Set<string>;
+  onToggle: (path: string) => void;
+  keyName?: string;
+  isLast: boolean;
+}) {
+  const isExpanded = expandedPaths.has(path);
+  const isObject = data !== null && typeof data === "object";
+  const isArray = Array.isArray(data);
+  const comma = isLast ? "" : ",";
+
+  // Render primitive values
+  if (!isObject) {
+    let valueClass = "text-foreground";
+    let displayValue: string;
+
+    if (typeof data === "string") {
+      valueClass = "text-health";
+      displayValue = `"${data}"`;
+    } else if (typeof data === "number") {
+      valueClass = "text-mana";
+      displayValue = String(data);
+    } else if (typeof data === "boolean") {
+      valueClass = "text-special";
+      displayValue = String(data);
+    } else if (data === null) {
+      valueClass = "text-muted-foreground";
+      displayValue = "null";
+    } else {
+      displayValue = String(data);
+    }
+
+    return (
+      <span>
+        {keyName !== undefined && (
+          <span className="text-gold">"{keyName}"</span>
+        )}
+        {keyName !== undefined && <span className="text-muted-foreground">: </span>}
+        <span className={valueClass}>{displayValue}</span>
+        <span className="text-muted-foreground">{comma}</span>
+      </span>
+    );
+  }
+
+  // Get entries for objects/arrays
+  const entries = isArray
+    ? (data as unknown[]).map((v, i) => [String(i), v] as const)
+    : Object.entries(data as Record<string, unknown>);
+
+  const isEmpty = entries.length === 0;
+  const openBracket = isArray ? "[" : "{";
+  const closeBracket = isArray ? "]" : "}";
+
+  // Empty object/array
+  if (isEmpty) {
+    return (
+      <span>
+        {keyName !== undefined && (
+          <span className="text-gold">"{keyName}"</span>
+        )}
+        {keyName !== undefined && <span className="text-muted-foreground">: </span>}
+        <span className="text-muted-foreground">{openBracket}{closeBracket}</span>
+        <span className="text-muted-foreground">{comma}</span>
+      </span>
+    );
+  }
+
+  // Collapsed state
+  if (!isExpanded) {
+    const preview = isArray
+      ? `${entries.length} items`
+      : `${entries.length} keys`;
+
+    return (
+      <span
+        className="cursor-pointer hover:bg-secondary/80 rounded px-1 -mx-1 inline-flex items-center gap-1"
+        onClick={() => onToggle(path)}
+      >
+        <ChevronRight className="w-3 h-3 text-muted-foreground inline shrink-0" />
+        {keyName !== undefined && (
+          <span className="text-gold">"{keyName}"</span>
+        )}
+        {keyName !== undefined && <span className="text-muted-foreground">: </span>}
+        <span className="text-muted-foreground">
+          {openBracket} <span className="text-muted-foreground/70 italic text-xs">{preview}</span> {closeBracket}
+        </span>
+        <span className="text-muted-foreground">{comma}</span>
+      </span>
+    );
+  }
+
+  // Expanded state
+  return (
+    <div>
+      <span
+        className="cursor-pointer hover:bg-secondary/80 rounded px-1 -mx-1 inline-flex items-center gap-1"
+        onClick={() => onToggle(path)}
+      >
+        <ChevronDown className="w-3 h-3 text-muted-foreground inline shrink-0" />
+        {keyName !== undefined && (
+          <span className="text-gold">"{keyName}"</span>
+        )}
+        {keyName !== undefined && <span className="text-muted-foreground">: </span>}
+        <span className="text-muted-foreground">{openBracket}</span>
+      </span>
+      <div className="pl-4 border-l border-border/50 ml-1.5">
+        {entries.map(([key, value], index) => {
+          const childPath = isArray ? `${path}[${key}]` : `${path}.${key}`;
+          const isLastEntry = index === entries.length - 1;
+
+          return (
+            <div key={key}>
+              <JsonNode
+                data={value}
+                path={childPath}
+                expandedPaths={expandedPaths}
+                onToggle={onToggle}
+                keyName={isArray ? undefined : key}
+                isLast={isLastEntry}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <span className="text-muted-foreground">{closeBracket}</span>
+      <span className="text-muted-foreground">{comma}</span>
     </div>
   );
 }
