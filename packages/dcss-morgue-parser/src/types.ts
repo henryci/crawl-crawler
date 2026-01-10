@@ -203,21 +203,15 @@ export interface MorgueData {
   startDate: string | null;
   /** Game end date */
   endDate: string | null;
-  /** Game duration as string (e.g., "11:04:36") */
-  gameDuration: string | null;
   /** Game duration in seconds */
   gameDurationSeconds: number | null;
   /** Total turns played */
   totalTurns: number | null;
-  /** Number of runes collected */
-  runesCollected: number | null;
   /** Total possible runes */
   runesPossible: number | null;
-  /** List of rune names */
+  /** List of rune names collected */
   runesList: string[] | null;
-  /** Number of gems collected (0.32+) */
-  gemsCollected: number | null;
-  /** List of gem names (0.32+) */
+  /** List of gem names collected (0.32+) */
   gemsList: string[] | null;
   /** Number of branches visited */
   branchesVisitedCount: number | null;

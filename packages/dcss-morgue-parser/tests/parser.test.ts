@@ -72,13 +72,11 @@ describe('parseMorgue', () => {
     });
 
     it('extracts game duration', () => {
-      expect(data.gameDuration).toBe('11:04:36');
       expect(data.gameDurationSeconds).toBe(39876);
       expect(data.totalTurns).toBe(124363);
     });
 
     it('extracts runes', () => {
-      expect(data.runesCollected).toBe(15);
       expect(data.runesPossible).toBe(15);
       expect(data.runesList).toHaveLength(15);
       expect(data.runesList).toContain('serpentine');
@@ -222,7 +220,7 @@ describe('parseMorgue', () => {
     });
 
     it('extracts runes', () => {
-      expect(data.runesCollected).toBe(15);
+      expect(data.runesList).toHaveLength(15);
     });
 
     it('extracts character stats (older format)', () => {

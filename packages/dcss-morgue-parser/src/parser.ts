@@ -67,13 +67,10 @@ export function parseMorgue(content: string): ParseResult {
     characterLevel: null,
     startDate: null,
     endDate: null,
-    gameDuration: null,
     gameDurationSeconds: null,
     totalTurns: null,
-    runesCollected: null,
     runesPossible: null,
     runesList: null,
-    gemsCollected: null,
     gemsList: null,
     branchesVisitedCount: null,
     levelsSeenCount: null,
@@ -107,13 +104,10 @@ export function parseMorgue(content: string): ParseResult {
     result.characterLevel = header.characterLevel;
     result.startDate = header.startDate;
     result.endDate = header.endDate;
-    result.gameDuration = header.gameDuration;
     result.gameDurationSeconds = header.gameDurationSeconds;
     result.totalTurns = header.totalTurns;
-    result.runesCollected = header.runesCollected;
     result.runesPossible = header.runesPossible;
     result.runesList = header.runesList;
-    result.gemsCollected = header.gemsCollected;
     result.gemsList = header.gemsList;
     result.branchesVisitedCount = header.branchesVisitedCount;
     result.levelsSeenCount = header.levelsSeenCount;

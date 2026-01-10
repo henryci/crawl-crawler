@@ -36,6 +36,16 @@ import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-pars
 
 type LoadingState = "idle" | "loading" | "success" | "error";
 
+/**
+ * Format seconds to HH:MM:SS string.
+ */
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
 export default function MorgueViewerPage() {
   return (
     <Suspense fallback={<MorgueViewerLoading />}>
@@ -295,7 +305,9 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
  */
 function OverviewTab({ data }: { data: MorgueData }) {
   const stats = data.endingStats;
-  const isVictory = (data.runesCollected ?? 0) >= 3 && data.runesList?.length === data.runesCollected;
+  const runesCollected = data.runesList?.length ?? 0;
+  const gemsCollected = data.gemsList?.length ?? 0;
+  const isVictory = runesCollected >= 3;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -436,10 +448,10 @@ function OverviewTab({ data }: { data: MorgueData }) {
               <span className="text-foreground">{data.totalTurns.toLocaleString()}</span>
             </div>
           )}
-          {data.gameDuration && (
+          {data.gameDurationSeconds !== null && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">Time</span>
-              <span className="text-foreground">{data.gameDuration}</span>
+              <span className="text-foreground">{formatDuration(data.gameDurationSeconds)}</span>
             </div>
           )}
           {data.version && (
@@ -452,12 +464,12 @@ function OverviewTab({ data }: { data: MorgueData }) {
       </Card>
 
       {/* Runes Card (if any collected) */}
-      {data.runesCollected !== null && data.runesCollected > 0 && (
+      {runesCollected > 0 && (
         <Card className="bg-card border-border md:col-span-2 lg:col-span-1">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Trophy className="w-4 h-4 text-gold" />
-              Runes ({data.runesCollected}/{data.runesPossible ?? 15})
+              Runes ({runesCollected}/{data.runesPossible ?? 15})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -477,12 +489,12 @@ function OverviewTab({ data }: { data: MorgueData }) {
       )}
 
       {/* Gems Card (0.32+) */}
-      {data.gemsCollected !== null && data.gemsCollected > 0 && (
+      {gemsCollected > 0 && (
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Gem className="w-4 h-4 text-special" />
-              Gems ({data.gemsCollected})
+              Gems ({gemsCollected})
             </CardTitle>
           </CardHeader>
           <CardContent>
