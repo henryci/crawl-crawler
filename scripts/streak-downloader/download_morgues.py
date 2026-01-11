@@ -13,12 +13,142 @@ import os
 import random
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
+
+
+@dataclass
+class ProgressTracker:
+    """Track download progress and estimate remaining time."""
+    total: int
+    delay_seconds: float = 0.0  # Delay between downloads (included in ETA)
+    completed: int = 0
+    successful_downloads: int = 0  # Successful downloads only
+    errors: int = 0  # Failed network requests
+    skipped: int = 0  # Items skipped (already exist, host failed)
+    start_time: float = field(default_factory=time.time)
+    # Track time spent on successful downloads only (not including delay)
+    download_time: float = 0.0
+    _last_download_start: float = 0.0
+    
+    # Minimum successful downloads before showing ETA (need enough data for accuracy)
+    MIN_DOWNLOADS_FOR_ETA: int = 3
+    
+    def start_item(self) -> None:
+        """Mark the start of processing an item."""
+        self._last_download_start = time.time()
+    
+    def record_result(self, result_type: str) -> None:
+        """
+        Record the result of processing an item.
+        
+        result_type should be one of:
+        - 'downloaded': successful download
+        - 'error': network error or invalid content
+        - 'skipped': file exists or host failed
+        """
+        self.completed += 1
+        
+        if result_type == 'downloaded':
+            self.successful_downloads += 1
+            # Only count time for successful downloads
+            if self._last_download_start > 0:
+                self.download_time += time.time() - self._last_download_start
+        elif result_type == 'error':
+            self.errors += 1
+        else:  # skipped
+            self.skipped += 1
+    
+    def elapsed_seconds(self) -> float:
+        """Return seconds elapsed since start."""
+        return time.time() - self.start_time
+    
+    def time_per_download(self) -> float:
+        """
+        Calculate average seconds per successful download, including the delay.
+        
+        This represents the real-world time for each download cycle:
+        HTTP request time + mandatory delay.
+        """
+        if self.successful_downloads == 0:
+            return 0.0
+        avg_request_time = self.download_time / self.successful_downloads
+        return avg_request_time + self.delay_seconds
+    
+    def downloads_per_minute(self) -> float:
+        """Calculate successful downloads per minute (including delay time)."""
+        time_per = self.time_per_download()
+        if time_per < 0.1:
+            return 0.0
+        return 60.0 / time_per
+    
+    def estimated_minutes_remaining(self) -> Optional[float]:
+        """
+        Estimate minutes remaining based on successful download pace.
+        
+        Only shows ETA after MIN_DOWNLOADS_FOR_ETA successful downloads
+        to ensure the estimate is meaningful.
+        
+        Includes the delay between downloads in the calculation.
+        """
+        if self.successful_downloads < self.MIN_DOWNLOADS_FOR_ETA:
+            return None
+        
+        # Average time per successful download (including delay)
+        time_per_download = self.time_per_download()
+        
+        # Remaining items to process (excluding already completed)
+        remaining_items = self.total - self.completed
+        
+        # Estimate remaining time assuming all remaining items need downloading
+        # This is conservative but more accurate than assuming the skip rate continues
+        remaining_seconds = remaining_items * time_per_download
+        return remaining_seconds / 60
+    
+    def format_time(self, minutes: float) -> str:
+        """Format minutes into a human-readable string."""
+        if minutes < 1:
+            return f"{minutes * 60:.0f}s"
+        elif minutes < 60:
+            return f"{minutes:.1f}m"
+        else:
+            hours = int(minutes // 60)
+            mins = minutes % 60
+            if hours >= 24:
+                days = int(hours // 24)
+                hours = hours % 24
+                return f"{days}d {hours}h {mins:.0f}m"
+            return f"{hours}h {mins:.0f}m"
+    
+    def progress_line(self) -> str:
+        """Generate a progress status line."""
+        pct = (self.completed / self.total * 100) if self.total > 0 else 0
+        
+        parts = [f"[{self.completed}/{self.total}] ({pct:.1f}%)"]
+        
+        # Show skip count if any
+        if self.skipped > 0:
+            parts.append(f"[{self.skipped} skipped]")
+        
+        # Only show rate/ETA after we have enough successful downloads
+        if self.successful_downloads >= self.MIN_DOWNLOADS_FOR_ETA:
+            dpm = self.downloads_per_minute()
+            eta = self.estimated_minutes_remaining()
+            
+            parts.append(f"| {dpm:.1f} downloads/min")
+            
+            if eta is not None:
+                parts.append(f"| ETA: {self.format_time(eta)}")
+        elif self.successful_downloads > 0:
+            # Show that we're collecting data
+            parts.append(f"| {self.successful_downloads}/{self.MIN_DOWNLOADS_FOR_ETA} downloads for ETA...")
+        
+        return " ".join(parts)
 
 
 def parse_args() -> argparse.Namespace:
@@ -189,8 +319,11 @@ def download_morgue(
             print(f"  ERROR: {error_msg}")
             return DownloadResult.INVALID_CONTENT, error_msg
         
-        # Write to file
-        output_path.write_text(response.text, encoding="utf-8")
+        # Write to file atomically (write to temp file, then rename)
+        # This prevents partial files if interrupted by Ctrl+C
+        temp_path = output_path.with_suffix(".txt.tmp")
+        temp_path.write_text(response.text, encoding="utf-8")
+        temp_path.rename(output_path)
         
         if verbose:
             print(f"  Saved {filename}")
@@ -257,15 +390,31 @@ def main() -> int:
     failed_hosts: set[str] = set()
     host_error_counts: dict[str, int] = {}
     
+    # Initialize progress tracker
+    total = len(morgue_urls)
+    progress = ProgressTracker(total=total, delay_seconds=args.delay)
+    
+    # Print initial status
+    print()
+    print(f"Starting download of {total} morgue files...")
+    print(f"Output directory: {args.output_dir.absolute()}")
+    print(f"Delay between downloads: {args.delay}s")
+    print()
+    
     # Download morgues
     downloaded_count = 0
     skipped_exists_count = 0
     skipped_host_count = 0
     error_count = 0
     
-    total = len(morgue_urls)
     for i, url in enumerate(morgue_urls, 1):
-        print(f"[{i}/{total}] {get_filename_from_url(url)}")
+        filename = get_filename_from_url(url)
+        
+        # Show progress with filename
+        print(f"{progress.progress_line()} - {filename}")
+        
+        # Start timing this item
+        progress.start_item()
         
         result, error = download_morgue(
             url,
@@ -293,20 +442,36 @@ def main() -> int:
             DownloadResult.ERROR,
             DownloadResult.INVALID_CONTENT,
         )
+        
+        # Record progress with result type
+        if result == DownloadResult.DOWNLOADED:
+            progress.record_result('downloaded')
+        elif result in (DownloadResult.ERROR, DownloadResult.INVALID_CONTENT):
+            progress.record_result('error')
+        else:
+            progress.record_result('skipped')
+        
         if i < total and args.delay > 0 and made_request:
             if args.verbose:
                 print(f"  Waiting {args.delay}s...")
             time.sleep(args.delay)
     
-    # Summary
+    # Final summary
+    elapsed_min = progress.elapsed_seconds() / 60
+    download_time_min = progress.download_time / 60
     print()
     print("=" * 50)
     print(f"Download complete!")
+    print(f"  Total time: {progress.format_time(elapsed_min)}")
+    if progress.successful_downloads > 0:
+        print(f"  Time spent downloading: {progress.format_time(download_time_min)}")
     print(f"  Total URLs: {total}")
     print(f"  Downloaded: {downloaded_count}")
     print(f"  Skipped (already exist): {skipped_exists_count}")
     print(f"  Skipped (host failed): {skipped_host_count}")
     print(f"  Errors: {error_count}")
+    if progress.successful_downloads > 0:
+        print(f"  Average download rate: {progress.downloads_per_minute():.1f} downloads/min")
     if failed_hosts:
         print(f"  Failed hosts: {', '.join(sorted(failed_hosts))}")
     

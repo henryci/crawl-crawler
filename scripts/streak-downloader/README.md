@@ -48,8 +48,41 @@ python download_morgues.py --max-host-errors 5 "http://crawl.akrasiac.org/scorin
 
 ## Features
 
+- **Progress tracking**: Shows real-time progress with items/minute, downloads/minute, and estimated time remaining
 - **Rate limiting**: Configurable delay between downloads to be polite to servers
 - **Resume support**: Skips files that already exist in the output directory
 - **Host failure caching**: After N errors from a host, skips remaining URLs from that host
 - **Content validation**: Rejects responses that are HTML (expired domains, error pages) instead of morgue files
 - **Sampling mode**: Download a random subset for testing
+
+## Progress Output
+
+The script displays real-time progress information during downloads:
+
+```
+Starting download of 1250 morgue files...
+Output directory: /path/to/outputs
+Delay between downloads: 10s
+
+[0/1250] (0.0%) - morgue-player1-20231015-123456.txt
+[1/1250] (0.1%) - morgue-player2-20231016-234567.txt
+[2/1250] (0.2%) | 5.8 items/min (5.8 downloads/min) | ETA: 3h 35m - morgue-player3-20231017-345678.txt
+...
+
+==================================================
+Download complete!
+  Total time: 3h 28m
+  Total URLs: 1250
+  Downloaded: 1100
+  Skipped (already exist): 120
+  Skipped (host failed): 25
+  Errors: 5
+  Average download rate: 5.3 downloads/min
+```
+
+The progress line shows:
+- **Items processed / Total**: How many URLs have been processed
+- **Percentage**: Completion percentage  
+- **Items/min**: Total processing rate (including skips)
+- **Downloads/min**: Actual network download rate
+- **ETA**: Estimated time remaining based on current pace
