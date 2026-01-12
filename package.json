@@ -10,7 +10,9 @@
     "build:parser": "pnpm --filter dcss-morgue-parser build",
     "test:parser": "pnpm --filter dcss-morgue-parser test",
     "build:combo-parser": "pnpm --filter dcss-combo-records-parser build",
-    "download:combo-records": "pnpm --filter dcss-combo-records-parser build && node packages/dcss-combo-records-parser/dist/cli.js --output apps/web/public/data/combo-records.json"
+    "download:combo-records": "pnpm --filter dcss-combo-records-parser build && node packages/dcss-combo-records-parser/dist/cli.js --output apps/web/public/data/combo-records.json",
+    "diagnose:morgue": "pnpm --filter dcss-morgue-parser build && pnpm --filter morgue-parser-diagnostic diagnose",
+    "diagnose:morgue:verbose": "pnpm --filter dcss-morgue-parser build && pnpm --filter morgue-parser-diagnostic diagnose:verbose"
   },
   "devDependencies": {
     "typescript": "^5"

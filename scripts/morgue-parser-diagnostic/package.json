@@ -1,0 +1,17 @@
+{
+  "name": "morgue-parser-diagnostic",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "diagnose": "tsx diagnose.ts",
+    "diagnose:verbose": "tsx diagnose.ts --verbose"
+  },
+  "dependencies": {
+    "dcss-morgue-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
