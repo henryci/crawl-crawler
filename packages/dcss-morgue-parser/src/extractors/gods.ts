@@ -12,16 +12,26 @@
  */
 
 import type { GodRecord } from '../types.js';
-import { PATTERNS, parseIntSafe, findNotesSection, cleanGodName } from '../utils.js';
+import { PATTERNS, parseIntSafe, findNotesSection, cleanGodName, parseRaceBackground } from '../utils.js';
+
+// Re-use the beganAs pattern from PATTERNS for consistency
+const BEGAN_AS_PATTERN = PATTERNS.beganAs;
 
 /**
  * Background classes that start with a god.
+ * Includes both current and removed backgrounds for historical morgue support.
  */
 const BACKGROUND_STARTING_GODS: Record<string, string> = {
+  // Current backgrounds
   Berserker: 'Trog',
   'Chaos Knight': 'Xom',
   'Abyssal Knight': 'Lugonu',
   'Cinder Acolyte': 'Ignis',
+  // Removed backgrounds (for historical morgues)
+  Healer: 'Elyvilon', // Removed in 0.14
+  Priest: 'Zin', // Removed in 0.8
+  Paladin: 'The Shining One', // Removed in 0.8
+  'Death Knight': 'Yredelemnul', // Removed in 0.8
 };
 
 /**
@@ -152,12 +162,17 @@ export function extractGods(content: string): GodRecord[] | null {
  * Detect starting god based on background class.
  */
 function detectStartingGod(content: string): string | null {
-  // Look for "Began as a X Background" line
-  const beganMatch = /Began as an?\s+\S+\s+(.+?)\s+on/.exec(content);
+  // Look for "Began as a X Background" line - reuse pattern from utils
+  const beganMatch = BEGAN_AS_PATTERN.exec(content);
   if (beganMatch) {
-    const background = beganMatch[1]?.trim();
-    if (background && BACKGROUND_STARTING_GODS[background]) {
-      return BACKGROUND_STARTING_GODS[background];
+    const raceBackground = beganMatch[1]?.trim() ?? '';
+    // Use parseRaceBackground to correctly split multi-word races like "Deep Dwarf"
+    const parsed = parseRaceBackground(raceBackground);
+    if (parsed.background) {
+      const startingGod = BACKGROUND_STARTING_GODS[parsed.background];
+      if (startingGod) {
+        return startingGod;
+      }
     }
   }
   return null;

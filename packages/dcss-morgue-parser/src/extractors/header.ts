@@ -10,7 +10,7 @@
  * - Branch visit summary
  */
 
-import { PATTERNS, durationToSeconds, parseIntSafe } from '../utils.js';
+import { PATTERNS, durationToSeconds, parseIntSafe, parseRaceBackground } from '../utils.js';
 
 export interface HeaderData {
   version: string | null;
@@ -161,6 +161,53 @@ function extractScoreAndPlayer(lines: string[], result: HeaderData): void {
       return;
     }
   }
+
+  // Fallback for very old format (0.2.x) where player name and level are on separate lines
+  // Format: "dpeg the Annihilator" followed later by "Level      :      27"
+  extractOldFormatPlayerAndLevel(lines, result);
+}
+
+/**
+ * Extract player info from very old morgue format (0.2.x).
+ *
+ * Old format has:
+ * - Player name on a line like "dpeg the Annihilator"
+ * - Level on a line like "Level      :      27"
+ * - Race on a line like "Race       : Grey Elf"
+ * - Class on a line like "Class      : Air Elementalist"
+ */
+function extractOldFormatPlayerAndLevel(lines: string[], result: HeaderData): void {
+  // Look for "Level      :      XX" pattern
+  for (let i = 0; i < Math.min(30, lines.length); i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    const levelMatch = /^Level\s*:\s*(\d+)/i.exec(line);
+    if (levelMatch) {
+      result.characterLevel = parseIntSafe(levelMatch[1]);
+    }
+
+    // Also try to extract race and background (class) from old format
+    const raceMatch = /^Race\s*:\s*(.+?)(?:\s{2,}|$)/i.exec(line);
+    if (raceMatch && !result.race) {
+      result.race = raceMatch[1]?.trim() ?? null;
+    }
+
+    const classMatch = /^Class\s*:\s*(.+?)(?:\s{2,}|$)/i.exec(line);
+    if (classMatch && !result.background) {
+      result.background = classMatch[1]?.trim() ?? null;
+    }
+
+    // Extract player name from "Name the Title" pattern (line 3 usually in old format)
+    // Must come after version line and be in format "name the title"
+    if (i >= 2 && i < 5 && !result.playerName) {
+      const nameMatch = /^(\S+)\s+the\s+(.+?)\s*$/.exec(line.trim());
+      if (nameMatch) {
+        result.playerName = nameMatch[1] ?? null;
+        result.title = nameMatch[2] ?? null;
+      }
+    }
+  }
 }
 
 /**
@@ -176,20 +223,24 @@ function extractDatesAndBackground(lines: string[], result: HeaderData): void {
     const line = lines[i];
     if (!line) continue;
 
-    // Look for "Began as" line
+    // Look for "Began as" line (primary source for race/background in modern morgues)
     const beganMatch = PATTERNS.beganAs.exec(line);
     if (beganMatch) {
-      result.race = beganMatch[1] ?? null;
-      result.background = beganMatch[2] ?? null;
-      result.startDate = beganMatch[3] ?? null;
+      const raceBackground = beganMatch[1]?.trim() ?? '';
+      const parsed = parseRaceBackground(raceBackground);
+      result.race = parsed.race;
+      result.background = parsed.background;
+      result.startDate = beganMatch[2] ?? null;
       continue;
     }
 
     // Look for "Was a" line (older format without date)
     const wasMatch = PATTERNS.wasA.exec(line);
     if (wasMatch && !result.race) {
-      result.race = wasMatch[1] ?? null;
-      result.background = wasMatch[2] ?? null;
+      const raceBackground = wasMatch[1]?.trim() ?? '';
+      const parsed = parseRaceBackground(raceBackground);
+      result.race = parsed.race;
+      result.background = parsed.background;
     }
 
     // Look for runes and end date
@@ -364,8 +415,8 @@ function extractRunesFromInventory(content: string, result: HeaderData): void {
  * at the next major section (Skills, Spells, Notes, etc.).
  */
 function findInventorySection(content: string): string | null {
-  // Look for "Inventory:" header
-  const inventoryMatch = /^Inventory:?\s*$/m.exec(content);
+  // Look for "Inventory:" header (may have leading whitespace in older formats)
+  const inventoryMatch = /^\s*Inventory:?\s*$/m.exec(content);
   if (!inventoryMatch) {
     return null;
   }

@@ -12,8 +12,9 @@
 export const PATTERNS = {
   /**
    * Version line: " Dungeon Crawl Stone Soup version 0.34-a0-3-g68670cc5b6 (webtiles) character file."
+   * Also handles older formats like "0.2.7 (crawl-ref)" where platform contains hyphens.
    */
-  version: /Dungeon Crawl Stone Soup version ([^\s]+)\s*(?:\((\w+)\))?\s*character file/,
+  version: /Dungeon Crawl Stone Soup version ([^\s]+)\s*(?:\(([^)]+)\))?\s*character file/,
 
   /**
    * Game seed: "Game seed: 333194901430686732" or "Game seed: 123, levelgen mode: deterministic"
@@ -22,18 +23,22 @@ export const PATTERNS = {
 
   /**
    * Score line: "12163156 Charly the Archmage (level 27, 258/258 HPs)"
+   * Also handles drained HP format like "54894 PigKeeper the Thaumaturge (level 14, -4/74 (81) HPs)"
+   * where (81) is the undrained max HP.
    */
-  scoreLine: /^\s*(\d+)\s+(\S+)\s+the\s+(.+?)\s+\(level\s+(\d+),\s*(-?\d+)\/(\d+)\s+HPs?\)/,
+  scoreLine: /^\s*(\d+)\s+(\S+)\s+the\s+(.+?)\s+\(level\s+(\d+),\s*(-?\d+)\/(\d+)(?:\s+\(\d+\))?\s+HPs?\)/,
 
   /**
    * Began as: "Began as a Demigod Earth Elementalist on Apr 26, 2025."
+   * Captures the full "Race Background" string for further parsing.
    */
-  beganAs: /Began as an?\s+(\S+)\s+(.+?)\s+on\s+(.+?)\./,
+  beganAs: /Began as an?\s+(.+?)\s+on\s+(.+?)\./,
 
   /**
    * Was a (older format): "Was a Demigod Earth Elementalist."
+   * Captures the full "Race Background" string for further parsing.
    */
-  wasA: /Was an?\s+(\S+)\s+(.+?)\./,
+  wasA: /Was an?\s+(.+?)\./,
 
   /**
    * Escaped with runes: "... and 15 runes on Apr 28, 2025!"
@@ -511,5 +516,90 @@ export const BRANCH_ALIASES: Record<string, string> = {
  */
 export function getCanonicalBranchName(name: string): string {
   return BRANCH_ALIASES[name] ?? name;
+}
+
+/**
+ * Known DCSS races (including removed ones).
+ * Multi-word races listed first to ensure correct matching.
+ */
+export const KNOWN_RACES = [
+  // Multi-word races (check these first)
+  'Deep Dwarf',
+  'Deep Elf',
+  'Grey Elf',       // Removed in 0.6
+  'High Elf',       // Removed in 0.17
+  'Hill Orc',
+  'Mountain Dwarf', // Removed in 0.10
+  'Sludge Elf',     // Removed in 0.14
+  'Vine Stalker',
+  // Single-word races
+  'Barachi',
+  'Centaur',        // Removed in 0.30
+  'Coglin',
+  'Demigod',
+  'Djinni',
+  'Draconian',
+  'Felid',
+  'Formicid',
+  'Gargoyle',
+  'Ghoul',
+  'Gnoll',
+  'Grotesk',
+  'Halfling',       // Removed in 0.17
+  'Human',
+  'Kenku',          // Renamed to Tengu in 0.10
+  'Kobold',
+  'Merfolk',
+  'Minotaur',
+  'Mummy',
+  'Naga',
+  'Octopode',
+  'Ogre',
+  'Oni',
+  'Palentonga',
+  'Spriggan',
+  'Tengu',
+  'Troll',
+  'Vampire',
+];
+
+/**
+ * Parse a combined "Race Background" string into separate race and background.
+ *
+ * The challenge is that some races are multi-word (e.g., "Deep Dwarf", "Hill Orc").
+ * We match against known races to determine where the race ends and background begins.
+ *
+ * @param raceBackground - Combined string like "Deep Dwarf Healer" or "Human Fighter"
+ * @returns Object with race and background, or nulls if parsing fails
+ */
+export function parseRaceBackground(raceBackground: string): { race: string | null; background: string | null } {
+  if (!raceBackground) {
+    return { race: null, background: null };
+  }
+
+  const trimmed = raceBackground.trim();
+
+  // Try to match known races (longest matches first - multi-word races are at start of array)
+  for (const race of KNOWN_RACES) {
+    if (trimmed.startsWith(race + ' ')) {
+      const background = trimmed.slice(race.length).trim();
+      return { race, background: background || null };
+    }
+    // Also try case-insensitive match for robustness
+    if (trimmed.toLowerCase().startsWith(race.toLowerCase() + ' ')) {
+      const background = trimmed.slice(race.length).trim();
+      return { race, background: background || null };
+    }
+  }
+
+  // Fallback: If no known race matches, assume first word is race
+  // This handles any new races we haven't added yet
+  const parts = trimmed.split(/\s+/);
+  if (parts.length >= 2) {
+    return { race: parts[0] ?? null, background: parts.slice(1).join(' ') };
+  }
+
+  // Single word - treat as race with no background
+  return { race: trimmed, background: null };
 }
 

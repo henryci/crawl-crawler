@@ -22,6 +22,8 @@ type CriticalSection = (typeof CRITICAL_SECTIONS)[number];
 interface MissingSectionInfo {
   file: string;
   version: string | null;
+  race: string | null;
+  characterLevel: number | null;
   missingSections: CriticalSection[];
 }
 
@@ -75,13 +77,25 @@ function getMorgueFiles(dir: string): string[] {
 }
 
 /**
+ * Races that cannot worship gods.
+ */
+const GODLESS_RACES = ["Demigod"];
+
+/**
  * Check which critical sections are missing from a parsed morgue.
+ * Takes race into account - Demigods can't worship gods so missing godsWorshipped is expected.
  */
 function getMissingSections(data: MorgueData): CriticalSection[] {
   const missing: CriticalSection[] = [];
 
   for (const section of CRITICAL_SECTIONS) {
     const value = data[section];
+    
+    // Skip godsWorshipped check for races that can't worship gods
+    if (section === "godsWorshipped" && data.race && GODLESS_RACES.includes(data.race)) {
+      continue;
+    }
+    
     if (value === null || value === undefined) {
       missing.push(section);
     } else if (Array.isArray(value) && value.length === 0) {
@@ -178,6 +192,8 @@ function runDiagnostics(morgueDir: string, verbose: boolean): DiagnosticResult {
           result.missingSections.get(section)!.push({
             file: fileName,
             version: data.version,
+            race: data.race,
+            characterLevel: data.characterLevel,
             missingSections: missing,
           });
         }
@@ -249,22 +265,24 @@ function printResults(result: DiagnosticResult): void {
 
     if (files.length > 0 && files.length <= 10) {
       for (const info of files) {
-        console.log(`  - ${info.file} (v${info.version || "unknown"})`);
+        const levelStr = info.characterLevel !== null ? `, XL ${info.characterLevel}` : "";
+        console.log(`  - ${info.file} (v${info.version || "unknown"}${levelStr})`);
       }
     } else if (files.length > 10) {
       // Group by version for easier diagnosis
-      const byVersion = new Map<string, string[]>();
+      const byVersion = new Map<string, MissingSectionInfo[]>();
       for (const info of files) {
         const v = info.version?.match(/^(\d+\.\d+)/)?.[1] || "unknown";
         if (!byVersion.has(v)) byVersion.set(v, []);
-        byVersion.get(v)!.push(info.file);
+        byVersion.get(v)!.push(info);
       }
       console.log("  By version:");
       for (const [version, fileList] of [...byVersion.entries()].sort((a, b) => compareVersions(a[0], b[0]))) {
         console.log(`    ${version}: ${fileList.length} file(s)`);
-        // Show first 3 examples
-        for (const f of fileList.slice(0, 3)) {
-          console.log(`      - ${f}`);
+        // Show first 3 examples with level info
+        for (const info of fileList.slice(0, 3)) {
+          const levelStr = info.characterLevel !== null ? `, XL ${info.characterLevel}` : "";
+          console.log(`      - ${info.file}${levelStr}`);
         }
         if (fileList.length > 3) {
           console.log(`      ... and ${fileList.length - 3} more`);
@@ -283,12 +301,15 @@ function printResults(result: DiagnosticResult): void {
     const highLevel = result.noRunesFiles.filter((f) => f.characterLevel !== null && f.characterLevel >= 14);
     const unknownLevel = result.noRunesFiles.filter((f) => f.characterLevel === null);
 
-    if (lowLevel.length > 0) {
-      console.log(`\nLow level deaths (likely legitimate): ${lowLevel.length}`);
+    console.log(`\nBreakdown:`);
+    console.log(`  XL 1-13 (likely legitimate - died before runes): ${lowLevel.length}`);
+    console.log(`  XL 14+  (died without getting runes):           ${highLevel.length}`);
+    if (unknownLevel.length > 0) {
+      console.log(`  Unknown XL (potential parsing issue):           ${unknownLevel.length}`);
     }
 
     if (highLevel.length > 0) {
-      console.log(`\n⚠️  High level (XL 14+) with no runes - might be parsing issue: ${highLevel.length}`);
+      console.log(`\nHigh level (XL 14+) deaths without runes:`);
       for (const f of highLevel.slice(0, 10)) {
         console.log(`  - ${f.file} (v${f.version || "unknown"}, XL ${f.characterLevel})`);
       }
@@ -298,9 +319,12 @@ function printResults(result: DiagnosticResult): void {
     }
 
     if (unknownLevel.length > 0) {
-      console.log(`\n❓ Unknown level: ${unknownLevel.length}`);
+      console.log(`\n⚠️  Files with unknown character level (potential parsing issue):`);
       for (const f of unknownLevel.slice(0, 5)) {
         console.log(`  - ${f.file} (v${f.version || "unknown"})`);
+      }
+      if (unknownLevel.length > 5) {
+        console.log(`  ... and ${unknownLevel.length - 5} more`);
       }
     }
   }

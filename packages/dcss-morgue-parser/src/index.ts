@@ -41,7 +41,9 @@ export {
   findNotesSection,
   cleanGodName,
   getCanonicalBranchName,
+  parseRaceBackground,
   KNOWN_GODS,
   BRANCH_ALIASES,
+  KNOWN_RACES,
 } from './utils.js';
 
