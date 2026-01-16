@@ -9,6 +9,8 @@ This script:
 """
 
 import argparse
+import csv
+import fcntl
 import os
 import random
 import sys
@@ -20,6 +22,10 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
+
+
+# Default name for the URL mapping CSV file
+URL_MAPPING_FILENAME = "url_mapping.csv"
 
 
 @dataclass
@@ -272,12 +278,68 @@ def record_host_error(
         failed_hosts.add(host)
 
 
+class UrlMappingTracker:
+    """
+    Tracks the mapping between downloaded morgue files and their source URLs.
+    
+    Uses a CSV file to persist the mapping. The CSV is updated atomically
+    to ensure consistency even if the script is interrupted.
+    """
+    
+    def __init__(self, csv_path: Path):
+        self.csv_path = csv_path
+        self._existing_files: set[str] = set()
+        self._load_existing()
+    
+    def _load_existing(self) -> None:
+        """Load existing mappings from the CSV file."""
+        if not self.csv_path.exists():
+            return
+        
+        with open(self.csv_path, "r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                self._existing_files.add(row["filename"])
+    
+    def has_mapping(self, filename: str) -> bool:
+        """Check if a mapping already exists for this filename."""
+        return filename in self._existing_files
+    
+    def add_mapping(self, filename: str, url: str) -> None:
+        """
+        Add a new mapping to the CSV file.
+        
+        This operation is atomic - it uses file locking and flushes
+        immediately to ensure the entry is persisted before returning.
+        """
+        file_exists = self.csv_path.exists()
+        
+        with open(self.csv_path, "a", newline="", encoding="utf-8") as f:
+            # Lock the file to prevent concurrent writes
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                writer = csv.writer(f)
+                
+                # Write header if this is a new file
+                if not file_exists:
+                    writer.writerow(["filename", "url"])
+                
+                writer.writerow([filename, url])
+                f.flush()
+                os.fsync(f.fileno())  # Ensure data is written to disk
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        
+        self._existing_files.add(filename)
+
+
 def download_morgue(
     url: str,
     output_dir: Path,
     failed_hosts: set[str],
     host_error_counts: dict[str, int],
     max_host_errors: int,
+    url_tracker: UrlMappingTracker,
     verbose: bool = False,
 ) -> tuple[str, Optional[str]]:
     """
@@ -323,6 +385,13 @@ def download_morgue(
         # This prevents partial files if interrupted by Ctrl+C
         temp_path = output_path.with_suffix(".txt.tmp")
         temp_path.write_text(response.text, encoding="utf-8")
+        
+        # Record the URL mapping BEFORE renaming the temp file to final.
+        # This ensures we never have a file without a mapping entry.
+        # If interrupted after this point but before rename, we'll have
+        # a mapping entry but no file (or a .tmp file), which is recoverable.
+        url_tracker.add_mapping(filename, url)
+        
         temp_path.rename(output_path)
         
         if verbose:
@@ -386,6 +455,10 @@ def main() -> int:
     # Create output directory
     args.output_dir.mkdir(parents=True, exist_ok=True)
     
+    # Initialize URL mapping tracker
+    url_mapping_path = args.output_dir / URL_MAPPING_FILENAME
+    url_tracker = UrlMappingTracker(url_mapping_path)
+    
     # Track failed hosts and error counts
     failed_hosts: set[str] = set()
     host_error_counts: dict[str, int] = {}
@@ -398,6 +471,7 @@ def main() -> int:
     print()
     print(f"Starting download of {total} morgue files...")
     print(f"Output directory: {args.output_dir.absolute()}")
+    print(f"URL mapping file: {url_mapping_path.absolute()}")
     print(f"Delay between downloads: {args.delay}s")
     print()
     
@@ -422,6 +496,7 @@ def main() -> int:
             failed_hosts,
             host_error_counts,
             args.max_host_errors,
+            url_tracker,
             verbose=args.verbose,
         )
         

@@ -54,6 +54,25 @@ python download_morgues.py --max-host-errors 5 "http://crawl.akrasiac.org/scorin
 - **Host failure caching**: After N errors from a host, skips remaining URLs from that host
 - **Content validation**: Rejects responses that are HTML (expired domains, error pages) instead of morgue files
 - **Sampling mode**: Download a random subset for testing
+- **URL mapping**: Maintains a CSV file (`url_mapping.csv`) mapping each downloaded file to its source URL
+
+## URL Mapping
+
+The script maintains a `url_mapping.csv` file in the output directory that maps each downloaded morgue filename to its original source URL. This is useful for:
+
+- Tracking the provenance of downloaded files
+- Including source URLs when parsing morgues into JSON
+- Resuming downloads without losing URL information
+
+The CSV has two columns: `filename` and `url`. Example:
+
+```csv
+filename,url
+morgue-player1-20231015-123456.txt,http://crawl.akrasiac.org/rawdata/player1/morgue-player1-20231015-123456.txt
+morgue-player2-20231016-234567.txt,http://crawl.berotato.org/crawl/morgue/player2/morgue-player2-20231016-234567.txt
+```
+
+**Atomicity guarantee**: The URL mapping entry is written to disk (with `fsync`) *before* the downloaded file is moved to its final location. This ensures that if the script is interrupted (e.g., with Ctrl+C), you will never have a downloaded file without a corresponding mapping entry.
 
 ## Progress Output
 
@@ -62,6 +81,7 @@ The script displays real-time progress information during downloads:
 ```
 Starting download of 1250 morgue files...
 Output directory: /path/to/outputs
+URL mapping file: /path/to/outputs/url_mapping.csv
 Delay between downloads: 10s
 
 [0/1250] (0.0%) - morgue-player1-20231015-123456.txt
