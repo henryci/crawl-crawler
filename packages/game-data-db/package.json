@@ -1,0 +1,30 @@
+{
+  "name": "@crawl-crawler/game-data-db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PostgreSQL database schema and utilities for storing parsed DCSS game data",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "migrate": "tsx src/migrate.ts",
+    "migrate:down": "tsx src/migrate.ts down",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}

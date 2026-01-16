@@ -43,6 +43,8 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "@crawl-crawler/game-data-db": "workspace:*",
+    "pg": "^8.13.1",
     "dcss-combo-records-parser": "workspace:*",
     "dcss-morgue-parser": "workspace:*",
     "dcss-player-parser": "workspace:*",

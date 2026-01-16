@@ -12,6 +12,7 @@ const navigation = [
   { name: "Home", href: "/" },
   { name: "Morgue Viewer", href: "/morgue" },
   { name: "Player Summary", href: "/player" },
+  { name: "Analytics", href: "/analytics" },
   { name: "Streaks", href: "/streaks" },
   { name: "Records", href: "/records" },
   { name: "Appeal", href: "/appeal" },

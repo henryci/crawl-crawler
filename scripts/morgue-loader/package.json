@@ -1,0 +1,18 @@
+{
+  "name": "morgue-loader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "load": "tsx load.ts"
+  },
+  "dependencies": {
+    "@crawl-crawler/game-data-db": "workspace:*",
+    "dcss-morgue-parser": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.2",
+    "typescript": "^5"
+  }
+}
