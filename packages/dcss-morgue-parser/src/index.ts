@@ -9,6 +9,7 @@
 
 // Main parser functions
 export { parseMorgue, parseMorgueData, VERSION } from './parser.js';
+export type { ParseOptions } from './parser.js';
 
 // Types
 export type {

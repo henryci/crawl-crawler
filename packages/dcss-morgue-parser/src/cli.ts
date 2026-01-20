@@ -119,7 +119,7 @@ function logError(message: string): void {
 /**
  * Process a single morgue file.
  */
-function processFile(inputPath: string, options: CliOptions): boolean {
+async function processFile(inputPath: string, options: CliOptions): Promise<boolean> {
   if (!existsSync(inputPath)) {
     logError(`File not found: ${inputPath}`);
     return false;
@@ -147,7 +147,7 @@ function processFile(inputPath: string, options: CliOptions): boolean {
     const content = readFileSync(inputPath, 'utf-8');
 
     // Parse the morgue file
-    const result = parseMorgue(content);
+    const result = await parseMorgue(content);
 
     // Verbose output
     if (options.verbose && options.outputDir) {
@@ -188,7 +188,7 @@ function processFile(inputPath: string, options: CliOptions): boolean {
 /**
  * Process all .txt files in a directory.
  */
-function processDirectory(dirPath: string, options: CliOptions): { success: number; fail: number } {
+async function processDirectory(dirPath: string, options: CliOptions): Promise<{ success: number; fail: number }> {
   if (!existsSync(dirPath)) {
     logError(`Directory not found: ${dirPath}`);
     return { success: 0, fail: 0 };
@@ -214,7 +214,7 @@ function processDirectory(dirPath: string, options: CliOptions): { success: numb
 
   for (const file of files) {
     const filePath = join(dirPath, file);
-    if (processFile(filePath, options)) {
+    if (await processFile(filePath, options)) {
       successCount++;
     } else {
       failCount++;
@@ -227,7 +227,7 @@ function processDirectory(dirPath: string, options: CliOptions): { success: numb
 /**
  * Main CLI entry point.
  */
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const options = parseArgs(args);
 
@@ -248,11 +248,11 @@ function main(): void {
     const stat = existsSync(path) ? statSync(path) : null;
 
     if (stat?.isDirectory()) {
-      const { success, fail } = processDirectory(path, options);
+      const { success, fail } = await processDirectory(path, options);
       totalSuccess += success;
       totalFail += fail;
     } else {
-      if (processFile(path, options)) {
+      if (await processFile(path, options)) {
         totalSuccess++;
       } else {
         totalFail++;
@@ -272,5 +272,8 @@ function main(): void {
   process.exit(totalFail > 0 ? 1 : 0);
 }
 
-main();
+main().catch((e) => {
+  process.stderr.write(`Fatal error: ${e instanceof Error ? e.message : String(e)}\n`);
+  process.exit(1);
+});
 

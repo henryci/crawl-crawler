@@ -148,7 +148,7 @@ function MorgueViewerContent() {
       const morgueText = await response.text();
 
       // Parse the morgue file client-side
-      const result = parseMorgue(morgueText);
+      const result = await parseMorgue(morgueText, { sourceUrl: targetUrl });
       setParseResult(result);
       setMorgueData(result.data);
       setLoadingState("success");

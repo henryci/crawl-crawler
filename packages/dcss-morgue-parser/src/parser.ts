@@ -29,30 +29,62 @@ import {
 export const VERSION = '1.0.0';
 
 /**
+ * Compute SHA-256 hash of a string.
+ * Works in both Node.js (18+) and browser environments.
+ *
+ * @param content - String to hash
+ * @returns Hex-encoded SHA-256 hash
+ */
+async function computeHash(content: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Options for parsing a morgue file.
+ */
+export interface ParseOptions {
+  /** URL where the original morgue file can be found */
+  sourceUrl?: string;
+}
+
+/**
  * Parse a morgue file and extract all available data.
  *
  * This is a pure function with no side effects. It accepts raw text
  * and returns structured data without performing any I/O.
  *
  * @param content - Full morgue file content as a string
- * @returns ParseResult containing the parsed data and success status
+ * @param options - Optional parsing options (e.g., sourceUrl)
+ * @returns Promise resolving to ParseResult containing the parsed data and success status
  *
  * @example
  * ```typescript
  * import { parseMorgue } from 'dcss-morgue-parser';
  *
  * const morgueText = fs.readFileSync('morgue.txt', 'utf-8');
- * const result = parseMorgue(morgueText);
+ * const result = await parseMorgue(morgueText, {
+ *   sourceUrl: 'http://crawl.akrasiac.org/rawdata/player/morgue.txt'
+ * });
  *
  * if (result.success) {
  *   console.log(`${result.data.playerName} the ${result.data.title}`);
  *   console.log(`Score: ${result.data.score}`);
+ *   console.log(`Source: ${result.data.sourceUrl}`);
  * }
  * ```
  */
-export function parseMorgue(content: string): ParseResult {
+export async function parseMorgue(content: string, options?: ParseOptions): Promise<ParseResult> {
+  // Compute hash of the original content for deduplication
+  const morgueHash = await computeHash(content);
+
   const result: MorgueData = {
     parserVersion: VERSION,
+    morgueHash,
+    sourceUrl: options?.sourceUrl ?? null,
     parseErrors: [],
 
     // Header fields
@@ -220,17 +252,18 @@ export function parseMorgue(content: string): ParseResult {
  * Use `parseMorgue` if you need to check for parse errors.
  *
  * @param content - Full morgue file content as a string
- * @returns Parsed morgue data
+ * @param options - Optional parsing options (e.g., sourceUrl)
+ * @returns Promise resolving to parsed morgue data
  *
  * @example
  * ```typescript
  * import { parseMorgueData } from 'dcss-morgue-parser';
  *
- * const data = parseMorgueData(morgueText);
+ * const data = await parseMorgueData(morgueText, { sourceUrl: 'http://...' });
  * console.log(`Player: ${data.playerName}`);
  * ```
  */
-export function parseMorgueData(content: string): MorgueData {
-  return parseMorgue(content).data;
+export async function parseMorgueData(content: string, options?: ParseOptions): Promise<MorgueData> {
+  return (await parseMorgue(content, options)).data;
 }
 

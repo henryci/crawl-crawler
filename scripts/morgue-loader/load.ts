@@ -8,11 +8,58 @@
  *   PGDATABASE=crawl_crawler pnpm load:morgues /path/to/morgue/directory
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync, createReadStream } from 'node:fs';
 import { join, basename } from 'node:path';
+import { createInterface } from 'node:readline';
 import { parseMorgue, type MorgueData } from '../../packages/dcss-morgue-parser/dist/index.js';
 import { getPool, closePool } from '../../packages/game-data-db/dist/index.js';
 import type { Pool, PoolClient } from 'pg';
+
+// ============================================
+// URL Mapping
+// ============================================
+
+const URL_MAPPING_FILENAME = 'url_mapping.csv';
+
+/**
+ * Load the URL mapping from the CSV file created by the download script.
+ * Returns a Map of filename -> URL.
+ */
+async function loadUrlMapping(directory: string): Promise<Map<string, string>> {
+  const mapping = new Map<string, string>();
+  const csvPath = join(directory, URL_MAPPING_FILENAME);
+  
+  if (!existsSync(csvPath)) {
+    console.log(`No URL mapping file found at ${csvPath}`);
+    return mapping;
+  }
+  
+  const fileStream = createReadStream(csvPath, 'utf-8');
+  const rl = createInterface({
+    input: fileStream,
+    crlfDelay: Infinity,
+  });
+  
+  let isHeader = true;
+  for await (const line of rl) {
+    if (isHeader) {
+      isHeader = false;
+      continue;
+    }
+    
+    // Simple CSV parsing (handles basic cases)
+    // Format: filename,url
+    const firstComma = line.indexOf(',');
+    if (firstComma > 0) {
+      const filename = line.substring(0, firstComma);
+      const url = line.substring(firstComma + 1);
+      mapping.set(filename, url);
+    }
+  }
+  
+  console.log(`Loaded ${mapping.size} URL mappings from ${csvPath}`);
+  return mapping;
+}
 
 // ============================================
 // Lookup table caches (populated on first use)
@@ -491,14 +538,26 @@ async function getOrCreateVersion(pool: Pool, version: string): Promise<number> 
 // ============================================
 
 async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promise<number | null> {
-  // Check if already loaded
-  const existing = await pool.query<{ id: number }>(
+  // Check if already loaded by filename
+  const existingByFilename = await pool.query<{ id: number }>(
     'SELECT id FROM games WHERE morgue_filename = $1',
     [filename]
   );
   
-  if (existing.rows[0]) {
+  if (existingByFilename.rows[0]) {
     return null; // Already loaded
+  }
+
+  // Check if already loaded by hash (handles duplicate morgues with different filenames)
+  if (data.morgueHash) {
+    const existingByHash = await pool.query<{ id: number }>(
+      'SELECT id FROM games WHERE morgue_hash = $1',
+      [data.morgueHash]
+    );
+    
+    if (existingByHash.rows[0]) {
+      return null; // Already loaded (duplicate content)
+    }
   }
 
   // Get lookup IDs (these are done outside transaction to avoid conflicts)
@@ -514,6 +573,7 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
     await client.query('BEGIN');
 
     // Insert main game record
+    // ON CONFLICT DO NOTHING handles race conditions and ensures idempotency
     const gameResult = await client.query<{ id: number }>(`
       INSERT INTO games (
         morgue_filename, player_name, score, version_id,
@@ -521,15 +581,19 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
         is_win, end_date, start_date, game_duration_seconds, total_turns,
         runes_count, gems_count, god_id, piety,
         hp_max, mp_max, ac, ev, sh, str, int, dex, gold,
-        branches_visited, levels_seen, is_webtiles, game_seed, parser_version
+        branches_visited, levels_seen, is_webtiles, game_seed, parser_version,
+        morgue_hash, source_url
       ) VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
         $9, $10, $11, $12, $13,
         $14, $15, $16, $17,
         $18, $19, $20, $21, $22, $23, $24, $25, $26,
-        $27, $28, $29, $30, $31
-      ) RETURNING id
+        $27, $28, $29, $30, $31,
+        $32, $33
+      )
+      ON CONFLICT (morgue_filename) DO NOTHING
+      RETURNING id
     `, [
       filename,
       data.playerName,
@@ -562,7 +626,15 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
       data.isWebtiles,
       data.gameSeed,
       data.parserVersion,
+      data.morgueHash,
+      data.sourceUrl,
     ]);
+
+    // If ON CONFLICT triggered, no row is returned - this is a duplicate
+    if (gameResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return null;
+    }
 
     const gameId = gameResult.rows[0]!.id;
 
@@ -740,9 +812,12 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Find all .txt files
-  const files = readdirSync(inputDir).filter(f => f.endsWith('.txt'));
+  // Find all .txt files (excluding the URL mapping CSV)
+  const files = readdirSync(inputDir).filter(f => f.endsWith('.txt') && f !== URL_MAPPING_FILENAME);
   console.log(`Found ${files.length} morgue files to process`);
+
+  // Load URL mapping
+  const urlMapping = await loadUrlMapping(inputDir);
 
   const pool = getPool();
   
@@ -756,7 +831,11 @@ async function main(): Promise<void> {
     
     try {
       const content = readFileSync(filePath, 'utf-8');
-      const result = parseMorgue(content);
+      
+      // Get the source URL from the mapping (if available)
+      const sourceUrl = urlMapping.get(file);
+      
+      const result = await parseMorgue(content, { sourceUrl });
       
       if (!result.data.playerName) {
         console.log(`  [${i + 1}/${files.length}] Skipping ${file} (no player name)`);

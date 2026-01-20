@@ -10,6 +10,7 @@ A high-quality TypeScript library for parsing [Dungeon Crawl Stone Soup](https:/
 - **Framework-Agnostic**: Pure parsing logic with no side effects
 - **Zero Dependencies**: No runtime dependencies for the core parser
 - **CLI Included**: Command-line tool for batch processing
+- **Content Hash**: Generates a SHA-256 hash of the morgue content for deduplication
 
 ## Installation
 
@@ -26,13 +27,17 @@ import { parseMorgue } from 'dcss-morgue-parser';
 import { readFileSync } from 'fs';
 
 const morgueText = readFileSync('morgue-Player-20250101.txt', 'utf-8');
-const result = parseMorgue(morgueText);
+const result = await parseMorgue(morgueText, {
+  sourceUrl: 'http://crawl.akrasiac.org/rawdata/player/morgue.txt'
+});
 
 if (result.success) {
   console.log(`${result.data.playerName} the ${result.data.title}`);
   console.log(`Score: ${result.data.score}`);
   console.log(`Race: ${result.data.race} ${result.data.background}`);
   console.log(`Runes: ${result.data.runesCollected}/${result.data.runesPossible}`);
+  console.log(`Hash: ${result.data.morgueHash}`);
+  console.log(`Source: ${result.data.sourceUrl}`);
 }
 ```
 
@@ -46,7 +51,7 @@ const fileInput = document.querySelector('input[type="file"]');
 fileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   const text = await file.text();
-  const result = parseMorgue(text);
+  const result = await parseMorgue(text);
   
   // Use result.data to populate your UI
   displayCharacterInfo(result.data);
@@ -55,7 +60,7 @@ fileInput.addEventListener('change', async (e) => {
 // From fetch
 const response = await fetch('/morgues/example.txt');
 const text = await response.text();
-const result = parseMorgue(text);
+const result = await parseMorgue(text);
 ```
 
 ### CLI
@@ -76,9 +81,15 @@ npx dcss-morgue-parser morgue.txt -v -o output/
 
 ## API Reference
 
-### `parseMorgue(content: string): ParseResult`
+### `parseMorgue(content: string, options?: ParseOptions): Promise<ParseResult>`
 
-Parse a morgue file and return structured data with success status.
+Parse a morgue file and return structured data with success status. The function is async because it computes a SHA-256 hash of the content using the Web Crypto API.
+
+```typescript
+interface ParseOptions {
+  sourceUrl?: string;  // URL where the original morgue file can be found
+}
+```
 
 ```typescript
 interface ParseResult {
@@ -87,7 +98,7 @@ interface ParseResult {
 }
 ```
 
-### `parseMorgueData(content: string): MorgueData`
+### `parseMorgueData(content: string, options?: ParseOptions): Promise<MorgueData>`
 
 Convenience function that returns just the data without the result wrapper.
 
@@ -101,6 +112,8 @@ The main data structure containing all parsed information:
 interface MorgueData {
   // Parser metadata
   parserVersion: string;
+  morgueHash: string;       // SHA-256 hash of original content (64 hex chars)
+  sourceUrl: string | null; // URL where the original morgue can be found
   parseErrors: string[];
 
   // Header information

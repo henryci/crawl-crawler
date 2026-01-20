@@ -1,7 +1,8 @@
 import { getClient, closePool } from './connection.js';
 import * as migration001 from './migrations/001_initial_schema.js';
+import * as migration002 from './migrations/002_add_morgue_hash_and_url.js';
 
-const migrations = [migration001];
+const migrations = [migration001, migration002];
 
 async function ensureMigrationsTable(client: import('pg').PoolClient): Promise<void> {
   await client.query(`
@@ -87,12 +88,76 @@ async function rollbackMigrations(): Promise<void> {
   }
 }
 
+async function resetDatabase(): Promise<void> {
+  const client = await getClient();
+  
+  try {
+    console.log('Resetting database...\n');
+
+    // First, rollback all migrations (drops tables in correct order)
+    await ensureMigrationsTable(client);
+    const applied = await getAppliedMigrations(client);
+
+    // Rollback in reverse order
+    for (const migration of [...migrations].reverse()) {
+      if (applied.has(migration.name)) {
+        console.log(`Rolling back: ${migration.name}`);
+        await client.query('BEGIN');
+        try {
+          await migration.down(client);
+          await client.query(
+            'DELETE FROM migrations WHERE name = $1',
+            [migration.name]
+          );
+          await client.query('COMMIT');
+          console.log(`  ✓ Rolled back ${migration.name}`);
+        } catch (error) {
+          await client.query('ROLLBACK');
+          throw error;
+        }
+      }
+    }
+
+    console.log('\n--- Applying fresh migrations ---\n');
+
+    // Now apply all migrations fresh
+    await ensureMigrationsTable(client);
+
+    for (const migration of migrations) {
+      console.log(`Applying: ${migration.name}`);
+      await client.query('BEGIN');
+      try {
+        await migration.up(client);
+        await client.query(
+          'INSERT INTO migrations (name) VALUES ($1)',
+          [migration.name]
+        );
+        await client.query('COMMIT');
+        console.log(`  ✓ Applied ${migration.name}`);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    }
+
+    console.log('\n✓ Database reset complete! All tables are empty with latest schema.');
+  } finally {
+    client.release();
+    await closePool();
+  }
+}
+
 // Main entry point
 const command = process.argv[2];
 
 if (command === 'down') {
   rollbackMigrations().catch((error) => {
     console.error('Rollback failed:', error);
+    process.exit(1);
+  });
+} else if (command === 'reset') {
+  resetDatabase().catch((error) => {
+    console.error('Reset failed:', error);
     process.exit(1);
   });
 } else {

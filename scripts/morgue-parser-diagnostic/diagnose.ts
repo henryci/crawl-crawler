@@ -115,7 +115,7 @@ function getMissingSections(data: MorgueData): CriticalSection[] {
 /**
  * Parse all morgue files and collect diagnostic information.
  */
-function runDiagnostics(morgueDir: string, verbose: boolean): DiagnosticResult {
+async function runDiagnostics(morgueDir: string, verbose: boolean): Promise<DiagnosticResult> {
   const result: DiagnosticResult = {
     totalFiles: 0,
     parsedSuccessfully: 0,
@@ -151,7 +151,7 @@ function runDiagnostics(morgueDir: string, verbose: boolean): DiagnosticResult {
 
     try {
       const content = fs.readFileSync(filePath, "utf-8");
-      const parseResult: ParseResult = parseMorgue(content);
+      const parseResult: ParseResult = await parseMorgue(content);
       const data = parseResult.data;
 
       // Track version
@@ -394,7 +394,7 @@ function printResults(result: DiagnosticResult): void {
 }
 
 // Main execution
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const verbose = args.includes("--verbose") || args.includes("-v");
   const helpRequested = args.includes("--help") || args.includes("-h");
@@ -431,8 +431,11 @@ Examples:
     process.exit(1);
   }
 
-  const result = runDiagnostics(morgueDir, verbose);
+  const result = await runDiagnostics(morgueDir, verbose);
   printResults(result);
 }
 
-main();
+main().catch((e) => {
+  console.error("Fatal error:", e instanceof Error ? e.message : String(e));
+  process.exit(1);
+});

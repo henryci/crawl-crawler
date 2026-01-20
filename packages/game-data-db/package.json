@@ -16,6 +16,7 @@
     "build": "tsc",
     "migrate": "tsx src/migrate.ts",
     "migrate:down": "tsx src/migrate.ts down",
+    "migrate:reset": "tsx src/migrate.ts reset",
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {

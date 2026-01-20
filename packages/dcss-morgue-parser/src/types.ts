@@ -177,6 +177,10 @@ export type SkillsByXlSource = 'table' | 'notes' | null;
 export interface MorgueData {
   /** Parser version that generated this data */
   parserVersion: string;
+  /** SHA-256 hash of the original morgue file content (hex string) */
+  morgueHash: string;
+  /** URL where the original morgue file can be found (if provided) */
+  sourceUrl: string | null;
   /** List of parse errors encountered (empty if successful) */
   parseErrors: string[];
 

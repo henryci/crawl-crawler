@@ -39,9 +39,9 @@ describe('parseMorgue', () => {
   describe('modern morgue file (0.24 - Bowmetheus)', () => {
     let data: MorgueData;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const content = loadMorgue('morgue-Bowmetheus-20230628-120831.txt');
-      const result = parseMorgue(content);
+      const result = await parseMorgue(content);
       data = result.data;
     });
 
@@ -193,12 +193,39 @@ describe('parseMorgue', () => {
     });
   });
 
+  describe('morgue hash', () => {
+    it('generates a morgue hash', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const result = await parseMorgue(content);
+      expect(result.data.morgueHash).toBeDefined();
+      expect(result.data.morgueHash).toHaveLength(64); // SHA-256 produces 64 hex chars
+      expect(result.data.morgueHash).toMatch(/^[a-f0-9]{64}$/);
+    });
+  });
+
+  describe('hash consistency', () => {
+    it('generates the same hash for the same content', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const result1 = await parseMorgue(content);
+      const result2 = await parseMorgue(content);
+      expect(result1.data.morgueHash).toBe(result2.data.morgueHash);
+    });
+
+    it('generates different hashes for different content', async () => {
+      const content1 = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const content2 = loadMorgue('morgue-henryci-20151114-075948.txt');
+      const result1 = await parseMorgue(content1);
+      const result2 = await parseMorgue(content2);
+      expect(result1.data.morgueHash).not.toBe(result2.data.morgueHash);
+    });
+  });
+
   describe('older morgue file (0.6 - hyperbolic)', () => {
     let data: MorgueData;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const content = loadMorgue('morgue-hyperbolic-20100426-054248.txt');
-      const result = parseMorgue(content);
+      const result = await parseMorgue(content);
       data = result.data;
     });
 
@@ -261,26 +288,26 @@ describe('parseMorgue', () => {
   });
 
   describe('edge cases', () => {
-    it('handles empty input gracefully', () => {
-      const result = parseMorgue('');
+    it('handles empty input gracefully', async () => {
+      const result = await parseMorgue('');
       expect(result.success).toBe(true); // No errors, just null values
       expect(result.data.playerName).toBeNull();
     });
 
-    it('handles malformed input gracefully', () => {
-      const result = parseMorgue('This is not a morgue file.\nJust random text.');
+    it('handles malformed input gracefully', async () => {
+      const result = await parseMorgue('This is not a morgue file.\nJust random text.');
       expect(result.data.playerName).toBeNull();
       expect(result.data.parseErrors).toHaveLength(0); // Should not throw
     });
 
-    it('handles partial morgue file', () => {
+    it('handles partial morgue file', async () => {
       const partialContent = `
  Dungeon Crawl Stone Soup version 0.30.0 (webtiles) character file.
 
 12345 TestPlayer the Warrior (level 10, 50/50 HPs)
              Began as a Minotaur Fighter on Jan 1, 2025.
 `;
-      const result = parseMorgue(partialContent);
+      const result = await parseMorgue(partialContent);
       expect(result.data.playerName).toBe('TestPlayer');
       expect(result.data.title).toBe('Warrior');
       expect(result.data.characterLevel).toBe(10);
@@ -290,20 +317,43 @@ describe('parseMorgue', () => {
   });
 
   describe('parseMorgueData convenience function', () => {
-    it('returns data directly without result wrapper', () => {
-      const content = loadMorgue('morgue-Bowmetheus-20230628-120831.txt');
-      const data = parseMorgueData(content);
-      expect(data.playerName).toBe('Bowmetheus');
+    it('returns data directly without result wrapper', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const data = await parseMorgueData(content);
+      expect(data.playerName).toBe('henryci');
       expect(data.parserVersion).toBeDefined();
+      expect(data.morgueHash).toBeDefined();
+    });
+  });
+
+  describe('sourceUrl option', () => {
+    it('includes sourceUrl when provided', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const url = 'http://crawl.example.org/rawdata/henryci/morgue.txt';
+      const result = await parseMorgue(content, { sourceUrl: url });
+      expect(result.data.sourceUrl).toBe(url);
+    });
+
+    it('sets sourceUrl to null when not provided', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const result = await parseMorgue(content);
+      expect(result.data.sourceUrl).toBeNull();
+    });
+
+    it('works with parseMorgueData convenience function', async () => {
+      const content = loadMorgue('morgue-henryci-20110411-013936.txt');
+      const url = 'http://crawl.example.org/rawdata/henryci/morgue.txt';
+      const data = await parseMorgueData(content, { sourceUrl: url });
+      expect(data.sourceUrl).toBe(url);
     });
   });
 
   describe('older morgue file (0.7 - henryci) with runes from inventory', () => {
     let data: MorgueData;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const content = loadMorgue('morgue-henryci-20110411-013936.txt');
-      const result = parseMorgue(content);
+      const result = await parseMorgue(content);
       data = result.data;
     });
 
@@ -341,9 +391,9 @@ describe('parseMorgue', () => {
   describe('older morgue file (0.17 - henryci) with skillsByXl from notes', () => {
     let data: MorgueData;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const content = loadMorgue('morgue-henryci-20151114-075948.txt');
-      const result = parseMorgue(content);
+      const result = await parseMorgue(content);
       data = result.data;
     });
 
