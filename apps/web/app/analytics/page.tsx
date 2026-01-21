@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Loader2,
@@ -113,15 +113,137 @@ const defaultFilters: Filters = {
   excludeLegacy: true,
 };
 
+/**
+ * Parse filters from URL search params
+ */
+function parseFiltersFromUrl(searchParams: URLSearchParams): Filters | null {
+  // Check if there are any filter params - if not, return null to use defaults
+  const hasFilterParams = [
+    'races', 'backgrounds', 'gods', 'isWin', 'minRunes', 'maxRunes',
+    'minTurns', 'maxTurns', 'player', 'minVersion', 'maxVersion', 'excludeLegacy'
+  ].some(key => searchParams.has(key));
+  
+  if (!hasFilterParams) return null;
+  
+  return {
+    races: searchParams.get('races')?.split(',').filter(Boolean) ?? [],
+    backgrounds: searchParams.get('backgrounds')?.split(',').filter(Boolean) ?? [],
+    gods: searchParams.get('gods')?.split(',').filter(Boolean) ?? [],
+    isWin: searchParams.get('isWin') ?? "",
+    minRunes: searchParams.get('minRunes') ?? "",
+    maxRunes: searchParams.get('maxRunes') ?? "",
+    minTurns: searchParams.get('minTurns') ?? "",
+    maxTurns: searchParams.get('maxTurns') ?? "",
+    player: searchParams.get('player') ?? "",
+    minVersion: searchParams.get('minVersion') ?? "",
+    maxVersion: searchParams.get('maxVersion') ?? "",
+    excludeLegacy: searchParams.get('excludeLegacy') === 'true',
+  };
+}
+
+/**
+ * Convert filters to URL search params string
+ */
+function filtersToUrlParams(filters: Filters, tab: string): string {
+  const params = new URLSearchParams();
+  
+  if (filters.races.length > 0) params.set("races", filters.races.join(","));
+  if (filters.backgrounds.length > 0) params.set("backgrounds", filters.backgrounds.join(","));
+  if (filters.gods.length > 0) params.set("gods", filters.gods.join(","));
+  if (filters.isWin) params.set("isWin", filters.isWin);
+  if (filters.minRunes) params.set("minRunes", filters.minRunes);
+  if (filters.maxRunes) params.set("maxRunes", filters.maxRunes);
+  if (filters.minTurns) params.set("minTurns", filters.minTurns);
+  if (filters.maxTurns) params.set("maxTurns", filters.maxTurns);
+  if (filters.player) params.set("player", filters.player);
+  if (filters.minVersion) params.set("minVersion", filters.minVersion);
+  if (filters.maxVersion) params.set("maxVersion", filters.maxVersion);
+  if (filters.excludeLegacy) params.set("excludeLegacy", "true");
+  if (tab !== "games") params.set("tab", tab);
+  
+  return params.toString();
+}
+
+/**
+ * Check if two filter objects are equal
+ */
+function filtersEqual(a: Filters, b: Filters): boolean {
+  return (
+    a.isWin === b.isWin &&
+    a.minRunes === b.minRunes &&
+    a.maxRunes === b.maxRunes &&
+    a.minTurns === b.minTurns &&
+    a.maxTurns === b.maxTurns &&
+    a.player === b.player &&
+    a.minVersion === b.minVersion &&
+    a.maxVersion === b.maxVersion &&
+    a.excludeLegacy === b.excludeLegacy &&
+    a.races.length === b.races.length &&
+    a.backgrounds.length === b.backgrounds.length &&
+    a.gods.length === b.gods.length &&
+    a.races.every((r, i) => r === b.races[i]) &&
+    a.backgrounds.every((bg, i) => bg === b.backgrounds[i]) &&
+    a.gods.every((g, i) => g === b.gods[i])
+  );
+}
+
 export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<AnalyticsLoading />}>
+      <AnalyticsContent />
+    </Suspense>
+  );
+}
+
+function AnalyticsLoading() {
+  return (
+    <PageWrapper>
+      <PageHeader
+        title="Game Analytics"
+        subtitle="Loading..."
+        icon={BarChart3}
+        variant="mana"
+      />
+      <Card className="bg-card border-border">
+        <CardContent className="py-12 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-mana" />
+          <p className="mt-4 text-muted-foreground">Loading analytics...</p>
+        </CardContent>
+      </Card>
+    </PageWrapper>
+  );
+}
+
+function AnalyticsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Initialize state from URL params
+  const initialFilters = useMemo(() => {
+    const urlFilters = parseFiltersFromUrl(searchParams);
+    return urlFilters ?? defaultFilters;
+  }, []); // Only run once on mount
+  
+  const initialTab = searchParams.get('tab') ?? "games";
+  
   const [lookups, setLookups] = useState<Lookups | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [activePreset, setActivePreset] = useState<"default" | "clear" | null>("default");
-  const [activeTab, setActiveTab] = useState("games");
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [activePreset, setActivePreset] = useState<"default" | "clear" | null>(() => {
+    // Determine initial preset based on URL filters
+    const urlFilters = parseFiltersFromUrl(searchParams);
+    if (!urlFilters) return "default";
+    if (filtersEqual(urlFilters, defaultFilters)) return "default";
+    if (filtersEqual(urlFilters, clearFilters)) return "clear";
+    return null;
+  });
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Track if this is the initial load to avoid double-updating URL
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Load lookups on mount
   useEffect(() => {
@@ -137,6 +259,51 @@ export default function AnalyticsPage() {
     }
     loadLookups();
   }, []);
+  
+  // Sync filters and tab to URL when they change
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+    
+    const newUrlParams = filtersToUrlParams(filters, activeTab);
+    const currentParams = searchParams.toString();
+    
+    // Only update URL if params actually changed
+    if (newUrlParams !== currentParams) {
+      const newUrl = newUrlParams ? `/analytics?${newUrlParams}` : '/analytics';
+      router.replace(newUrl, { scroll: false });
+    }
+  }, [filters, activeTab, isInitialLoad, router, searchParams]);
+  
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const urlFilters = parseFiltersFromUrl(searchParams);
+    const urlTab = searchParams.get('tab') ?? "games";
+    
+    // Update tab if it changed
+    if (urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+    
+    // Update filters if they changed (and URL has filter params)
+    if (urlFilters && !filtersEqual(urlFilters, filters)) {
+      setFilters(urlFilters);
+      // Update preset indicator
+      if (filtersEqual(urlFilters, defaultFilters)) {
+        setActivePreset("default");
+      } else if (filtersEqual(urlFilters, clearFilters)) {
+        setActivePreset("clear");
+      } else {
+        setActivePreset(null);
+      }
+    } else if (!urlFilters && !filtersEqual(filters, defaultFilters)) {
+      // URL has no filter params, reset to defaults
+      setFilters(defaultFilters);
+      setActivePreset("default");
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build query string from filters
   const queryString = useMemo(() => {
