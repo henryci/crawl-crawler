@@ -37,6 +37,8 @@ import { useSortable } from "@/hooks/use-sortable";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
 import { StatsOverview } from "@/components/analytics/stats-overview";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Lookups {
   races: { id: number; name: string; code: string }[];
@@ -44,6 +46,8 @@ interface Lookups {
   gods: { id: number; name: string }[];
   skills: { id: number; name: string }[];
   versions: { id: number; version: string; major: number; minor: number }[];
+  legacySpecies: string[];
+  legacyBackgrounds: string[];
 }
 
 interface Game {
@@ -72,6 +76,9 @@ interface Filters {
   minTurns: string;
   maxTurns: string;
   player: string;
+  minVersion: string;
+  maxVersion: string;
+  excludeLegacy: boolean;
 }
 
 const initialFilters: Filters = {
@@ -84,6 +91,9 @@ const initialFilters: Filters = {
   minTurns: "",
   maxTurns: "",
   player: "",
+  minVersion: "",
+  maxVersion: "",
+  excludeLegacy: false,
 };
 
 export default function AnalyticsPage() {
@@ -123,6 +133,9 @@ export default function AnalyticsPage() {
     if (filters.minTurns) params.set("minTurns", filters.minTurns);
     if (filters.maxTurns) params.set("maxTurns", filters.maxTurns);
     if (filters.player) params.set("player", filters.player);
+    if (filters.minVersion) params.set("minVersion", filters.minVersion);
+    if (filters.maxVersion) params.set("maxVersion", filters.maxVersion);
+    if (filters.excludeLegacy) params.set("excludeLegacy", "true");
     params.set("limit", "100");
     return params.toString();
   }, [filters]);
@@ -157,7 +170,10 @@ export default function AnalyticsPage() {
       filters.maxRunes !== "" ||
       filters.minTurns !== "" ||
       filters.maxTurns !== "" ||
-      filters.player !== ""
+      filters.player !== "" ||
+      filters.minVersion !== "" ||
+      filters.maxVersion !== "" ||
+      filters.excludeLegacy
     );
   }, [filters]);
 
@@ -165,32 +181,49 @@ export default function AnalyticsPage() {
     setFilters(initialFilters);
   }, []);
 
-  const toggleRace = useCallback((race: string) => {
-    setFilters(prev => ({
-      ...prev,
-      races: prev.races.includes(race)
-        ? prev.races.filter(r => r !== race)
-        : [...prev.races, race],
+  // Build options for multi-selects
+  const raceOptions = useMemo(() => {
+    if (!lookups) return [];
+    const legacySet = new Set(lookups.legacySpecies);
+    return lookups.races.map(race => ({
+      value: race.name,
+      label: `${race.name} (${race.code})${legacySet.has(race.name) ? ' ⚰️' : ''}`,
     }));
-  }, []);
+  }, [lookups]);
 
-  const toggleBackground = useCallback((bg: string) => {
-    setFilters(prev => ({
-      ...prev,
-      backgrounds: prev.backgrounds.includes(bg)
-        ? prev.backgrounds.filter(b => b !== bg)
-        : [...prev.backgrounds, bg],
+  const backgroundOptions = useMemo(() => {
+    if (!lookups) return [];
+    const legacySet = new Set(lookups.legacyBackgrounds);
+    return lookups.backgrounds.map(bg => ({
+      value: bg.name,
+      label: `${bg.name} (${bg.code})${legacySet.has(bg.name) ? ' ⚰️' : ''}`,
     }));
-  }, []);
+  }, [lookups]);
 
-  const toggleGod = useCallback((god: string) => {
-    setFilters(prev => ({
-      ...prev,
-      gods: prev.gods.includes(god)
-        ? prev.gods.filter(g => g !== god)
-        : [...prev.gods, god],
+  const godOptions = useMemo(() => {
+    if (!lookups) return [];
+    return lookups.gods.map(god => ({
+      value: god.name,
+      label: god.name,
     }));
-  }, []);
+  }, [lookups]);
+
+  // Get unique versions for the version selector
+  const versionOptions = useMemo(() => {
+    if (!lookups) return [];
+    // Group by minor version and get unique ones
+    const seen = new Set<number>();
+    return lookups.versions
+      .filter(v => {
+        if (seen.has(v.minor)) return false;
+        seen.add(v.minor);
+        return true;
+      })
+      .map(v => ({
+        value: `0.${v.minor}`,
+        label: `0.${v.minor}`,
+      }));
+  }, [lookups]);
 
   if (error && !lookups) {
     return (
@@ -260,83 +293,47 @@ export default function AnalyticsPage() {
         {filtersExpanded && (
           <CardContent className="pt-0 pb-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Race Filter */}
+              {/* Race Multi-Select */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Species</label>
-                <Select
-                  value={filters.races[0] || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
-                    ...prev,
-                    races: v === "all" ? [] : [v],
-                  }))}
-                >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
-                    <SelectValue placeholder="All Species" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Species</SelectItem>
-                    {lookups?.races.map((race) => (
-                      <SelectItem key={race.id} value={race.name}>
-                        {race.name} ({race.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={raceOptions}
+                  selected={filters.races}
+                  onChange={(races) => setFilters(prev => ({ ...prev, races }))}
+                  placeholder="All Species"
+                  className="bg-secondary/50 text-sm"
+                />
               </div>
 
-              {/* Background Filter */}
+              {/* Background Multi-Select */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Background</label>
-                <Select
-                  value={filters.backgrounds[0] || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
-                    ...prev,
-                    backgrounds: v === "all" ? [] : [v],
-                  }))}
-                >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
-                    <SelectValue placeholder="All Backgrounds" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Backgrounds</SelectItem>
-                    {lookups?.backgrounds.map((bg) => (
-                      <SelectItem key={bg.id} value={bg.name}>
-                        {bg.name} ({bg.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={backgroundOptions}
+                  selected={filters.backgrounds}
+                  onChange={(backgrounds) => setFilters(prev => ({ ...prev, backgrounds }))}
+                  placeholder="All Backgrounds"
+                  className="bg-secondary/50 text-sm"
+                />
               </div>
 
-              {/* God Filter */}
+              {/* God Multi-Select */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">God</label>
-                <Select
-                  value={filters.gods[0] || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
-                    ...prev,
-                    gods: v === "all" ? [] : [v],
-                  }))}
-                >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
-                    <SelectValue placeholder="All Gods" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Gods</SelectItem>
-                    {lookups?.gods.map((god) => (
-                      <SelectItem key={god.id} value={god.name}>
-                        {god.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelect
+                  options={godOptions}
+                  selected={filters.gods}
+                  onChange={(gods) => setFilters(prev => ({ ...prev, gods }))}
+                  placeholder="All Gods"
+                  className="bg-secondary/50 text-sm"
+                />
               </div>
 
               {/* Win Filter */}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Outcome</label>
                 <Select
-                  value={filters.isWin}
+                  value={filters.isWin || "all"}
                   onValueChange={(v) => setFilters(prev => ({
                     ...prev,
                     isWin: v === "all" ? "" : v,
@@ -349,6 +346,52 @@ export default function AnalyticsPage() {
                     <SelectItem value="all">All Games</SelectItem>
                     <SelectItem value="true">Wins Only</SelectItem>
                     <SelectItem value="false">Deaths Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Version Range */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Min Version</label>
+                <Select
+                  value={filters.minVersion || "all"}
+                  onValueChange={(v) => setFilters(prev => ({
+                    ...prev,
+                    minVersion: v === "all" ? "" : v,
+                  }))}
+                >
+                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                    <SelectValue placeholder="Any" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any</SelectItem>
+                    {versionOptions.map((v) => (
+                      <SelectItem key={v.value} value={v.value}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Max Version</label>
+                <Select
+                  value={filters.maxVersion || "all"}
+                  onValueChange={(v) => setFilters(prev => ({
+                    ...prev,
+                    maxVersion: v === "all" ? "" : v,
+                  }))}
+                >
+                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                    <SelectValue placeholder="Any" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any</SelectItem>
+                    {versionOptions.map((v) => (
+                      <SelectItem key={v.value} value={v.value}>
+                        {v.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -404,14 +447,32 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Player Search */}
-              <div className="md:col-span-2 lg:col-span-4">
+              <div className="md:col-span-2">
                 <label className="text-xs text-muted-foreground mb-1 block">Player Name</label>
                 <Input
                   placeholder="Search by player name..."
                   value={filters.player}
                   onChange={(e) => setFilters(prev => ({ ...prev, player: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm max-w-md"
+                  className="bg-secondary/50 h-9 text-sm"
                 />
+              </div>
+
+              {/* Exclude Legacy Checkbox */}
+              <div className="md:col-span-2 flex items-center gap-2 pt-5">
+                <Checkbox
+                  id="exclude-legacy"
+                  checked={filters.excludeLegacy}
+                  onCheckedChange={(checked) => setFilters(prev => ({
+                    ...prev,
+                    excludeLegacy: checked === true,
+                  }))}
+                />
+                <label
+                  htmlFor="exclude-legacy"
+                  className="text-sm text-muted-foreground cursor-pointer select-none"
+                >
+                  Exclude legacy species & backgrounds
+                </label>
               </div>
             </div>
           </CardContent>

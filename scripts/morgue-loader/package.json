@@ -8,10 +8,12 @@
   },
   "dependencies": {
     "@crawl-crawler/game-data-db": "workspace:*",
+    "dcss-game-data": "workspace:*",
     "dcss-morgue-parser": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@types/pg": "^8",
     "tsx": "^4.19.2",
     "typescript": "^5"
   }

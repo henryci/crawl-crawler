@@ -3,6 +3,11 @@
  * Provides consistent input validation and query building.
  */
 
+import {
+  LEGACY_SPECIES_NAMES,
+  LEGACY_BACKGROUND_NAMES,
+} from 'dcss-game-data';
+
 // Validation constants
 const MAX_STRING_LENGTH = 100;
 const MAX_ARRAY_LENGTH = 50;
@@ -45,6 +50,14 @@ export interface CommonFilters {
   backgrounds: string[] | null;
   gods: string[] | null;
   isWin: boolean | null;
+  minVersion: string | null;
+  maxVersion: string | null;
+  minRunes: number | null;
+  maxRunes: number | null;
+  minTurns: number | null;
+  maxTurns: number | null;
+  player: string | null;
+  excludeLegacy: boolean;
 }
 
 export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters {
@@ -57,7 +70,32 @@ export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters
   if (isWinParam === 'true') isWin = true;
   else if (isWinParam === 'false') isWin = false;
   
-  return { races, backgrounds, gods, isWin };
+  const minVersion = sanitizeString(searchParams.get('minVersion'), 20);
+  const maxVersion = sanitizeString(searchParams.get('maxVersion'), 20);
+  
+  const minRunes = sanitizeInt(searchParams.get('minRunes'), 0, 15);
+  const maxRunes = sanitizeInt(searchParams.get('maxRunes'), 0, 15);
+  const minTurns = sanitizeInt(searchParams.get('minTurns'), 0);
+  const maxTurns = sanitizeInt(searchParams.get('maxTurns'), 0);
+  
+  const player = sanitizeString(searchParams.get('player'));
+  
+  const excludeLegacy = searchParams.get('excludeLegacy') === 'true';
+  
+  return { 
+    races, 
+    backgrounds, 
+    gods, 
+    isWin,
+    minVersion,
+    maxVersion,
+    minRunes,
+    maxRunes,
+    minTurns,
+    maxTurns,
+    player,
+    excludeLegacy,
+  };
 }
 
 /**
@@ -66,8 +104,14 @@ export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters
  * 
  * SECURITY: All values are passed as parameterized query parameters,
  * never interpolated into the SQL string.
+ * 
+ * NOTE: This function requires the query to have joined:
+ * - races r ON g.race_id = r.id
+ * - backgrounds b ON g.background_id = b.id
+ * - gods god ON g.god_id = god.id
+ * - game_versions v ON g.version_id = v.id (if using version filters)
  */
-export function buildCommonWhereClause(filters: CommonFilters): { where: string; params: unknown[] } {
+export function buildCommonWhereClause(filters: CommonFilters, options?: { includeVersionJoin?: boolean }): { where: string; params: unknown[] } {
   const conditions: string[] = [];
   const params: unknown[] = [];
   let paramIndex = 1;
@@ -93,6 +137,62 @@ export function buildCommonWhereClause(filters: CommonFilters): { where: string;
   if (filters.isWin !== null) {
     conditions.push(`g.is_win = $${paramIndex}`);
     params.push(filters.isWin);
+    paramIndex++;
+  }
+  
+  if (filters.minRunes !== null) {
+    conditions.push(`g.runes_count >= $${paramIndex}`);
+    params.push(filters.minRunes);
+    paramIndex++;
+  }
+  
+  if (filters.maxRunes !== null) {
+    conditions.push(`g.runes_count <= $${paramIndex}`);
+    params.push(filters.maxRunes);
+    paramIndex++;
+  }
+  
+  if (filters.minTurns !== null) {
+    conditions.push(`g.total_turns >= $${paramIndex}`);
+    params.push(filters.minTurns);
+    paramIndex++;
+  }
+  
+  if (filters.maxTurns !== null) {
+    conditions.push(`g.total_turns <= $${paramIndex}`);
+    params.push(filters.maxTurns);
+    paramIndex++;
+  }
+  
+  if (filters.player) {
+    conditions.push(`g.player_name ILIKE $${paramIndex}`);
+    params.push(`%${filters.player}%`);
+    paramIndex++;
+  }
+  
+  if (filters.minVersion) {
+    conditions.push(`v.minor >= $${paramIndex}`);
+    const match = /^0\.(\d+)/.exec(filters.minVersion);
+    params.push(match ? parseInt(match[1]!, 10) : 0);
+    paramIndex++;
+  }
+  
+  if (filters.maxVersion) {
+    conditions.push(`v.minor <= $${paramIndex}`);
+    const match = /^0\.(\d+)/.exec(filters.maxVersion);
+    params.push(match ? parseInt(match[1]!, 10) : 99);
+    paramIndex++;
+  }
+  
+  if (filters.excludeLegacy) {
+    // Exclude legacy species
+    conditions.push(`r.name != ALL($${paramIndex})`);
+    params.push([...LEGACY_SPECIES_NAMES]);
+    paramIndex++;
+    
+    // Exclude legacy backgrounds
+    conditions.push(`b.name != ALL($${paramIndex})`);
+    params.push([...LEGACY_BACKGROUND_NAMES]);
     paramIndex++;
   }
   

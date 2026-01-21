@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN races r ON g.race_id = r.id
       LEFT JOIN backgrounds b ON g.background_id = b.id
       LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
       ${whereClause}
       GROUP BY sp.id, sp.name, sp.level
       ORDER BY game_count DESC
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN races r ON g.race_id = r.id
       LEFT JOIN backgrounds b ON g.background_id = b.id
       LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
       ${whereClause}
     `, params);
     

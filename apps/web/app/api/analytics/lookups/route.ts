@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 import { query } from '@crawl-crawler/game-data-db';
+import {
+  LEGACY_SPECIES_NAMES,
+  LEGACY_BACKGROUND_NAMES,
+} from 'dcss-game-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +24,9 @@ export async function GET() {
       gods: godsResult.rows,
       skills: skillsResult.rows,
       versions: versionsResult.rows,
+      // Include legacy data from dcss-game-data package
+      legacySpecies: [...LEGACY_SPECIES_NAMES],
+      legacyBackgrounds: [...LEGACY_BACKGROUND_NAMES],
     });
   } catch (error) {
     console.error('Lookups API error:', error);

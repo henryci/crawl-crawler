@@ -5,8 +5,8 @@ import type {
   ComboRecordsWithAnalytics,
   SpeciesAggregate,
   BackgroundAggregate,
-  LegacyConfig,
 } from './types.js';
+import type { LegacyConfig } from './legacy-config.js';
 import {
   defaultLegacyConfig,
   getSpeciesName,
@@ -188,7 +188,7 @@ function computeAggregates(inputs: AggregateInput[]): AggregateResult[] {
   return results.sort((a, b) => b.recordCount - a.recordCount);
 }
 
-function computeSpeciesStats(records: ComboRecord[], config: LegacyConfig): SpeciesAggregate[] {
+function computeSpeciesStats(records: ComboRecord[]): SpeciesAggregate[] {
   const inputs = records.map(r => ({
     key: r.species,
     score: r.score,
@@ -199,8 +199,8 @@ function computeSpeciesStats(records: ComboRecord[], config: LegacyConfig): Spec
 
   return computeAggregates(inputs).map(agg => ({
     species: agg.key,
-    speciesName: getSpeciesName(agg.key, config, agg.latestVersion),
-    isRemoved: isSpeciesRemoved(agg.key, config, agg.latestVersion),
+    speciesName: getSpeciesName(agg.key, agg.latestVersion),
+    isRemoved: isSpeciesRemoved(agg.key, agg.latestVersion),
     recordCount: agg.recordCount,
     totalScore: agg.totalScore,
     avgScore: agg.avgScore,
@@ -212,7 +212,7 @@ function computeSpeciesStats(records: ComboRecord[], config: LegacyConfig): Spec
   }));
 }
 
-function computeBackgroundStats(records: ComboRecord[], config: LegacyConfig): BackgroundAggregate[] {
+function computeBackgroundStats(records: ComboRecord[]): BackgroundAggregate[] {
   const inputs = records.map(r => ({
     key: r.background,
     score: r.score,
@@ -223,8 +223,8 @@ function computeBackgroundStats(records: ComboRecord[], config: LegacyConfig): B
 
   return computeAggregates(inputs).map(agg => ({
     background: agg.key,
-    backgroundName: getBackgroundName(agg.key, config, agg.latestVersion),
-    isRemoved: isBackgroundRemoved(agg.key, config, agg.latestVersion),
+    backgroundName: getBackgroundName(agg.key, agg.latestVersion),
+    isRemoved: isBackgroundRemoved(agg.key, agg.latestVersion),
     recordCount: agg.recordCount,
     totalScore: agg.totalScore,
     avgScore: agg.avgScore,
@@ -248,8 +248,8 @@ export function parseComboRecordsWithAnalytics(
 
   return {
     ...baseData,
-    speciesStats: computeSpeciesStats(baseData.records, config),
-    backgroundStats: computeBackgroundStats(baseData.records, config),
+    speciesStats: computeSpeciesStats(baseData.records),
+    backgroundStats: computeBackgroundStats(baseData.records),
     legacyConfig: config,
   };
 }

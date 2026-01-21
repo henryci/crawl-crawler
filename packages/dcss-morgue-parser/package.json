@@ -37,6 +37,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "dcss-game-data": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.3.0",

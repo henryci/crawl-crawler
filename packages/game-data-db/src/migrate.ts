@@ -95,26 +95,22 @@ async function resetDatabase(): Promise<void> {
     console.log('Resetting database...\n');
 
     // First, rollback all migrations (drops tables in correct order)
+    // Note: migrations table might not exist if this is a fresh database
     await ensureMigrationsTable(client);
     const applied = await getAppliedMigrations(client);
 
-    // Rollback in reverse order
+    // Rollback in reverse order - run all down migrations regardless of tracking
+    // since we want a clean slate
     for (const migration of [...migrations].reverse()) {
-      if (applied.has(migration.name)) {
-        console.log(`Rolling back: ${migration.name}`);
-        await client.query('BEGIN');
-        try {
-          await migration.down(client);
-          await client.query(
-            'DELETE FROM migrations WHERE name = $1',
-            [migration.name]
-          );
-          await client.query('COMMIT');
-          console.log(`  ✓ Rolled back ${migration.name}`);
-        } catch (error) {
-          await client.query('ROLLBACK');
-          throw error;
-        }
+      console.log(`Rolling back: ${migration.name}`);
+      await client.query('BEGIN');
+      try {
+        await migration.down(client);
+        await client.query('COMMIT');
+        console.log(`  ✓ Rolled back ${migration.name}`);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
       }
     }
 

@@ -63,11 +63,14 @@ export function extractTimeTables(content: string): TimeTablesData {
  * @returns Object mapping branch names to time statistics
  */
 function extractTimeByBranch(content: string): Record<string, BranchTimeStats> | null {
-  // Look for time table - various header formats
+  // Look for time table - only match specific time-related markers
+  // IMPORTANT: Do NOT match generic "Table legend:" as that can match
+  // the XP/Vault statistics table which has percentage columns
   const tableMarkers = [
-    'Table legend:',
     'Time is in decaauts',
     'Time is in auts',
+    'Table legend: (Time is in decaauts)',
+    'Table legend: (Time is in auts)',
   ];
 
   let tableStart = -1;
@@ -81,11 +84,16 @@ function extractTimeByBranch(content: string): Record<string, BranchTimeStats> |
     }
   }
 
-  // Try regex pattern
+  // Try regex pattern for time table header with column descriptions
+  // This matches lines like "A = Elapsed time spent in this place."
   if (tableStart === -1) {
-    const regexMatch = /^\s+A\s+B\s+C\s+D\s+E/m.exec(content);
+    const regexMatch = /A = Elapsed time spent/m.exec(content);
     if (regexMatch) {
-      tableStart = regexMatch.index;
+      // Find the start of the table legend before this line
+      const legendMatch = content.lastIndexOf('Table legend:', regexMatch.index);
+      if (legendMatch !== -1 && regexMatch.index - legendMatch < 200) {
+        tableStart = legendMatch;
+      }
     }
   }
 

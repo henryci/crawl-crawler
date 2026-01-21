@@ -44,21 +44,9 @@ export interface ComboRecord {
   serverUrl: string | null;
 }
 
-/**
- * Configuration for removed/legacy species and backgrounds
- */
-export interface LegacyConfig {
-  /** Species codes that are no longer playable */
-  removedSpecies: string[];
-  /** Background codes that are no longer playable */
-  removedBackgrounds: string[];
-  /** Combo codes (e.g., "DgBe") that are restricted even though species/background exist */
-  restrictedCombos: string[];
-  /** Human-readable names for species codes */
-  speciesNames: Record<string, string>;
-  /** Human-readable names for background codes */
-  backgroundNames: Record<string, string>;
-}
+// Import and re-export LegacyConfig from centralized package
+import type { LegacyConfig } from 'dcss-game-data';
+export type { LegacyConfig };
 
 /**
  * Aggregate stats for a species

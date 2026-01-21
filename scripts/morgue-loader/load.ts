@@ -9,11 +9,11 @@
  */
 
 import { readFileSync, readdirSync, statSync, existsSync, createReadStream } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
-import { parseMorgue, type MorgueData } from '../../packages/dcss-morgue-parser/dist/index.js';
-import { getPool, closePool } from '../../packages/game-data-db/dist/index.js';
-import type { Pool, PoolClient } from 'pg';
+import { parseMorgue, type MorgueData } from 'dcss-morgue-parser';
+import { getPool, closePool } from '@crawl-crawler/game-data-db';
+import type { Pool } from 'pg';
 
 // ============================================
 // URL Mapping
@@ -75,128 +75,30 @@ const runeCache = new Map<string, number>();
 const versionCache = new Map<string, number>();
 
 // ============================================
-// Race/Background code mappings
+// Race/Background code mappings (from centralized package)
 // ============================================
-const RACE_CODES: Record<string, string> = {
-  'Barachi': 'Ba',
-  'Centaur': 'Ce',
-  'Coglin': 'Cg',
-  'Deep Dwarf': 'DD',
-  'Deep Elf': 'DE',
-  'Demigod': 'Dg',
-  'Djinni': 'Dj',
-  'Draconian': 'Dr',
-  'Felid': 'Fe',
-  'Formicid': 'Fo',
-  'Gargoyle': 'Gr',
-  'Ghoul': 'Gh',
-  'Gnoll': 'Gn',
-  'Grotesk': 'Gt',
-  'Halfling': 'Ha',
-  'High Elf': 'HE',
-  'Hill Orc': 'HO',
-  'Human': 'Hu',
-  'Kenku': 'Ke',
-  'Kobold': 'Ko',
-  'Merfolk': 'Mf',
-  'Minotaur': 'Mi',
-  'Mountain Dwarf': 'MD',
-  'Mummy': 'Mu',
-  'Naga': 'Na',
-  'Octopode': 'Op',
-  'Ogre': 'Og',
-  'Oni': 'On',
-  'Palentonga': 'Pa',
-  'Spriggan': 'Sp',
-  'Tengu': 'Te',
-  'Troll': 'Tr',
-  'Vampire': 'Vp',
-  'Vine Stalker': 'VS',
-  // Draconian colors - all map to Dr
-  'Black Draconian': 'Dr',
-  'Green Draconian': 'Dr',
-  'Grey Draconian': 'Dr',
-  'Pale Draconian': 'Dr',
-  'Purple Draconian': 'Dr',
-  'Red Draconian': 'Dr',
-  'White Draconian': 'Dr',
-  'Yellow Draconian': 'Dr',
-  // Removed races
-  'Sludge Elf': 'SE',
-  'Grey Elf': 'GE',
-};
-
-const BACKGROUND_CODES: Record<string, string> = {
-  'Abyssal Knight': 'AK',
-  'Air Elementalist': 'AE',
-  'Alchemist': 'Al',
-  'Arcane Marksman': 'AM',
-  'Artificer': 'Ar',
-  'Assassin': 'As',
-  'Berserker': 'Be',
-  'Brigand': 'Br',
-  'Cinder Acolyte': 'CA',
-  'Chaos Knight': 'CK',
-  'Conjurer': 'Cj',
-  'Death Knight': 'DK',
-  'Delver': 'De',
-  'Earth Elementalist': 'EE',
-  'Enchanter': 'En',
-  'Fighter': 'Fi',
-  'Fire Elementalist': 'FE',
-  'Gladiator': 'Gl',
-  'Hedge Wizard': 'HW',
-  'Hexslinger': 'Hs',
-  'Hunter': 'Hn',
-  'Ice Elementalist': 'IE',
-  'Monk': 'Mo',
-  'Necromancer': 'Ne',
-  'Reaver': 'Re',
-  'Shapeshifter': 'Sh',
-  'Skald': 'Sk',
-  'Sloth Apostle': 'SA',
-  'Summoner': 'Su',
-  'Transmuter': 'Tm',
-  'Venom Mage': 'VM',
-  'Wanderer': 'Wn',
-  'Warper': 'Wp',
-  'Wizard': 'Wz',
-  // Removed backgrounds
-  'Healer': 'He',
-  'Stalker': 'St',
-  'Priest': 'Pr',
-  'Thief': 'Th',
-  'Crusader': 'Cr',
-  'Paladin': 'Pa',
-};
+import {
+  getSpeciesCode,
+  getBackgroundCode,
+  normalizeSpeciesName,
+  parseVersion as parseVersionUtil,
+  PORTAL_BRANCHES,
+} from 'dcss-game-data';
 
 // ============================================
 // Helper functions
 // ============================================
 
-function getRaceCode(race: string): string {
-  // Handle draconian colors
-  if (race.includes('Draconian')) {
-    return 'Dr';
-  }
-  return RACE_CODES[race] || race.substring(0, 2).toUpperCase();
-}
-
-function getBackgroundCode(background: string): string {
-  return BACKGROUND_CODES[background] || background.substring(0, 2);
-}
+// Use the centralized functions with local aliases for backwards compatibility
+const getRaceCode = getSpeciesCode;
 
 function parseVersion(version: string): { major: number | null; minor: number | null; isTrunk: boolean } {
-  // e.g., "0.32-a0-1165-gbb83fb5" or "0.31.0"
-  const match = /^(\d+)\.(\d+)/.exec(version);
-  if (match) {
-    return {
-      major: parseInt(match[1]!, 10),
-      minor: parseInt(match[2]!, 10),
-      isTrunk: version.includes('-a') || version.includes('trunk'),
-    };
-  }
-  return { major: null, minor: null, isTrunk: false };
+  const parsed = parseVersionUtil(version);
+  return {
+    major: parsed.major,
+    minor: parsed.minor,
+    isTrunk: parsed.isTrunk,
+  };
 }
 
 function parseFailurePercent(failure: string): number | null {
@@ -233,13 +135,8 @@ function parseDate(dateStr: string | null): string | null {
   return null;
 }
 
-// Normalize race name (handle draconian colors)
-function normalizeRace(race: string): string {
-  if (race.includes('Draconian')) {
-    return 'Draconian';
-  }
-  return race;
-}
+// Use the centralized function with a local alias for backwards compatibility
+const normalizeRace = normalizeSpeciesName;
 
 // ============================================
 // Lookup table getters/inserters
@@ -455,11 +352,8 @@ async function getOrCreateBranch(pool: Pool, name: string): Promise<number> {
     return branchCache.get(name)!;
   }
 
-  // Determine if it's a portal
-  const portalBranches = ['Sewer', 'Ossuary', 'Bailey', 'Ice Cave', 'Volcano', 
-    'Wizard Laboratory', 'Gauntlet', 'Bazaar', 'Trove', 'Desolation', 'Arena',
-    'Labyrinth', 'WizLab'];
-  const isPortal = portalBranches.includes(name);
+  // Determine if it's a portal (using centralized data)
+  const isPortal = PORTAL_BRANCHES.includes(name);
 
   const existing = await pool.query<{ id: number }>(
     'SELECT id FROM branches WHERE name = $1',

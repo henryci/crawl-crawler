@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@crawl-crawler/game-data-db';
+import {
+  LEGACY_SPECIES_NAMES,
+  LEGACY_BACKGROUND_NAMES,
+} from 'dcss-game-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +21,7 @@ interface FilterParams {
   minScore?: number;
   maxScore?: number;
   player?: string;
+  excludeLegacy?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -89,6 +94,9 @@ function parseFilters(searchParams: URLSearchParams): FilterParams {
   
   const player = sanitizeString(searchParams.get('player'));
   if (player) filters.player = player;
+  
+  const excludeLegacy = searchParams.get('excludeLegacy');
+  if (excludeLegacy === 'true') filters.excludeLegacy = true;
   
   // Limit and offset with strict bounds
   const limit = sanitizeInt(searchParams.get('limit'), 1, 1000);
@@ -182,6 +190,18 @@ function buildWhereClause(filters: FilterParams): { where: string; params: unkno
     conditions.push(`v.minor <= $${paramIndex}`);
     const match = /^0\.(\d+)/.exec(filters.maxVersion);
     params.push(match ? parseInt(match[1]!, 10) : 99);
+    paramIndex++;
+  }
+  
+  if (filters.excludeLegacy) {
+    // Exclude legacy species
+    conditions.push(`r.name != ALL($${paramIndex})`);
+    params.push([...LEGACY_SPECIES_NAMES]);
+    paramIndex++;
+    
+    // Exclude legacy backgrounds
+    conditions.push(`b.name != ALL($${paramIndex})`);
+    params.push([...LEGACY_BACKGROUND_NAMES]);
     paramIndex++;
   }
   
