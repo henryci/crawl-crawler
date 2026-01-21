@@ -582,7 +582,7 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
               {sortedData.map((game) => (
                 <TableRow key={game.id} className="hover:bg-secondary/30">
                   <TableCell className="font-mono text-gold">
-                    {game.score?.toLocaleString() ?? "—"}
+                    {game.score != null ? Number(game.score).toLocaleString() : "—"}
                   </TableCell>
                   <TableCell className="text-mana">{game.player_name}</TableCell>
                   <TableCell>
