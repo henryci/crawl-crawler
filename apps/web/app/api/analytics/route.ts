@@ -248,6 +248,7 @@ export async function GET(request: NextRequest) {
       end_date: string | null;
       version: string | null;
       title: string | null;
+      morgue_hash: string | null;
     }>(`
       SELECT 
         g.id,
@@ -262,7 +263,8 @@ export async function GET(request: NextRequest) {
         g.total_turns,
         g.end_date::text,
         v.version,
-        g.title
+        g.title,
+        g.morgue_hash
       FROM games g
       LEFT JOIN races r ON g.race_id = r.id
       LEFT JOIN backgrounds b ON g.background_id = b.id

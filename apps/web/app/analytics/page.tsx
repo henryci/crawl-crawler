@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   BarChart3,
   Loader2,
   AlertCircle,
   Filter,
+  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,6 +63,7 @@ interface Game {
   end_date: string | null;
   version: string | null;
   title: string | null;
+  morgue_hash: string | null;
 }
 
 interface Filters {
@@ -508,10 +511,17 @@ export default function AnalyticsPage() {
 }
 
 function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
+  const router = useRouter();
   const { sortedData, sortDir, handleSort, isSortedBy } = useSortable(games, {
     initialField: "score" as keyof Game,
     initialDirection: "desc",
   });
+
+  const handleRowClick = useCallback((game: Game) => {
+    if (game.morgue_hash) {
+      router.push(`/morgue?hash=${game.morgue_hash}`);
+    }
+  }, [router]);
 
   if (loading) {
     return (
@@ -576,11 +586,16 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
                 </TableHead>
                 <TableHead>Win</TableHead>
                 <TableHead>Version</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedData.map((game) => (
-                <TableRow key={game.id} className="hover:bg-secondary/30">
+                <TableRow
+                  key={game.id}
+                  className={`hover:bg-secondary/30 ${game.morgue_hash ? "cursor-pointer" : ""}`}
+                  onClick={() => handleRowClick(game)}
+                >
                   <TableCell className="font-mono text-gold">
                     {game.score != null ? Number(game.score).toLocaleString() : "—"}
                   </TableCell>
@@ -619,6 +634,11 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {game.version?.split("-")[0] ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    {game.morgue_hash && (
+                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

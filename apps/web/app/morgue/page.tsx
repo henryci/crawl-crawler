@@ -118,12 +118,42 @@ function MorgueViewerContent() {
   const router = useRouter();
 
   const urlFromParams = searchParams.get("url") || "";
+  const hashFromParams = searchParams.get("hash") || "";
   const [url, setUrl] = useState(urlFromParams);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [morgueData, setMorgueData] = useState<MorgueData | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [lastLoadedUrl, setLastLoadedUrl] = useState<string | null>(null);
+  const [lastLoadedHash, setLastLoadedHash] = useState<string | null>(null);
+
+  const fetchFromHash = useCallback(async (hash: string) => {
+    setLoadingState("loading");
+    setError(null);
+    setMorgueData(null);
+
+    try {
+      const response = await fetch(`/api/morgue/${hash}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Failed to fetch morgue data: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setParseResult({ success: true, data: result.data });
+      setMorgueData(result.data);
+      setLoadingState("success");
+      setLastLoadedHash(hash);
+      // Update URL field if the morgue has a source URL
+      if (result.data.sourceUrl) {
+        setUrl(result.data.sourceUrl);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setLoadingState("error");
+    }
+  }, []);
 
   const fetchAndParse = useCallback(async (targetUrl: string) => {
     if (!targetUrl.trim()) {
@@ -159,13 +189,22 @@ function MorgueViewerContent() {
     }
   }, []);
 
+  // Auto-load when hash param is present (priority over URL)
+  useEffect(() => {
+    if (hashFromParams && hashFromParams !== lastLoadedHash) {
+      fetchFromHash(hashFromParams);
+    }
+  }, [hashFromParams, lastLoadedHash, fetchFromHash]);
+
   // Auto-load when URL param changes (including browser back/forward navigation)
   useEffect(() => {
+    // Skip if we're loading from hash
+    if (hashFromParams) return;
     if (urlFromParams && urlFromParams !== lastLoadedUrl) {
       setUrl(urlFromParams);
       fetchAndParse(urlFromParams);
     }
-  }, [urlFromParams, lastLoadedUrl, fetchAndParse]);
+  }, [urlFromParams, lastLoadedUrl, fetchAndParse, hashFromParams]);
 
   const handleParseMorgue = async () => {
     // Update URL params when user clicks Parse
@@ -316,6 +355,22 @@ function MorgueViewerContent() {
 function MorgueDisplay({ data }: { data: MorgueData }) {
   return (
     <div className="space-y-6">
+      {/* Link to original morgue file */}
+      {data.sourceUrl && (
+        <div className="flex items-center gap-2 text-sm">
+          <FileText className="w-4 h-4 text-muted-foreground" />
+          <a
+            href={data.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-mana hover:text-mana/80 hover:underline flex items-center gap-1"
+          >
+            View original morgue file
+            <LinkIcon className="w-3 h-3" />
+          </a>
+        </div>
+      )}
+
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="bg-transparent gap-2 p-0 mb-6">
           <TabsTrigger

@@ -431,6 +431,20 @@ async function getOrCreateVersion(pool: Pool, version: string): Promise<number> 
 // Main loader function
 // ============================================
 
+/**
+ * Store the parsed morgue JSON in the lookup table.
+ * This allows retrieving the full parsed data without re-parsing.
+ */
+async function storeParsedMorgueJson(pool: Pool, data: MorgueData): Promise<void> {
+  if (!data.morgueHash) return;
+  
+  await pool.query(`
+    INSERT INTO parsed_morgue_json (morgue_hash, parsed_json)
+    VALUES ($1, $2)
+    ON CONFLICT (morgue_hash) DO NOTHING
+  `, [data.morgueHash, JSON.stringify(data)]);
+}
+
 async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promise<number | null> {
   // Check if already loaded by filename
   const existingByFilename = await pool.query<{ id: number }>(
@@ -671,6 +685,10 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
     }
 
     await client.query('COMMIT');
+    
+    // Store the parsed JSON for later retrieval (outside transaction)
+    await storeParsedMorgueJson(pool, data);
+    
     return gameId;
   } catch (error) {
     await client.query('ROLLBACK');
