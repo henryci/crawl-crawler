@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
                   selected={filters.races}
                   onChange={(races) => updateFilters(prev => ({ ...prev, races }))}
                   placeholder="All Species"
-                  className="bg-secondary/50 text-sm"
+                  className="text-sm"
                 />
               </div>
 
@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
                   selected={filters.backgrounds}
                   onChange={(backgrounds) => updateFilters(prev => ({ ...prev, backgrounds }))}
                   placeholder="All Backgrounds"
-                  className="bg-secondary/50 text-sm"
+                  className="text-sm"
                 />
               </div>
 
@@ -325,7 +325,7 @@ export default function AnalyticsPage() {
                   selected={filters.gods}
                   onChange={(gods) => updateFilters(prev => ({ ...prev, gods }))}
                   placeholder="All Gods"
-                  className="bg-secondary/50 text-sm"
+                  className="text-sm"
                 />
               </div>
 
@@ -339,7 +339,7 @@ export default function AnalyticsPage() {
                     isWin: v === "all" ? "" : v,
                   }))}
                 >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="All Games" />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,7 +360,7 @@ export default function AnalyticsPage() {
                     minVersion: v === "all" ? "" : v,
                   }))}
                 >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
@@ -382,7 +382,7 @@ export default function AnalyticsPage() {
                     maxVersion: v === "all" ? "" : v,
                   }))}
                 >
-                  <SelectTrigger className="bg-secondary/50 h-9 text-sm">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Any" />
                   </SelectTrigger>
                   <SelectContent>
@@ -404,7 +404,7 @@ export default function AnalyticsPage() {
                   placeholder="0"
                   value={filters.minRunes}
                   onChange={(e) => updateFilters(prev => ({ ...prev, minRunes: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm"
+                  className="h-9 text-sm"
                   min={0}
                   max={15}
                 />
@@ -416,7 +416,7 @@ export default function AnalyticsPage() {
                   placeholder="15"
                   value={filters.maxRunes}
                   onChange={(e) => updateFilters(prev => ({ ...prev, maxRunes: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm"
+                  className="h-9 text-sm"
                   min={0}
                   max={15}
                 />
@@ -430,7 +430,7 @@ export default function AnalyticsPage() {
                   placeholder="0"
                   value={filters.minTurns}
                   onChange={(e) => updateFilters(prev => ({ ...prev, minTurns: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm"
+                  className="h-9 text-sm"
                   min={0}
                 />
               </div>
@@ -441,7 +441,7 @@ export default function AnalyticsPage() {
                   placeholder="∞"
                   value={filters.maxTurns}
                   onChange={(e) => updateFilters(prev => ({ ...prev, maxTurns: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm"
+                  className="h-9 text-sm"
                   min={0}
                 />
               </div>
@@ -453,7 +453,7 @@ export default function AnalyticsPage() {
                   placeholder="Search by player name..."
                   value={filters.player}
                   onChange={(e) => updateFilters(prev => ({ ...prev, player: e.target.value }))}
-                  className="bg-secondary/50 h-9 text-sm"
+                  className="h-9 text-sm"
                 />
               </div>
 

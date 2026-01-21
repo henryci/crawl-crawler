@@ -161,12 +161,12 @@ function PlayerSummaryContent() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleFetchAndParse()}
-                  className="bg-secondary/50 flex-1"
+                  className="flex-1"
                 />
                 <Button
                   onClick={handleFetchAndParse}
                   disabled={loading}
-                  className="bg-health hover:bg-health/80 text-primary-foreground"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {loading ? (
                     <>

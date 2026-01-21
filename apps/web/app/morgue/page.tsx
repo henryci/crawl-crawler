@@ -218,7 +218,7 @@ function MorgueViewerContent() {
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleParseMorgue()}
                   placeholder="https://crawl.akrasiac.org/rawdata/username/morgue-username-date.txt"
-                  className="font-mono text-sm bg-secondary border-border flex-1"
+                  className="font-mono text-sm flex-1"
                 />
                 <Button
                   onClick={handleParseMorgue}

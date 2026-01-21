@@ -35,7 +35,12 @@ import { isComboRestricted as isComboRestrictedImpl, ALL_RESTRICTED_COMBO_CODES 
  * @param b - Second version string (e.g., "0.31.0")
  * @returns Comparison result
  */
-export function compareVersions(a: string, b: string): number {
+export function compareVersions(a: string | null | undefined, b: string | null | undefined): number {
+  // Handle null/undefined - treat as "unknown" which sorts first
+  if (!a && !b) return 0;
+  if (!a) return -1;
+  if (!b) return 1;
+
   // Handle versions like "0.32.1", "0.32-a0", "0.32"
   const parseVersion = (v: string): number[] => {
     // Remove suffixes like "-a0", "-b1"
@@ -56,12 +61,14 @@ export function compareVersions(a: string, b: string): number {
 
 /**
  * Check if a version is before a cutoff version.
+ * Returns false if version is null/undefined (unknown versions are not considered "before").
  *
  * @param version - Version to check
  * @param cutoff - Cutoff version
  * @returns True if version < cutoff
  */
-export function isVersionBefore(version: string, cutoff: string): boolean {
+export function isVersionBefore(version: string | null | undefined, cutoff: string): boolean {
+  if (!version) return false;
   return compareVersions(version, cutoff) < 0;
 }
 
