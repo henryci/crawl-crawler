@@ -85,8 +85,8 @@ function findStatsSection(content: string): string | null {
     return content.slice(start, end);
   }
 
-  // Look for older format marker
-  const hpMatch = /HP\s+-?\d+\/\d+/.exec(content);
+  // Look for older format marker (HP with optional colon)
+  const hpMatch = /HP:?\s+-?\d+\/\d+/.exec(content);
   if (hpMatch) {
     const start = hpMatch.index;
     const end = Math.min(start + 500, content.length);

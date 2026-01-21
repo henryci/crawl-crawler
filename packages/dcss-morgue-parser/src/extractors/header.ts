@@ -34,6 +34,8 @@ export interface HeaderData {
   gemsList: string[] | null;
   branchesVisitedCount: number | null;
   levelsSeenCount: number | null;
+  /** Whether the game was a win (escaped with the Orb) */
+  isWin: boolean | null;
 }
 
 /**
@@ -73,6 +75,7 @@ export function extractHeader(content: string): HeaderData {
     gemsList: null,
     branchesVisitedCount: null,
     levelsSeenCount: null,
+    isWin: null,
   };
 
   const lines = content.split('\n');
@@ -88,6 +91,9 @@ export function extractHeader(content: string): HeaderData {
 
   // Extract dates and began as info
   extractDatesAndBackground(lines, result);
+
+  // Extract win status from header
+  extractWinStatus(lines, result);
 
   // Extract game duration
   extractDuration(content, result);
@@ -260,6 +266,38 @@ function extractDatesAndBackground(lines: string[], result: HeaderData): void {
         result.endDate = endDateMatch[1] ?? null;
       }
     }
+  }
+}
+
+/**
+ * Extract win status from the header.
+ *
+ * A win is indicated by "Escaped with the Orb" in the header section.
+ * Deaths have various messages like "Slain by...", "Killed by...", etc.
+ * If neither is found, isWin remains null.
+ */
+function extractWinStatus(lines: string[], result: HeaderData): void {
+  for (let i = 0; i < Math.min(30, lines.length); i++) {
+    const line = lines[i];
+    if (!line) continue;
+
+    // Check for win condition - "Escaped with the Orb" appears in header
+    if (/Escaped with the Orb/i.test(line)) {
+      result.isWin = true;
+      return;
+    }
+
+    // Also check for older win format: "escaped!" at end of line
+    if (/escaped!?\s*$/i.test(line)) {
+      result.isWin = true;
+      return;
+    }
+  }
+
+  // If we found score/player info but no escape message, it's a death
+  // (The score line is always present in a valid morgue)
+  if (result.score !== null) {
+    result.isWin = false;
   }
 }
 

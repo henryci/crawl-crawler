@@ -221,6 +221,8 @@ export interface MorgueData {
   branchesVisitedCount: number | null;
   /** Number of levels seen */
   levelsSeenCount: number | null;
+  /** Whether the game was a win (escaped with the Orb) */
+  isWin: boolean | null;
 
   // Detailed sections
   /** Character stats at game end */

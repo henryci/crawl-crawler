@@ -106,16 +106,13 @@ function parseFailurePercent(failure: string): number | null {
   return match ? parseInt(match[1]!, 10) : null;
 }
 
-function isWin(data: MorgueData): boolean {
-  // A win typically has runes and the player escaped
-  // Check for common win indicators
-  if (data.runesList && data.runesList.length >= 3) {
-    // Check if they escaped (score line often indicates this)
-    // Also check if HP is positive at end (didn't die)
-    if (data.endingStats?.hpCurrent && data.endingStats.hpCurrent > 0) {
-      return true;
-    }
+function getIsWin(data: MorgueData): boolean {
+  // Use the parser's isWin field which is determined from the header text
+  // (e.g., "Escaped with the Orb" indicates a win)
+  if (data.isWin !== null) {
+    return data.isWin;
   }
+  // Fallback for very old morgues where isWin might not be detected
   return false;
 }
 
@@ -511,7 +508,7 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
       backgroundId,
       data.characterLevel,
       data.title,
-      isWin(data),
+      getIsWin(data),
       parseDate(data.endDate),
       parseDate(data.startDate),
       data.gameDurationSeconds,

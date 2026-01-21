@@ -64,7 +64,7 @@ export const PATTERNS = {
   statsGod: /God:\s*(.+?)(?:\s+\[([*]+)\])?(?:\s|$)/,
 
   // Stats patterns - older format (pre-0.17)
-  statsHpOld: /HP\s+(-?\d+)\/(\d+)/,
+  statsHpOld: /HP:?\s+(-?\d+)\/(\d+)/,
   statsMpOld: /MP\s+(\d+)\/(\d+)/,
 
   /**

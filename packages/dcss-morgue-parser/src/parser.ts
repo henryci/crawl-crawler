@@ -106,6 +106,7 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     gemsList: null,
     branchesVisitedCount: null,
     levelsSeenCount: null,
+    isWin: null,
 
     // Detailed sections
     endingStats: null,
@@ -143,6 +144,7 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     result.gemsList = header.gemsList;
     result.branchesVisitedCount = header.branchesVisitedCount;
     result.levelsSeenCount = header.levelsSeenCount;
+    result.isWin = header.isWin;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     result.parseErrors.push(`header: ${message}`);

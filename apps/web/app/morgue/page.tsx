@@ -430,7 +430,9 @@ function OverviewTab({ data }: { data: MorgueData }) {
   const stats = data.endingStats;
   const runesCollected = data.runesList?.length ?? 0;
   const gemsCollected = data.gemsList?.length ?? 0;
-  const isVictory = runesCollected >= 3;
+  // Use the parser's isWin field which is determined from the header text
+  // (e.g., "Escaped with the Orb" indicates a win)
+  const isVictory = data.isWin ?? false;
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
