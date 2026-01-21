@@ -144,8 +144,13 @@ function parseFiltersFromUrl(searchParams: URLSearchParams): Filters | null {
 /**
  * Convert filters to URL search params string
  */
-function filtersToUrlParams(filters: Filters, tab: string): string {
+function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "clear" | null): string {
   const params = new URLSearchParams();
+  
+  // If clear preset is active, add a marker so we know not to reset to defaults
+  if (preset === "clear") {
+    params.set("preset", "clear");
+  }
   
   if (filters.races.length > 0) params.set("races", filters.races.join(","));
   if (filters.backgrounds.length > 0) params.set("backgrounds", filters.backgrounds.join(","));
@@ -220,6 +225,10 @@ function AnalyticsContent() {
   
   // Initialize state from URL params
   const initialFilters = useMemo(() => {
+    // Check for explicit clear preset first
+    if (searchParams.get('preset') === 'clear') {
+      return clearFilters;
+    }
     const urlFilters = parseFiltersFromUrl(searchParams);
     return urlFilters ?? defaultFilters;
   }, []); // Only run once on mount
@@ -233,6 +242,8 @@ function AnalyticsContent() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [activePreset, setActivePreset] = useState<"default" | "clear" | null>(() => {
+    // Check for explicit clear preset first
+    if (searchParams.get('preset') === 'clear') return "clear";
     // Determine initial preset based on URL filters
     const urlFilters = parseFiltersFromUrl(searchParams);
     if (!urlFilters) return "default";
@@ -267,7 +278,7 @@ function AnalyticsContent() {
       return;
     }
     
-    const newUrlParams = filtersToUrlParams(filters, activeTab);
+    const newUrlParams = filtersToUrlParams(filters, activeTab, activePreset);
     const currentParams = searchParams.toString();
     
     // Only update URL if params actually changed
@@ -275,16 +286,28 @@ function AnalyticsContent() {
       const newUrl = newUrlParams ? `/analytics?${newUrlParams}` : '/analytics';
       router.replace(newUrl, { scroll: false });
     }
-  }, [filters, activeTab, isInitialLoad, router, searchParams]);
+  }, [filters, activeTab, activePreset, isInitialLoad, router, searchParams]);
   
   // Handle browser back/forward navigation
   useEffect(() => {
     const urlFilters = parseFiltersFromUrl(searchParams);
     const urlTab = searchParams.get('tab') ?? "games";
+    const urlPreset = searchParams.get('preset');
     
     // Update tab if it changed
     if (urlTab !== activeTab) {
       setActiveTab(urlTab);
+    }
+    
+    // Check if the URL explicitly requests the clear preset
+    if (urlPreset === "clear") {
+      if (!filtersEqual(filters, clearFilters)) {
+        setFilters(clearFilters);
+      }
+      if (activePreset !== "clear") {
+        setActivePreset("clear");
+      }
+      return;
     }
     
     // Update filters if they changed (and URL has filter params)
