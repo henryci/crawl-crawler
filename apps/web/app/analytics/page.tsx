@@ -5,10 +5,7 @@ import {
   BarChart3,
   Loader2,
   AlertCircle,
-  X,
   Filter,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -81,7 +78,8 @@ interface Filters {
   excludeLegacy: boolean;
 }
 
-const initialFilters: Filters = {
+// Clear preset - no filters applied
+const clearFilters: Filters = {
   races: [],
   backgrounds: [],
   gods: [],
@@ -96,14 +94,30 @@ const initialFilters: Filters = {
   excludeLegacy: false,
 };
 
+// Default preset - wins only, version 0.30+, exclude legacy
+const defaultFilters: Filters = {
+  races: [],
+  backgrounds: [],
+  gods: [],
+  isWin: "true",
+  minRunes: "",
+  maxRunes: "",
+  minTurns: "",
+  maxTurns: "",
+  player: "",
+  minVersion: "0.30",
+  maxVersion: "",
+  excludeLegacy: true,
+};
+
 export default function AnalyticsPage() {
   const [lookups, setLookups] = useState<Lookups | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Filters>(initialFilters);
-  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [activePreset, setActivePreset] = useState<"default" | "clear" | null>("default");
   const [activeTab, setActiveTab] = useState("games");
 
   // Load lookups on mount
@@ -160,25 +174,20 @@ export default function AnalyticsPage() {
     loadGames();
   }, [queryString]);
 
-  const hasActiveFilters = useMemo(() => {
-    return (
-      filters.races.length > 0 ||
-      filters.backgrounds.length > 0 ||
-      filters.gods.length > 0 ||
-      filters.isWin !== "" ||
-      filters.minRunes !== "" ||
-      filters.maxRunes !== "" ||
-      filters.minTurns !== "" ||
-      filters.maxTurns !== "" ||
-      filters.player !== "" ||
-      filters.minVersion !== "" ||
-      filters.maxVersion !== "" ||
-      filters.excludeLegacy
-    );
-  }, [filters]);
+  const applyPreset = useCallback((preset: "default" | "clear") => {
+    if (preset === "default") {
+      setFilters(defaultFilters);
+      setActivePreset("default");
+    } else {
+      setFilters(clearFilters);
+      setActivePreset("clear");
+    }
+  }, []);
 
-  const resetFilters = useCallback(() => {
-    setFilters(initialFilters);
+  // When user manually changes filters, clear the active preset indicator
+  const updateFilters = useCallback((updater: (prev: Filters) => Filters) => {
+    setFilters(updater);
+    setActivePreset(null);
   }, []);
 
   // Build options for multi-selects
@@ -256,42 +265,33 @@ export default function AnalyticsPage() {
 
       {/* Filters Section */}
       <Card className="bg-card border-border mb-6">
-        <CardHeader className="py-3 cursor-pointer" onClick={() => setFiltersExpanded(!filtersExpanded)}>
+        <CardHeader className="py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Filter className="w-4 h-4 text-muted-foreground" />
               <CardTitle className="text-base">Filters</CardTitle>
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="ml-2">
-                  Active
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {hasActiveFilters && (
+              <div className="flex items-center gap-1 ml-2">
                 <Button
-                  variant="ghost"
+                  variant={activePreset === "default" ? "secondary" : "ghost"}
                   size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    resetFilters();
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
+                  onClick={() => applyPreset("default")}
+                  className="h-7 text-xs"
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Reset
+                  Default
                 </Button>
-              )}
-              {filtersExpanded ? (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              )}
+                <Button
+                  variant={activePreset === "clear" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => applyPreset("clear")}
+                  className="h-7 text-xs"
+                >
+                  Clear
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
-        {filtersExpanded && (
-          <CardContent className="pt-0 pb-4">
+        <CardContent className="pt-0 pb-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Race Multi-Select */}
               <div>
@@ -299,7 +299,7 @@ export default function AnalyticsPage() {
                 <MultiSelect
                   options={raceOptions}
                   selected={filters.races}
-                  onChange={(races) => setFilters(prev => ({ ...prev, races }))}
+                  onChange={(races) => updateFilters(prev => ({ ...prev, races }))}
                   placeholder="All Species"
                   className="bg-secondary/50 text-sm"
                 />
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
                 <MultiSelect
                   options={backgroundOptions}
                   selected={filters.backgrounds}
-                  onChange={(backgrounds) => setFilters(prev => ({ ...prev, backgrounds }))}
+                  onChange={(backgrounds) => updateFilters(prev => ({ ...prev, backgrounds }))}
                   placeholder="All Backgrounds"
                   className="bg-secondary/50 text-sm"
                 />
@@ -323,7 +323,7 @@ export default function AnalyticsPage() {
                 <MultiSelect
                   options={godOptions}
                   selected={filters.gods}
-                  onChange={(gods) => setFilters(prev => ({ ...prev, gods }))}
+                  onChange={(gods) => updateFilters(prev => ({ ...prev, gods }))}
                   placeholder="All Gods"
                   className="bg-secondary/50 text-sm"
                 />
@@ -334,7 +334,7 @@ export default function AnalyticsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Outcome</label>
                 <Select
                   value={filters.isWin || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
+                  onValueChange={(v) => updateFilters(prev => ({
                     ...prev,
                     isWin: v === "all" ? "" : v,
                   }))}
@@ -355,7 +355,7 @@ export default function AnalyticsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Min Version</label>
                 <Select
                   value={filters.minVersion || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
+                  onValueChange={(v) => updateFilters(prev => ({
                     ...prev,
                     minVersion: v === "all" ? "" : v,
                   }))}
@@ -377,7 +377,7 @@ export default function AnalyticsPage() {
                 <label className="text-xs text-muted-foreground mb-1 block">Max Version</label>
                 <Select
                   value={filters.maxVersion || "all"}
-                  onValueChange={(v) => setFilters(prev => ({
+                  onValueChange={(v) => updateFilters(prev => ({
                     ...prev,
                     maxVersion: v === "all" ? "" : v,
                   }))}
@@ -403,7 +403,7 @@ export default function AnalyticsPage() {
                   type="number"
                   placeholder="0"
                   value={filters.minRunes}
-                  onChange={(e) => setFilters(prev => ({ ...prev, minRunes: e.target.value }))}
+                  onChange={(e) => updateFilters(prev => ({ ...prev, minRunes: e.target.value }))}
                   className="bg-secondary/50 h-9 text-sm"
                   min={0}
                   max={15}
@@ -415,7 +415,7 @@ export default function AnalyticsPage() {
                   type="number"
                   placeholder="15"
                   value={filters.maxRunes}
-                  onChange={(e) => setFilters(prev => ({ ...prev, maxRunes: e.target.value }))}
+                  onChange={(e) => updateFilters(prev => ({ ...prev, maxRunes: e.target.value }))}
                   className="bg-secondary/50 h-9 text-sm"
                   min={0}
                   max={15}
@@ -429,7 +429,7 @@ export default function AnalyticsPage() {
                   type="number"
                   placeholder="0"
                   value={filters.minTurns}
-                  onChange={(e) => setFilters(prev => ({ ...prev, minTurns: e.target.value }))}
+                  onChange={(e) => updateFilters(prev => ({ ...prev, minTurns: e.target.value }))}
                   className="bg-secondary/50 h-9 text-sm"
                   min={0}
                 />
@@ -440,7 +440,7 @@ export default function AnalyticsPage() {
                   type="number"
                   placeholder="∞"
                   value={filters.maxTurns}
-                  onChange={(e) => setFilters(prev => ({ ...prev, maxTurns: e.target.value }))}
+                  onChange={(e) => updateFilters(prev => ({ ...prev, maxTurns: e.target.value }))}
                   className="bg-secondary/50 h-9 text-sm"
                   min={0}
                 />
@@ -452,7 +452,7 @@ export default function AnalyticsPage() {
                 <Input
                   placeholder="Search by player name..."
                   value={filters.player}
-                  onChange={(e) => setFilters(prev => ({ ...prev, player: e.target.value }))}
+                  onChange={(e) => updateFilters(prev => ({ ...prev, player: e.target.value }))}
                   className="bg-secondary/50 h-9 text-sm"
                 />
               </div>
@@ -462,7 +462,7 @@ export default function AnalyticsPage() {
                 <Checkbox
                   id="exclude-legacy"
                   checked={filters.excludeLegacy}
-                  onCheckedChange={(checked) => setFilters(prev => ({
+                  onCheckedChange={(checked) => updateFilters(prev => ({
                     ...prev,
                     excludeLegacy: checked === true,
                   }))}
@@ -476,7 +476,6 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </CardContent>
-        )}
       </Card>
 
       {/* Tabs for different views */}
