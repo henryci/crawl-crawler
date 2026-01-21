@@ -36,6 +36,7 @@ import { useSortable } from "@/hooks/use-sortable";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
 import { StatsOverview } from "@/components/analytics/stats-overview";
+import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -675,6 +676,9 @@ function AnalyticsContent() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-secondary/50">
           <TabsTrigger value="games">Games ({totalCount.toLocaleString()})</TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1.5">
+            <span className="hidden sm:inline">✨</span> Insights
+          </TabsTrigger>
           <TabsTrigger value="stats">Statistics</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="spells">Spells</TabsTrigger>
@@ -682,6 +686,10 @@ function AnalyticsContent() {
 
         <TabsContent value="games">
           <GamesTable games={games} loading={loading} />
+        </TabsContent>
+
+        <TabsContent value="insights">
+          <AggregationBuilder queryString={queryString} />
         </TabsContent>
 
         <TabsContent value="stats">
