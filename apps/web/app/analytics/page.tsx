@@ -44,6 +44,7 @@ import { StatsOverview } from "@/components/analytics/stats-overview";
 import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getSpeciesCode, getBackgroundCode } from "dcss-game-data";
 
 interface Lookups {
   races: { id: number; name: string; code: string }[];
@@ -850,7 +851,7 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
                   </TableCell>
                   <TableCell className="text-mana">{game.player_name}</TableCell>
                   <TableCell>
-                    <div className="font-mono text-health">{game.race?.substring(0, 2)}{game.background?.substring(0, 2)}</div>
+                    <div className="font-mono text-health">{game.race ? getSpeciesCode(game.race) : ''}{game.background ? getBackgroundCode(game.background) : ''}</div>
                     <div className="text-xs text-muted-foreground">
                       {game.race} {game.background}
                     </div>
