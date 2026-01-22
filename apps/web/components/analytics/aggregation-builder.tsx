@@ -10,9 +10,6 @@ import {
   ChevronDown,
   BarChart3,
   Table2,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Sparkles,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -221,25 +218,6 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
     
     return String(value);
   };
-
-  // Get trend indicator for metrics
-  const getTrendIndicator = (key: string, value: number, maxValue: number) => {
-    if (!maxValue) return null;
-    const percentage = (value / maxValue) * 100;
-    
-    if (percentage >= 80) return <TrendingUp className="w-3 h-3 text-health" />;
-    if (percentage <= 20) return <TrendingDown className="w-3 h-3 text-danger" />;
-    return <Minus className="w-3 h-3 text-muted-foreground" />;
-  };
-
-  // Calculate max values for trend indicators
-  const maxValues = useMemo(() => {
-    const maxes: Record<string, number> = {};
-    for (const metric of selectedMetrics) {
-      maxes[metric] = Math.max(...results.map(r => Number(r[metric]) || 0));
-    }
-    return maxes;
-  }, [results, selectedMetrics]);
 
   return (
     <div className="space-y-4">
@@ -476,12 +454,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
                                 header.key === "max_score" && "text-gold",
                               )}
                             >
-                              <div className="flex items-center gap-2">
-                                {formatValue(header.key, value)}
-                                {header.isMetric && header.key !== "win_rate" && (
-                                  getTrendIndicator(header.key, numValue, maxValues[header.key] || 0)
-                                )}
-                              </div>
+                              {formatValue(header.key, value)}
                             </TableCell>
                           );
                         })}
