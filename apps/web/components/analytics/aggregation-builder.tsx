@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 const DIMENSIONS = [
   { value: "species", label: "Species", icon: "🐉" },
   { value: "background", label: "Background", icon: "⚔️" },
+  { value: "combo", label: "Combo", icon: "🎲" },
   { value: "god", label: "God", icon: "✨" },
   { value: "version", label: "Version", icon: "📦" },
   { value: "is_win", label: "Outcome", icon: "🏆" },

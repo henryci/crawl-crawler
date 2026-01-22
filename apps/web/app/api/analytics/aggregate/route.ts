@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALLOWED_DIMENSIONS = {
   species: { select: 'r.name', alias: 'species', join: 'races r ON g.race_id = r.id' },
   background: { select: 'b.name', alias: 'background', join: 'backgrounds b ON g.background_id = b.id' },
+  combo: { select: 'CONCAT(r.code, b.code)', alias: 'combo', join: null }, // Uses races and backgrounds joins
   god: { select: 'COALESCE(god.name, \'Atheist\')', alias: 'god', join: 'gods god ON g.god_id = god.id' },
   version: { select: 'CONCAT(\'0.\', v.minor)', alias: 'version', join: 'game_versions v ON g.version_id = v.id' },
   is_win: { select: 'g.is_win', alias: 'is_win', join: null },
