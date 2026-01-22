@@ -42,6 +42,7 @@ import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
 import { StatsOverview } from "@/components/analytics/stats-overview";
 import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
+import { TrendsChart } from "@/components/analytics/trends-chart";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getSpeciesCode, getBackgroundCode } from "dcss-game-data";
@@ -149,16 +150,10 @@ function parseFiltersFromUrl(searchParams: URLSearchParams): Filters | null {
 }
 
 /**
- * Convert filters to URL search params string
+ * Convert filters to query params (shared between URL and API calls)
  */
-function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "clear" | null): string {
+function filtersToQueryParams(filters: Filters): URLSearchParams {
   const params = new URLSearchParams();
-  
-  // If clear preset is active, add a marker so we know not to reset to defaults
-  if (preset === "clear") {
-    params.set("preset", "clear");
-  }
-  
   if (filters.races.length > 0) params.set("races", filters.races.join(","));
   if (filters.backgrounds.length > 0) params.set("backgrounds", filters.backgrounds.join(","));
   if (filters.gods.length > 0) params.set("gods", filters.gods.join(","));
@@ -171,6 +166,20 @@ function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "
   if (filters.minVersion) params.set("minVersion", filters.minVersion);
   if (filters.maxVersion) params.set("maxVersion", filters.maxVersion);
   if (filters.excludeLegacy) params.set("excludeLegacy", "true");
+  return params;
+}
+
+/**
+ * Convert filters to URL search params string (includes tab and preset)
+ */
+function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "clear" | null): string {
+  const params = filtersToQueryParams(filters);
+  
+  // If clear preset is active, add a marker so we know not to reset to defaults
+  if (preset === "clear") {
+    params.set("preset", "clear");
+  }
+  
   if (tab !== "games") params.set("tab", tab);
   
   return params.toString();
@@ -336,21 +345,9 @@ function AnalyticsContent() {
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Build query string from filters
+  // Build query string from filters (reuse shared function)
   const queryString = useMemo(() => {
-    const params = new URLSearchParams();
-    if (filters.races.length > 0) params.set("races", filters.races.join(","));
-    if (filters.backgrounds.length > 0) params.set("backgrounds", filters.backgrounds.join(","));
-    if (filters.gods.length > 0) params.set("gods", filters.gods.join(","));
-    if (filters.isWin) params.set("isWin", filters.isWin);
-    if (filters.minRunes) params.set("minRunes", filters.minRunes);
-    if (filters.maxRunes) params.set("maxRunes", filters.maxRunes);
-    if (filters.minTurns) params.set("minTurns", filters.minTurns);
-    if (filters.maxTurns) params.set("maxTurns", filters.maxTurns);
-    if (filters.player) params.set("player", filters.player);
-    if (filters.minVersion) params.set("minVersion", filters.minVersion);
-    if (filters.maxVersion) params.set("maxVersion", filters.maxVersion);
-    if (filters.excludeLegacy) params.set("excludeLegacy", "true");
+    const params = filtersToQueryParams(filters);
     params.set("limit", "100");
     return params.toString();
   }, [filters]);
@@ -693,12 +690,19 @@ function AnalyticsContent() {
               Games
             </TabsTrigger>
           <TabsTrigger
-            value="insights"
+            value="deep-dive"
             className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
           >
             <Sparkles className="w-4 h-4 mr-2" />
             Deep Dive
           </TabsTrigger>
+            <TabsTrigger
+              value="trends"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Trends
+            </TabsTrigger>
             <TabsTrigger
               value="stats"
               className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
@@ -740,8 +744,12 @@ function AnalyticsContent() {
           <GamesTable games={games} loading={loading} />
         </TabsContent>
 
-        <TabsContent value="insights">
+        <TabsContent value="deep-dive">
           <AggregationBuilder queryString={queryString} />
+        </TabsContent>
+
+        <TabsContent value="trends">
+          <TrendsChart queryString={queryString} />
         </TabsContent>
 
         <TabsContent value="stats">

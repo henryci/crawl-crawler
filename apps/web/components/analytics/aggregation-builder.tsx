@@ -30,35 +30,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import {
+  DIMENSIONS,
+  METRICS,
+  AGGREGATION_METRICS,
+  MAX_DIMENSIONS,
+  MAX_METRICS,
+  type DimensionKey,
+  type MetricKey,
+} from "@/lib/analytics-types";
 
-// Available dimensions for grouping
-const DIMENSIONS = [
-  { value: "species", label: "Species", icon: "🐉" },
-  { value: "background", label: "Background", icon: "⚔️" },
-  { value: "combo", label: "Combo", icon: "🎲" },
-  { value: "god", label: "God", icon: "✨" },
-  { value: "version", label: "Version", icon: "📦" },
-  { value: "is_win", label: "Outcome", icon: "🏆" },
-  { value: "runes", label: "Rune Count", icon: "💎" },
-  { value: "character_level", label: "Character Level", icon: "📈" },
-] as const;
+// Get dimension options for the UI
+const DIMENSION_OPTIONS = (Object.keys(DIMENSIONS) as DimensionKey[]).map((key) => ({
+  value: key,
+  label: DIMENSIONS[key].label,
+  icon: DIMENSIONS[key].icon,
+}));
 
-// Available metrics for aggregation
-const METRICS = [
-  { value: "count", label: "Game Count", description: "Total number of games" },
-  { value: "wins", label: "Win Count", description: "Number of wins" },
-  { value: "win_rate", label: "Win Rate %", description: "Percentage of games won" },
-  { value: "avg_score", label: "Avg Score", description: "Average score" },
-  { value: "max_score", label: "Max Score", description: "Highest score" },
-  { value: "avg_turns", label: "Avg Turns", description: "Average game length in turns" },
-  { value: "avg_runes", label: "Avg Runes", description: "Average runes collected" },
-  { value: "avg_xl", label: "Avg XL", description: "Average character level" },
-] as const;
-
-type DimensionValue = (typeof DIMENSIONS)[number]["value"];
-type MetricValue = (typeof METRICS)[number]["value"];
+// Get metric options for the UI (only aggregation metrics)
+const METRIC_OPTIONS = AGGREGATION_METRICS.map((key) => ({
+  value: key,
+  label: METRICS[key].label,
+  description: METRICS[key].description,
+}));
 
 interface AggregationResult {
   [key: string]: unknown;
@@ -79,8 +74,8 @@ interface AggregationBuilderProps {
 
 export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   // Query configuration state
-  const [selectedDimensions, setSelectedDimensions] = useState<DimensionValue[]>(["species"]);
-  const [selectedMetrics, setSelectedMetrics] = useState<MetricValue[]>(["count", "win_rate"]);
+  const [selectedDimensions, setSelectedDimensions] = useState<DimensionKey[]>(["species"]);
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(["count", "win_rate"]);
   const [sortBy, setSortBy] = useState<string>("count");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState<number>(25);
@@ -139,20 +134,20 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   }, [executeQuery]);
 
   // Handle dimension toggle
-  const toggleDimension = (dim: DimensionValue) => {
+  const toggleDimension = (dim: DimensionKey) => {
     setSelectedDimensions(prev => {
       if (prev.includes(dim)) {
         return prev.filter(d => d !== dim);
       }
-      if (prev.length >= 3) {
-        return prev; // Max 3 dimensions
+      if (prev.length >= MAX_DIMENSIONS) {
+        return prev; // Max dimensions reached
       }
       return [...prev, dim];
     });
   };
 
   // Handle metric toggle
-  const toggleMetric = (metric: MetricValue) => {
+  const toggleMetric = (metric: MetricKey) => {
     setSelectedMetrics(prev => {
       if (prev.includes(metric)) {
         // Don't allow removing the last metric
@@ -164,8 +159,8 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
         }
         return prev.filter(m => m !== metric);
       }
-      if (prev.length >= 6) {
-        return prev; // Max 6 metrics
+      if (prev.length >= MAX_METRICS) {
+        return prev; // Max metrics reached
       }
       return [...prev, metric];
     });
@@ -176,19 +171,19 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
     const headers: { key: string; label: string; isMetric: boolean }[] = [];
     
     for (const dim of selectedDimensions) {
-      const dimConfig = DIMENSIONS.find(d => d.value === dim);
+      const dimConfig = DIMENSIONS[dim];
       headers.push({
         key: dim,
-        label: dimConfig?.label || dim,
+        label: dimConfig.label,
         isMetric: false,
       });
     }
     
     for (const metric of selectedMetrics) {
-      const metricConfig = METRICS.find(m => m.value === metric);
+      const metricConfig = METRICS[metric];
       headers.push({
         key: metric,
-        label: metricConfig?.label || metric,
+        label: metricConfig.label,
         isMetric: true,
       });
     }
@@ -239,12 +234,12 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
             <div className="flex items-center gap-2 mb-2">
               <Layers className="w-4 h-4 text-mana" />
               <span className="text-sm font-medium">Group By</span>
-              <span className="text-xs text-muted-foreground">(max 3)</span>
+              <span className="text-xs text-muted-foreground">(max {MAX_DIMENSIONS})</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {DIMENSIONS.map((dim) => {
+              {DIMENSION_OPTIONS.map((dim) => {
                 const isSelected = selectedDimensions.includes(dim.value);
-                const isDisabled = !isSelected && selectedDimensions.length >= 3;
+                const isDisabled = !isSelected && selectedDimensions.length >= MAX_DIMENSIONS;
                 return (
                   <Button
                     key={dim.value}
@@ -271,12 +266,12 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
             <div className="flex items-center gap-2 mb-2">
               <Calculator className="w-4 h-4 text-gold" />
               <span className="text-sm font-medium">Metrics</span>
-              <span className="text-xs text-muted-foreground">(max 6)</span>
+              <span className="text-xs text-muted-foreground">(max {MAX_METRICS})</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {METRICS.map((metric) => {
+              {METRIC_OPTIONS.map((metric) => {
                 const isSelected = selectedMetrics.includes(metric.value);
-                const isDisabled = !isSelected && selectedMetrics.length >= 6;
+                const isDisabled = !isSelected && selectedMetrics.length >= MAX_METRICS;
                 const isOnlyOne = isSelected && selectedMetrics.length === 1;
                 return (
                   <Button
@@ -309,22 +304,16 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedMetrics.map((metric) => {
-                    const metricConfig = METRICS.find(m => m.value === metric);
-                    return (
-                      <SelectItem key={metric} value={metric} className="text-xs">
-                        {metricConfig?.label || metric}
-                      </SelectItem>
-                    );
-                  })}
-                  {selectedDimensions.map((dim) => {
-                    const dimConfig = DIMENSIONS.find(d => d.value === dim);
-                    return (
-                      <SelectItem key={dim} value={dim} className="text-xs">
-                        {dimConfig?.label || dim}
-                      </SelectItem>
-                    );
-                  })}
+                  {selectedMetrics.map((metric) => (
+                    <SelectItem key={metric} value={metric} className="text-xs">
+                      {METRICS[metric].label}
+                    </SelectItem>
+                  ))}
+                  {selectedDimensions.map((dim) => (
+                    <SelectItem key={dim} value={dim} className="text-xs">
+                      {DIMENSIONS[dim].label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Button
@@ -495,8 +484,8 @@ function AggregationChart({
   formatValue,
 }: {
   results: AggregationResult[];
-  dimensions: DimensionValue[];
-  metrics: MetricValue[];
+  dimensions: DimensionKey[];
+  metrics: MetricKey[];
   formatValue: (key: string, value: unknown) => string;
 }) {
   // Use the first metric for the chart
@@ -512,15 +501,13 @@ function AggregationChart({
     }).join(" / ");
   };
 
-  const metricConfig = METRICS.find(m => m.value === primaryMetric);
+  const metricConfig = METRICS[primaryMetric];
 
   return (
     <Card className="bg-card border-border">
       <CardHeader className="py-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          {metricConfig?.label || primaryMetric} by {dimensions.map(d => 
-            DIMENSIONS.find(dim => dim.value === d)?.label || d
-          ).join(", ")}
+          {metricConfig.label} by {dimensions.map(d => DIMENSIONS[d].label).join(", ")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
