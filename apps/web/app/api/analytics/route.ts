@@ -217,18 +217,22 @@ export async function GET(request: NextRequest) {
     const filters = parseFilters(searchParams);
     const { where, params } = buildWhereClause(filters);
     
-    // Get total count
-    const countResult = await query<{ count: string }>(`
-      SELECT COUNT(*) as count
-      FROM games g
-      LEFT JOIN races r ON g.race_id = r.id
-      LEFT JOIN backgrounds b ON g.background_id = b.id
-      LEFT JOIN gods god ON g.god_id = god.id
-      LEFT JOIN game_versions v ON g.version_id = v.id
-      ${where}
-    `, params);
+    // Get filtered count and total count in parallel
+    const [countResult, totalGamesResult] = await Promise.all([
+      query<{ count: string }>(`
+        SELECT COUNT(*) as count
+        FROM games g
+        LEFT JOIN races r ON g.race_id = r.id
+        LEFT JOIN backgrounds b ON g.background_id = b.id
+        LEFT JOIN gods god ON g.god_id = god.id
+        LEFT JOIN game_versions v ON g.version_id = v.id
+        ${where}
+      `, params),
+      query<{ count: string }>('SELECT COUNT(*) as count FROM games'),
+    ]);
     
     const totalCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
+    const totalGamesCount = parseInt(totalGamesResult.rows[0]?.count ?? '0', 10);
     
     // Get games with pagination
     const limitParamIndex = params.length + 1;
@@ -278,6 +282,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       games: gamesResult.rows,
       totalCount,
+      totalGamesCount,
       limit: filters.limit,
       offset: filters.offset,
     });

@@ -8,6 +8,11 @@ import {
   AlertCircle,
   Filter,
   ExternalLink,
+  Gamepad2,
+  Sparkles,
+  TrendingUp,
+  BookOpen,
+  Wand2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -239,6 +244,7 @@ function AnalyticsContent() {
   const [lookups, setLookups] = useState<Lookups | null>(null);
   const [games, setGames] = useState<Game[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [totalGamesCount, setTotalGamesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -358,6 +364,7 @@ function AnalyticsContent() {
         const data = await response.json();
         setGames(data.games);
         setTotalCount(data.totalCount);
+        setTotalGamesCount(data.totalGamesCount ?? data.totalCount);
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
@@ -452,7 +459,7 @@ function AnalyticsContent() {
     <PageWrapper>
       <PageHeader
         title="Game Analytics"
-        subtitle={`${totalCount.toLocaleString()} games in database`}
+        subtitle="Explore game data and statistics"
         icon={BarChart3}
         variant="mana"
       />
@@ -672,17 +679,61 @@ function AnalyticsContent() {
           </CardContent>
       </Card>
 
-      {/* Tabs for different views */}
+      {/* Results Count and Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-secondary/50">
-          <TabsTrigger value="games">Games ({totalCount.toLocaleString()})</TabsTrigger>
-          <TabsTrigger value="insights" className="gap-1.5">
-            <span className="hidden sm:inline">✨</span> Insights
-          </TabsTrigger>
-          <TabsTrigger value="stats">Statistics</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-          <TabsTrigger value="spells">Spells</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Tabs */}
+          <TabsList className="bg-transparent gap-2 p-0">
+            <TabsTrigger
+              value="games"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <Gamepad2 className="w-4 h-4 mr-2" />
+              Games
+            </TabsTrigger>
+            <TabsTrigger
+              value="insights"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Insights
+            </TabsTrigger>
+            <TabsTrigger
+              value="stats"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Statistics
+            </TabsTrigger>
+            <TabsTrigger
+              value="skills"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Skills
+            </TabsTrigger>
+            <TabsTrigger
+              value="spells"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+            >
+              <Wand2 className="w-4 h-4 mr-2" />
+              Spells
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Results Count */}
+          <div className="flex items-center gap-2 px-4 py-2 bg-mana/10 border border-mana/30 rounded-lg">
+            <Gamepad2 className="w-5 h-5 text-mana" />
+            <span className="text-2xl font-bold text-mana font-mono">{totalCount.toLocaleString()}</span>
+            <span className="text-sm text-muted-foreground">
+              {totalGamesCount > 0 && totalCount !== totalGamesCount ? (
+                <>matches out of <span className="font-mono text-foreground">{totalGamesCount.toLocaleString()}</span> total</>
+              ) : (
+                "games in database"
+              )}
+            </span>
+          </div>
+        </div>
 
         <TabsContent value="games">
           <GamesTable games={games} loading={loading} />
