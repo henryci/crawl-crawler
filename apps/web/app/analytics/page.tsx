@@ -692,13 +692,13 @@ function AnalyticsContent() {
               <Gamepad2 className="w-4 h-4 mr-2" />
               Games
             </TabsTrigger>
-            <TabsTrigger
-              value="insights"
-              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Insights
-            </TabsTrigger>
+          <TabsTrigger
+            value="insights"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Deep Dive
+          </TabsTrigger>
             <TabsTrigger
               value="stats"
               className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
