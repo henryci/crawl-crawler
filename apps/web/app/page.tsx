@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { FileText, Trophy, TrendingUp, MessageSquare, ArrowRight, Terminal, User } from "lucide-react"
+import { FileText, Trophy, Info, ArrowRight, Terminal, User } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
@@ -12,14 +12,6 @@ const tools = [
     icon: FileText,
     color: "text-health",
     borderColor: "border-health/30 hover:border-health/50",
-  },
-  {
-    title: "Streak Explorer",
-    description: "Search and explore player win streaks across the community.",
-    href: "/streaks",
-    icon: TrendingUp,
-    color: "text-gold",
-    borderColor: "border-gold/30 hover:border-gold/50",
   },
   {
     title: "Records Explorer",
@@ -38,10 +30,10 @@ const tools = [
     borderColor: "border-health/30 hover:border-health/50",
   },
   {
-    title: "Data Format Appeal",
-    description: "An open letter to the DCSS dev team about data accessibility.",
-    href: "/appeal",
-    icon: MessageSquare,
+    title: "About",
+    description: "Learn about CrawlCrawler, how it works, and where the data comes from.",
+    href: "/about",
+    icon: Info,
     color: "text-special",
     borderColor: "border-special/30 hover:border-special/50",
   },
