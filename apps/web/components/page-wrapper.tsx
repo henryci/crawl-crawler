@@ -11,7 +11,7 @@ interface PageWrapperProps {
  */
 export function PageWrapper({ children, className = "" }: PageWrapperProps) {
   return (
-    <div className="relative min-h-[calc(100vh-8rem)]">
+    <div className="relative flex-1">
       <div className="absolute inset-0 texture-noise pointer-events-none" />
       <div className={`relative mx-auto max-w-7xl px-4 py-12 lg:px-8 ${className}`}>
         {children}

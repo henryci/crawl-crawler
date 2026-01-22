@@ -2,7 +2,7 @@ import { DungeonMap } from "@/components/dungeon-map"
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-[calc(100vh-140px)] flex items-center justify-center">
+    <div className="relative flex-1 flex items-center justify-center">
       {/* Dungeon background texture */}
       <div className="absolute inset-0 texture-noise pointer-events-none" />
       

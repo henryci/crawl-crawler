@@ -51,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased min-h-screen flex flex-col">
+      <body className="font-sans antialiased min-h-dvh flex flex-col">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
