@@ -23,7 +23,6 @@ export const analyticsTabTooltips = {
   games: "Browse individual games matching your filters",
   deepDive: "Build custom aggregations to analyze patterns in the data",
   trends: "See how species, backgrounds, and gods change over game versions",
-  statistics: "View summary statistics and distributions",
   skills: "Explore skill training patterns across different builds",
   spells: "Discover which spells are most commonly used",
 } as const;

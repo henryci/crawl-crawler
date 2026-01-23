@@ -42,7 +42,6 @@ import { SortIcon } from "@/components/sort-icon";
 import { useSortable } from "@/hooks/use-sortable";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
-import { StatsOverview } from "@/components/analytics/stats-overview";
 import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
 import { TrendsChart } from "@/components/analytics/trends-chart";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -724,18 +723,6 @@ function AnalyticsContent() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <TabsTrigger
-                    value="stats"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Statistics
-                  </TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">{analyticsTabTooltips.statistics}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger
                     value="skills"
                     className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/20 data-[state=active]:border-mana/50 px-4 transition-colors"
                   >
@@ -786,9 +773,6 @@ function AnalyticsContent() {
           <TrendsChart queryString={queryString} />
         </TabsContent>
 
-        <TabsContent value="stats">
-          <StatsOverview queryString={queryString} totalCount={totalCount} />
-        </TabsContent>
 
         <TabsContent value="skills">
           <SkillsHeatmap queryString={queryString} />
