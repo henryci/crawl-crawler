@@ -1,5 +1,5 @@
 import { ExternalLink, AlertTriangle, HelpCircle, Link2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { PageWrapper } from "@/components/page-wrapper";
 import {
   Accordion,
@@ -40,14 +40,14 @@ export default function AboutPage() {
       <ServiceStats />
 
       {/* FAQ Section */}
-      <Card className="bg-card border-border mb-6">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <HelpCircle className="w-5 h-5 text-primary" />
-            Frequently Asked Questions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-2">
+      <Card className="bg-card border-border mb-6 py-0 gap-0">
+        <div className="border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2 text-base font-semibold">
+            <HelpCircle className="w-4 h-4 text-primary" />
+            Infrequently Asked Questions
+          </div>
+        </div>
+        <div className="px-4 py-2">
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="what">
               <AccordionTrigger>What is this?</AccordionTrigger>
@@ -93,19 +93,19 @@ export default function AboutPage() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Related Projects */}
-      <Card className="bg-card border-border mb-6">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Link2 className="w-5 h-5 text-mana" />
+      <Card className="bg-card border-border mb-6 py-0 gap-0">
+        <div className="border-b border-border px-4 py-2">
+          <div className="flex items-center gap-2 text-base font-semibold">
+            <Link2 className="w-4 h-4 text-mana" />
             Other DCSS Projects
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-6">
-          <p className="text-sm text-muted-foreground mb-4">
+          </div>
+        </div>
+        <div className="px-4 py-3">
+          <p className="text-sm text-muted-foreground mb-3">
             CrawlCrawler isn&apos;t the only community project for DCSS. Check out these other
             excellent tools:
           </p>
@@ -144,7 +144,7 @@ export default function AboutPage() {
               <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </a>
           </div>
-        </CardContent>
+        </div>
       </Card>
     </PageWrapper>
   );

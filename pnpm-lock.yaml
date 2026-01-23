@@ -286,6 +286,25 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  scripts/combo-records-updater:
+    dependencies:
+      '@crawl-crawler/game-data-db':
+        specifier: workspace:*
+        version: link:../../packages/game-data-db
+      dcss-combo-records-parser:
+        specifier: workspace:*
+        version: link:../../packages/dcss-combo-records-parser
+    devDependencies:
+      '@types/node':
+        specifier: ^22.19.7
+        version: 22.19.7
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   scripts/morgue-loader:
     dependencies:
       '@crawl-crawler/game-data-db':
@@ -1760,6 +1779,9 @@ packages:
 
   '@types/node@22.19.3':
     resolution: {integrity: sha512-1N9SBnWYOJTrNZCdh/yJE+t910Y128BoyY+zBLWhL3r0TYzlTmFdXrPwHL9DyFZmlEXNQQolTZh3KHV31QDhyA==}
+
+  '@types/node@22.19.7':
+    resolution: {integrity: sha512-MciR4AKGHWl7xwxkBa6xUGxQJ4VBOmPTF7sL+iGzuahOFaO0jHCsuEfS80pan1ef4gWId1oWOweIhrDEYLuaOw==}
 
   '@types/pg@8.16.0':
     resolution: {integrity: sha512-RmhMd/wD+CF8Dfo+cVIy3RR5cl8CyfXQ0tGgW6XBL8L4LM/UTEbNXYRbLwU6w+CgrKBNbrQWt4FUtTfaU5jSYQ==}
@@ -3891,6 +3913,10 @@ snapshots:
       undici-types: 6.21.0
 
   '@types/node@22.19.3':
+    dependencies:
+      undici-types: 6.21.0
+
+  '@types/node@22.19.7':
     dependencies:
       undici-types: 6.21.0
 

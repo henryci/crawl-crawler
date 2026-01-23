@@ -2,8 +2,9 @@ import { getClient, closePool } from './connection.js';
 import * as migration001 from './migrations/001_initial_schema.js';
 import * as migration002 from './migrations/002_add_morgue_hash_and_url.js';
 import * as migration003 from './migrations/003_add_parsed_morgue_json.js';
+import * as migration004 from './migrations/004_add_service_metadata.js';
 
-const migrations = [migration001, migration002, migration003];
+const migrations = [migration001, migration002, migration003, migration004];
 
 async function ensureMigrationsTable(client: import('pg').PoolClient): Promise<void> {
   await client.query(`

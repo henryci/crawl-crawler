@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Loader2, Trophy, Calendar } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Database, Loader2 } from "lucide-react";
 
 interface ServiceData {
   streakGamesCount: number | null;
-  comboRecordsLastUpdated: string | null;
+  streakDownloadDate: string | null;
+  comboRecordsDownloadDate: string | null;
   loading: boolean;
   error: string | null;
 }
@@ -14,7 +15,8 @@ interface ServiceData {
 export function ServiceStats() {
   const [data, setData] = useState<ServiceData>({
     streakGamesCount: null,
-    comboRecordsLastUpdated: null,
+    streakDownloadDate: null,
+    comboRecordsDownloadDate: null,
     loading: true,
     error: null,
   });
@@ -22,38 +24,18 @@ export function ServiceStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch streak games count from analytics API
-        const [analyticsRes, comboRecordsRes] = await Promise.all([
-          fetch("/api/analytics?limit=0"),
-          fetch("/data/combo-records.json"),
-        ]);
+        const response = await fetch("/api/service-metadata");
 
-        let streakGamesCount: number | null = null;
-        let comboRecordsLastUpdated: string | null = null;
-
-        if (analyticsRes.ok) {
-          const analyticsData = await analyticsRes.json();
-          streakGamesCount = analyticsData.totalGamesCount ?? null;
+        if (!response.ok) {
+          throw new Error("Failed to fetch service metadata");
         }
 
-        if (comboRecordsRes.ok) {
-          const comboData = await comboRecordsRes.json();
-          // Get the most recent date from the records
-          if (comboData.records && comboData.records.length > 0) {
-            const dates = comboData.records
-              .map((r: { date?: string }) => r.date)
-              .filter(Boolean)
-              .sort()
-              .reverse();
-            if (dates.length > 0) {
-              comboRecordsLastUpdated = dates[0];
-            }
-          }
-        }
+        const result = await response.json();
 
         setData({
-          streakGamesCount,
-          comboRecordsLastUpdated,
+          streakGamesCount: result.totalGamesCount ?? null,
+          streakDownloadDate: result.metadata?.streak_download_date?.value ?? null,
+          comboRecordsDownloadDate: result.metadata?.combo_records_download_date?.value ?? null,
           loading: false,
           error: null,
         });
@@ -73,9 +55,9 @@ export function ServiceStats() {
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
+        month: "short",
         day: "numeric",
+        year: "numeric",
       });
     } catch {
       return dateStr;
@@ -87,50 +69,44 @@ export function ServiceStats() {
   };
 
   return (
-    <Card className="bg-card border-border mb-6">
-      <CardHeader className="border-b border-border">
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <Database className="w-5 h-5 text-health" />
+    <Card className="bg-card border-border mb-6 py-0 gap-0">
+      <div className="border-b border-border px-4 py-2">
+        <div className="flex items-center gap-2 text-base font-semibold">
+          <Database className="w-4 h-4 text-health" />
           Service Information
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="py-6">
+        </div>
+      </div>
+      <div className="px-4 py-2">
         {data.loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading...</span>
           </div>
         ) : data.error ? (
-          <p className="text-sm text-muted-foreground text-center py-4">{data.error}</p>
+          <p className="text-sm text-muted-foreground">{data.error}</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* Streak Games Count */}
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy className="w-4 h-4 text-gold" />
-                <h3 className="font-medium text-foreground">Streak Games</h3>
-              </div>
-              <p className="text-2xl font-bold text-primary">
+          <div className="grid grid-cols-3 gap-4 text-sm text-center">
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Streak Games</p>
+              <p className="text-foreground font-medium">
                 {data.streakGamesCount !== null ? formatNumber(data.streakGamesCount) : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total games from verified winning streaks
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Streaks Updated</p>
+              <p className="text-foreground font-medium">
+                {data.streakDownloadDate ? formatDate(data.streakDownloadDate) : "—"}
               </p>
             </div>
-
-            {/* Combo Records Last Updated */}
-            <div className="p-4 rounded-lg bg-secondary/30 border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-4 h-4 text-mana" />
-                <h3 className="font-medium text-foreground">Combo Records</h3>
-              </div>
-              <p className="text-2xl font-bold text-primary">
-                {data.comboRecordsLastUpdated ? formatDate(data.comboRecordsLastUpdated) : "—"}
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Combo Records Updated</p>
+              <p className="text-foreground font-medium">
+                {data.comboRecordsDownloadDate ? formatDate(data.comboRecordsDownloadDate) : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Most recent record date</p>
             </div>
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

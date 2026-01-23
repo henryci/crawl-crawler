@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, statSync, existsSync, createReadStream } fro
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { parseMorgue, type MorgueData } from 'dcss-morgue-parser';
-import { getPool, closePool } from '@crawl-crawler/game-data-db';
+import { getPool, closePool, recordStreakDownloadDate } from '@crawl-crawler/game-data-db';
 import type { Pool } from 'pg';
 
 // ============================================
@@ -772,6 +772,13 @@ async function main(): Promise<void> {
   console.log(`  Loaded: ${loaded}`);
   console.log(`  Skipped (already loaded or invalid): ${skipped}`);
   console.log(`  Failed: ${failed}`);
+
+  // Record the streak download date
+  if (loaded > 0) {
+    console.log(`\nRecording streak download date...`);
+    await recordStreakDownloadDate();
+    console.log(`  ✓ Streak download date recorded`);
+  }
 
   await closePool();
 }
