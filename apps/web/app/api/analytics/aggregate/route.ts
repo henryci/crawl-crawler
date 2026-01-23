@@ -21,6 +21,7 @@ interface AggregateParams {
   sortBy: string;
   sortDir: 'asc' | 'desc';
   limit: number;
+  offset: number;
 }
 
 function parseAggregateParams(searchParams: URLSearchParams): AggregateParams | { error: string } {
@@ -86,7 +87,12 @@ function parseAggregateParams(searchParams: URLSearchParams): AggregateParams | 
   if (isNaN(limit) || limit < 1) limit = 100;
   if (limit > MAX_RESULTS) limit = MAX_RESULTS;
   
-  return { groupBy, metrics, sortBy, sortDir, limit };
+  // Parse offset
+  const offsetParam = searchParams.get('offset');
+  let offset = offsetParam ? parseInt(offsetParam, 10) : 0;
+  if (isNaN(offset) || offset < 0) offset = 0;
+  
+  return { groupBy, metrics, sortBy, sortDir, limit, offset };
 }
 
 export async function GET(request: NextRequest) {
@@ -99,7 +105,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: aggParams.error }, { status: 400 });
     }
     
-    const { groupBy, metrics, sortBy, sortDir, limit } = aggParams;
+    const { groupBy, metrics, sortBy, sortDir, limit, offset } = aggParams;
     
     // Parse common filters
     const filters = parseCommonFilters(searchParams);
@@ -138,7 +144,7 @@ export async function GET(request: NextRequest) {
     // Build WHERE clause from filters
     const { where, params } = buildCommonWhereClause(filters);
     
-    // Build final query
+    // Build final query with pagination
     const sql = `
       SELECT ${selectParts.join(', ')}
       FROM games g
@@ -146,28 +152,47 @@ export async function GET(request: NextRequest) {
       ${where}
       GROUP BY ${groupByParts.join(', ')}
       ORDER BY ${sortBy} ${sortDir.toUpperCase()} NULLS LAST
-      LIMIT $${params.length + 1}
+      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
     
-    const result = await query<Record<string, unknown>>(sql, [...params, limit]);
+    const result = await query<Record<string, unknown>>(sql, [...params, limit, offset]);
     
-    // Also get total count for context
+    // Get total count of games and total count of groups for pagination
     const countSql = `
       SELECT COUNT(*) as total
       FROM games g
       ${Array.from(requiredJoins).join('\n      ')}
       ${where}
     `;
-    const countResult = await query<{ total: string }>(countSql, params);
+    
+    const groupCountSql = `
+      SELECT COUNT(*) as total FROM (
+        SELECT 1
+        FROM games g
+        ${Array.from(requiredJoins).join('\n        ')}
+        ${where}
+        GROUP BY ${groupByParts.join(', ')}
+      ) subquery
+    `;
+    
+    const [countResult, groupCountResult] = await Promise.all([
+      query<{ total: string }>(countSql, params),
+      query<{ total: string }>(groupCountSql, params),
+    ]);
+    
     const totalGames = parseInt(countResult.rows[0]?.total ?? '0', 10);
+    const totalGroups = parseInt(groupCountResult.rows[0]?.total ?? '0', 10);
     
     return NextResponse.json({
       results: result.rows,
       totalGames,
+      totalGroups,
       groupBy,
       metrics,
       sortBy,
       sortDir,
+      limit,
+      offset,
     });
   } catch (error) {
     console.error('Aggregate API error:', error);

@@ -8,6 +8,10 @@ import {
   Calculator,
   ArrowUpDown,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   BarChart3,
   Table2,
   Sparkles,
@@ -62,10 +66,13 @@ interface AggregationResult {
 interface AggregationResponse {
   results: AggregationResult[];
   totalGames: number;
+  totalGroups: number;
   groupBy: string[];
   metrics: string[];
   sortBy: string;
   sortDir: "asc" | "desc";
+  limit: number;
+  offset: number;
 }
 
 interface AggregationBuilderProps {
@@ -83,9 +90,13 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   // Results state
   const [results, setResults] = useState<AggregationResult[]>([]);
   const [totalGames, setTotalGames] = useState<number>(0);
+  const [totalGroups, setTotalGroups] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "chart">("table");
+  const [page, setPage] = useState(0);
+  
+  const totalPages = Math.ceil(totalGroups / limit);
 
   // Build the aggregation query string
   const aggregateQueryString = useMemo(() => {
@@ -95,8 +106,9 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
     params.set("sortBy", sortBy);
     params.set("sortDir", sortDir);
     params.set("limit", limit.toString());
+    params.set("offset", (page * limit).toString());
     return params.toString();
-  }, [queryString, selectedDimensions, selectedMetrics, sortBy, sortDir, limit]);
+  }, [queryString, selectedDimensions, selectedMetrics, sortBy, sortDir, limit, page]);
 
   // Fetch aggregation results
   const executeQuery = useCallback(async () => {
@@ -118,6 +130,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
       
       setResults(data.results);
       setTotalGames(data.totalGames);
+      setTotalGroups(data.totalGroups);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -132,6 +145,11 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
     }, 300);
     return () => clearTimeout(timer);
   }, [executeQuery]);
+
+  // Reset page when query parameters change (except page itself)
+  useEffect(() => {
+    setPage(0);
+  }, [queryString, selectedDimensions, selectedMetrics, sortBy, sortDir, limit]);
 
   // Handle dimension toggle
   const toggleDimension = (dim: DimensionKey) => {
@@ -374,7 +392,8 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
         </Card>
       )}
 
-      {loading && (
+      {/* Show loading card only on initial load (no results yet) */}
+      {loading && results.length === 0 && (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-mana" />
@@ -383,11 +402,69 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
         </Card>
       )}
 
-      {!loading && !error && results.length > 0 && (
+      {!error && results.length > 0 && (
         viewMode === "table" ? (
           <Card className="bg-card border-border">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              {/* Pagination Controls - Top */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <div className="text-sm text-muted-foreground">
+                  Showing <span className="font-mono text-foreground">{Math.min(page * limit + 1, totalGroups).toLocaleString()}</span>
+                  {" - "}
+                  <span className="font-mono text-foreground">{Math.min((page + 1) * limit, totalGroups).toLocaleString()}</span>
+                  {" of "}
+                  <span className="font-mono text-foreground">{totalGroups.toLocaleString()}</span>
+                  {" groups"}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(0)}
+                    disabled={page === 0 || loading}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(0, p - 1))}
+                    disabled={page === 0 || loading}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm px-2 min-w-[80px] text-center">
+                    Page <span className="font-mono">{page + 1}</span> of <span className="font-mono">{totalPages || 1}</span>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1 || loading}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(totalPages - 1)}
+                    disabled={page >= totalPages - 1 || loading}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto relative">
+                {loading && (
+                  <div className="absolute inset-0 bg-card/80 flex items-center justify-center z-20">
+                    <Loader2 className="w-6 h-6 animate-spin text-mana" />
+                  </div>
+                )}
                 <Table>
                   <TableHeader className="sticky top-0 bg-card z-10">
                     <TableRow className="hover:bg-transparent">
@@ -427,7 +504,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
                     {results.map((row, index) => (
                       <TableRow key={index} className="hover:bg-secondary/30">
                         <TableCell className="text-center text-muted-foreground font-mono text-xs">
-                          {index + 1}
+                          {page * limit + index + 1}
                         </TableCell>
                         {columnHeaders.map((header) => {
                           const value = row[header.key];
