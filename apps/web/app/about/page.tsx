@@ -1,7 +1,6 @@
-import { Info, Database, ExternalLink, AlertTriangle, HelpCircle, Link2 } from "lucide-react";
+import { ExternalLink, AlertTriangle, HelpCircle, Link2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageWrapper } from "@/components/page-wrapper";
-import { PageHeader } from "@/components/page-header";
 import {
   Accordion,
   AccordionContent,
@@ -13,39 +12,32 @@ import { ServiceStats } from "./service-stats";
 export default function AboutPage() {
   return (
     <PageWrapper className="max-w-4xl">
-      {/* Header */}
-      <PageHeader
-        title="About CrawlCrawler"
-        subtitle="Analytics and exploration tools for Dungeon Crawl Stone Soup"
-        icon={Info}
-        variant="special"
-      />
-
       {/* Beta Warning */}
-      <Card className="bg-destructive/10 border-destructive/30 mb-6">
-        <CardContent className="py-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-foreground mb-1">Beta Software</h3>
-              <p className="text-sm text-muted-foreground">
-                CrawlCrawler is still very much in beta. Things may break, data may be incomplete,
-                and features may change. If you encounter any bugs or have suggestions, please
-                report them on{" "}
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  GitHub
-                </a>{" "}
-                or reach out in the DCSS community channels.
-              </p>
-            </div>
+      <div className="rounded-md bg-destructive/10 border border-destructive/30 mb-6 px-4 py-3">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+          <div>
+            <h3 className="font-semibold text-foreground text-sm mb-0.5">Beta Software</h3>
+            <p className="text-xs text-muted-foreground">
+              CrawlCrawler is still very much in beta. Things may break, data may be incomplete,
+              and features may change. If you encounter any bugs or have suggestions, please
+              report them on{" "}
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                GitHub
+              </a>{" "}
+              or reach out in the DCSS community channels.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Service Stats */}
+      <ServiceStats />
 
       {/* FAQ Section */}
       <Card className="bg-card border-border mb-6">
@@ -104,9 +96,6 @@ export default function AboutPage() {
         </CardContent>
       </Card>
 
-      {/* Service Stats */}
-      <ServiceStats />
-
       {/* Related Projects */}
       <Card className="bg-card border-border mb-6">
         <CardHeader className="border-b border-border">
@@ -154,33 +143,6 @@ export default function AboutPage() {
               </div>
               <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </a>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Data Sources */}
-      <Card className="bg-card border-border mb-6">
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Database className="w-5 h-5 text-gold" />
-            Data Sources
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="py-6">
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p>
-              <strong className="text-foreground">Streak Analytics:</strong> Sourced from morgue
-              files of games that are part of verified winning streaks. We parse these to extract
-              character builds, progression, and outcomes.
-            </p>
-            <p>
-              <strong className="text-foreground">Combo Records:</strong> Sourced from the
-              community-maintained combo high scores pages across multiple servers.
-            </p>
-            <p>
-              <strong className="text-foreground">Player Summaries:</strong> Fetched from official
-              DCSS scoring servers (CAO, CXC, CBR2, and others).
-            </p>
           </div>
         </CardContent>
       </Card>
