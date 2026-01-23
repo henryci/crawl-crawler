@@ -24,18 +24,18 @@ interface Location {
 // Define locations on the map
 const locations: Record<string, Location> = {
   "2,1": {
-    name: "Analytics",
+    name: "Streak Analytics",
     href: "/analytics",
     icon: BarChart3,
     color: "text-gold",
-    description: "Explore game statistics and trends",
+    description: "Explore win streaks and trends",
   },
   "6,1": {
-    name: "Morgue Viewer",
-    href: "/morgue",
-    icon: FileText,
-    color: "text-health",
-    description: "Parse and view morgue files",
+    name: "Combo Records",
+    href: "/records",
+    icon: Trophy,
+    color: "text-gold",
+    description: "Browse combo high scores",
   },
   "1,5": {
     name: "Player Summary",
@@ -45,11 +45,11 @@ const locations: Record<string, Location> = {
     description: "Look up player statistics",
   },
   "4,5": {
-    name: "Records",
-    href: "/records",
-    icon: Trophy,
-    color: "text-gold",
-    description: "Browse game records",
+    name: "Morgue Summary",
+    href: "/morgue",
+    icon: FileText,
+    color: "text-health",
+    description: "Parse and view morgue files",
   },
   "7,5": {
     name: "About",
@@ -373,7 +373,7 @@ export function DungeonMap() {
           <div className="text-center text-muted-foreground">
             <p className="text-sm">Navigate to a location to explore</p>
             <p className="text-xs mt-1 opacity-70">
-              Analytics • Morgue Viewer • Player Summary • Records • About
+              Streak Analytics • Combo Records • Player Summary • Morgue Summary • About
             </p>
           </div>
         )}

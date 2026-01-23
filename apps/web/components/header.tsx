@@ -11,10 +11,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import Image from "next/image"
 
 const navigation = [
-  { name: "Analytics", href: "/analytics", primary: true, tooltipKey: "analytics" as const },
-  { name: "Morgue Viewer", href: "/morgue", tooltipKey: "morgueViewer" as const },
+  { name: "Streak Analytics", href: "/analytics", primary: true, tooltipKey: "analytics" as const },
+  { name: "Combo Records", href: "/records", tooltipKey: "records" as const },
   { name: "Player Summary", href: "/player", tooltipKey: "playerSummary" as const },
-  { name: "Records", href: "/records", tooltipKey: "records" as const },
+  { name: "Morgue Summary", href: "/morgue", tooltipKey: "morgueViewer" as const },
   { name: "About", href: "/about", tooltipKey: "about" as const },
 ]
 
