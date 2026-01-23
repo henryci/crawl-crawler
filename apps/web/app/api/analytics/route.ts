@@ -24,7 +24,21 @@ interface FilterParams {
   excludeLegacy?: boolean;
   limit?: number;
   offset?: number;
+  sortBy?: string;
+  sortDir?: 'asc' | 'desc';
 }
+
+// Valid sort columns (maps API param to SQL column)
+const VALID_SORT_COLUMNS: Record<string, string> = {
+  score: 'g.score',
+  player_name: 'g.player_name',
+  god: 'god.name',
+  character_level: 'g.character_level',
+  runes_count: 'g.runes_count',
+  total_turns: 'g.total_turns',
+  end_date: 'g.end_date',
+  version: 'v.minor',
+};
 
 // Validation helpers
 const MAX_STRING_LENGTH = 100;
@@ -104,6 +118,17 @@ function parseFilters(searchParams: URLSearchParams): FilterParams {
   
   const offset = sanitizeInt(searchParams.get('offset'), 0, 100000);
   filters.offset = offset ?? 0;
+  
+  // Sort parameters
+  const sortBy = sanitizeString(searchParams.get('sortBy'), 50);
+  if (sortBy && sortBy in VALID_SORT_COLUMNS) {
+    filters.sortBy = sortBy;
+  }
+  
+  const sortDir = searchParams.get('sortDir');
+  if (sortDir === 'asc' || sortDir === 'desc') {
+    filters.sortDir = sortDir;
+  }
   
   return filters;
 }
@@ -234,9 +259,14 @@ export async function GET(request: NextRequest) {
     const totalCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
     const totalGamesCount = parseInt(totalGamesResult.rows[0]?.count ?? '0', 10);
     
-    // Get games with pagination
+    // Get games with pagination and sorting
     const limitParamIndex = params.length + 1;
     const offsetParamIndex = params.length + 2;
+    
+    // Build ORDER BY clause
+    const sortColumn = filters.sortBy ? VALID_SORT_COLUMNS[filters.sortBy] : 'g.score';
+    const sortDirection = filters.sortDir ?? 'desc';
+    const orderBy = `ORDER BY ${sortColumn} ${sortDirection.toUpperCase()} NULLS LAST`;
     
     const gamesResult = await query<{
       id: number;
@@ -275,7 +305,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN gods god ON g.god_id = god.id
       LEFT JOIN game_versions v ON g.version_id = v.id
       ${where}
-      ORDER BY g.score DESC NULLS LAST
+      ${orderBy}
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `, [...params, filters.limit, filters.offset]);
     

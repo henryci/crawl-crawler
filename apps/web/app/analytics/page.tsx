@@ -13,6 +13,10 @@ import {
   TrendingUp,
   BookOpen,
   Wand2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +43,6 @@ import { analyticsTabTooltips } from "@/lib/tooltips";
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
 import { SortIcon } from "@/components/sort-icon";
-import { useSortable } from "@/hooks/use-sortable";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
 import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
@@ -253,7 +256,6 @@ function AnalyticsContent() {
   const initialTab = searchParams.get('tab') ?? "games";
   
   const [lookups, setLookups] = useState<Lookups | null>(null);
-  const [games, setGames] = useState<Game[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalGamesCount, setTotalGamesCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -348,20 +350,18 @@ function AnalyticsContent() {
 
   // Build query string from filters (reuse shared function)
   const queryString = useMemo(() => {
-    const params = filtersToQueryParams(filters);
-    params.set("limit", "100");
-    return params.toString();
+    return filtersToQueryParams(filters).toString();
   }, [filters]);
 
-  // Load games when filters change
+  // Load counts when filters change
   useEffect(() => {
-    async function loadGames() {
+    async function loadCounts() {
       setLoading(true);
       try {
-        const response = await fetch(`/api/analytics?${queryString}`);
-        if (!response.ok) throw new Error("Failed to load games");
+        // Fetch with limit=0 to just get counts without game data
+        const response = await fetch(`/api/analytics?${queryString}&limit=0`);
+        if (!response.ok) throw new Error("Failed to load counts");
         const data = await response.json();
-        setGames(data.games);
         setTotalCount(data.totalCount);
         setTotalGamesCount(data.totalGamesCount ?? data.totalCount);
         setError(null);
@@ -371,7 +371,7 @@ function AnalyticsContent() {
         setLoading(false);
       }
     }
-    loadGames();
+    loadCounts();
   }, [queryString]);
 
   const applyPreset = useCallback((preset: "default" | "clear") => {
@@ -762,7 +762,7 @@ function AnalyticsContent() {
         </div>
 
         <TabsContent value="games">
-          <GamesTable games={games} loading={loading} />
+          <GamesTable queryString={queryString} totalCount={totalCount} />
         </TabsContent>
 
         <TabsContent value="deep-dive">
@@ -786,12 +786,60 @@ function AnalyticsContent() {
   );
 }
 
-function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
+type SortField = 'score' | 'player_name' | 'god' | 'character_level' | 'runes_count' | 'total_turns';
+type SortDirection = 'asc' | 'desc';
+
+const PAGE_SIZE = 50;
+
+function GamesTable({ queryString, totalCount }: { queryString: string; totalCount: number }) {
   const router = useRouter();
-  const { sortedData, sortDir, handleSort, isSortedBy } = useSortable(games, {
-    initialField: "score" as keyof Game,
-    initialDirection: "desc",
-  });
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [sortField, setSortField] = useState<SortField>('score');
+  const [sortDir, setSortDir] = useState<SortDirection>('desc');
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Reset to page 0 when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [queryString]);
+
+  // Load games when filters, page, or sort changes
+  useEffect(() => {
+    async function loadGames() {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams(queryString);
+        params.set('limit', String(PAGE_SIZE));
+        params.set('offset', String(page * PAGE_SIZE));
+        params.set('sortBy', sortField);
+        params.set('sortDir', sortDir);
+        
+        const response = await fetch(`/api/analytics?${params.toString()}`);
+        if (!response.ok) throw new Error("Failed to load games");
+        const data = await response.json();
+        setGames(data.games);
+      } catch (err) {
+        console.error('Failed to load games:', err);
+        setGames([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadGames();
+  }, [queryString, page, sortField, sortDir]);
+
+  const handleSort = useCallback((field: SortField) => {
+    if (field === sortField) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('desc');
+    }
+    setPage(0); // Reset to first page when sort changes
+  }, [sortField]);
 
   const handleRowClick = useCallback((game: Game) => {
     if (game.morgue_hash) {
@@ -799,66 +847,115 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
     }
   }, [router]);
 
-  if (loading) {
-    return (
-      <Card className="bg-card border-border">
-        <CardContent className="py-12 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-mana" />
-          <p className="mt-4 text-muted-foreground">Loading games...</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isSortedBy = (field: SortField) => field === sortField;
 
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        {/* Pagination Controls - Top */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="text-sm text-muted-foreground">
+            Showing <span className="font-mono text-foreground">{Math.min(page * PAGE_SIZE + 1, totalCount).toLocaleString()}</span>
+            {" - "}
+            <span className="font-mono text-foreground">{Math.min((page + 1) * PAGE_SIZE, totalCount).toLocaleString()}</span>
+            {" of "}
+            <span className="font-mono text-foreground">{totalCount.toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(0)}
+              disabled={page === 0 || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm px-2 min-w-[80px] text-center">
+              Page <span className="font-mono">{page + 1}</span> of <span className="font-mono">{totalPages || 1}</span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1 || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(totalPages - 1)}
+              disabled={page >= totalPages - 1 || loading}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto relative">
+          {loading && (
+            <div className="absolute inset-0 bg-card/80 flex items-center justify-center z-20">
+              <Loader2 className="w-6 h-6 animate-spin text-mana" />
+            </div>
+          )}
           <Table>
             <TableHeader className="sticky top-0 bg-card z-10">
               <TableRow className="hover:bg-transparent">
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("score" as keyof Game)}
+                  onClick={() => handleSort("score")}
                 >
                   Score
-                  <SortIcon active={isSortedBy("score" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("score")} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("player_name" as keyof Game)}
+                  onClick={() => handleSort("player_name")}
                 >
                   Player
-                  <SortIcon active={isSortedBy("player_name" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("player_name")} direction={sortDir} />
                 </TableHead>
                 <TableHead>Combo</TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("god" as keyof Game)}
+                  onClick={() => handleSort("god")}
                 >
                   God
-                  <SortIcon active={isSortedBy("god" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("god")} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("character_level" as keyof Game)}
+                  onClick={() => handleSort("character_level")}
                 >
                   XL
-                  <SortIcon active={isSortedBy("character_level" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("character_level")} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("runes_count" as keyof Game)}
+                  onClick={() => handleSort("runes_count")}
                 >
                   Runes
-                  <SortIcon active={isSortedBy("runes_count" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("runes_count")} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("total_turns" as keyof Game)}
+                  onClick={() => handleSort("total_turns")}
                 >
                   Turns
-                  <SortIcon active={isSortedBy("total_turns" as keyof Game)} direction={sortDir} />
+                  <SortIcon active={isSortedBy("total_turns")} direction={sortDir} />
                 </TableHead>
                 <TableHead>Win</TableHead>
                 <TableHead>Version</TableHead>
@@ -866,7 +963,7 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedData.map((game) => (
+              {games.map((game) => (
                 <TableRow
                   key={game.id}
                   className={`hover:bg-secondary/30 ${game.morgue_hash ? "cursor-pointer" : ""}`}
@@ -921,7 +1018,7 @@ function GamesTable({ games, loading }: { games: Game[]; loading: boolean }) {
             </TableBody>
           </Table>
         </div>
-        {sortedData.length === 0 && (
+        {games.length === 0 && !loading && (
           <div className="p-8 text-center text-muted-foreground">
             No games match your filters.
           </div>
