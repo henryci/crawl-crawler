@@ -27,6 +27,9 @@ from bs4 import BeautifulSoup
 # Default name for the URL mapping CSV file
 URL_MAPPING_FILENAME = "url_mapping.csv"
 
+# Default name for the skip file (URLs that returned 404)
+SKIP_URLS_FILENAME = "skip_urls.txt"
+
 
 @dataclass
 class ProgressTracker:
@@ -243,8 +246,65 @@ class DownloadResult:
     DOWNLOADED = "downloaded"
     SKIPPED_EXISTS = "skipped_exists"
     SKIPPED_HOST_FAILED = "skipped_host_failed"
+    SKIPPED_404 = "skipped_404"
     ERROR = "error"
+    ERROR_404 = "error_404"
     INVALID_CONTENT = "invalid_content"
+
+
+class SkipUrlTracker:
+    """
+    Tracks URLs that should be skipped (e.g., those that returned 404).
+    
+    Uses a simple text file with one URL per line. The file is updated
+    atomically to ensure consistency even if the script is interrupted.
+    """
+    
+    def __init__(self, skip_file_path: Path):
+        self.skip_file_path = skip_file_path
+        self._skip_urls: set[str] = set()
+        self._load_existing()
+    
+    def _load_existing(self) -> None:
+        """Load existing skip URLs from the file."""
+        if not self.skip_file_path.exists():
+            return
+        
+        with open(self.skip_file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                url = line.strip()
+                if url:  # Skip empty lines
+                    self._skip_urls.add(url)
+    
+    def should_skip(self, url: str) -> bool:
+        """Check if a URL should be skipped."""
+        return url in self._skip_urls
+    
+    def add_skip_url(self, url: str) -> None:
+        """
+        Add a URL to the skip list.
+        
+        This operation appends to the file immediately to ensure
+        the URL is persisted before returning.
+        """
+        if url in self._skip_urls:
+            return  # Already in the skip list
+        
+        with open(self.skip_file_path, "a", encoding="utf-8") as f:
+            # Lock the file to prevent concurrent writes
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                f.write(url + "\n")
+                f.flush()
+                os.fsync(f.fileno())  # Ensure data is written to disk
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        
+        self._skip_urls.add(url)
+    
+    def count(self) -> int:
+        """Return the number of URLs in the skip list."""
+        return len(self._skip_urls)
 
 
 def is_valid_morgue_content(content: str) -> tuple[bool, str]:
@@ -340,6 +400,7 @@ def download_morgue(
     host_error_counts: dict[str, int],
     max_host_errors: int,
     url_tracker: UrlMappingTracker,
+    skip_tracker: SkipUrlTracker,
     verbose: bool = False,
 ) -> tuple[str, Optional[str]]:
     """
@@ -350,6 +411,12 @@ def download_morgue(
     """
     parsed = urlparse(url)
     host = parsed.netloc
+    
+    # Skip if this URL is in the skip list (e.g., previously returned 404)
+    if skip_tracker.should_skip(url):
+        if verbose:
+            print(f"  Skipping (URL in skip list)")
+        return DownloadResult.SKIPPED_404, "URL previously returned 404"
     
     # Skip if we've already had too many errors from this host
     if host in failed_hosts:
@@ -413,6 +480,11 @@ def download_morgue(
     
     except requests.exceptions.HTTPError as e:
         error_msg = f"HTTP error: {e}"
+        # Handle 404s specially - add to skip list for future runs
+        if response.status_code == 404:
+            skip_tracker.add_skip_url(url)
+            print(f"  ERROR: {error_msg} (added to skip list)")
+            return DownloadResult.ERROR_404, error_msg
         # Count toward host failure if:
         # - 5xx errors (server issues)
         # - 401/403 (host is blocking access)
@@ -459,6 +531,10 @@ def main() -> int:
     url_mapping_path = args.output_dir / URL_MAPPING_FILENAME
     url_tracker = UrlMappingTracker(url_mapping_path)
     
+    # Initialize skip URL tracker (for 404s)
+    skip_urls_path = args.output_dir / SKIP_URLS_FILENAME
+    skip_tracker = SkipUrlTracker(skip_urls_path)
+    
     # Track failed hosts and error counts
     failed_hosts: set[str] = set()
     host_error_counts: dict[str, int] = {}
@@ -472,6 +548,9 @@ def main() -> int:
     print(f"Starting download of {total} morgue files...")
     print(f"Output directory: {args.output_dir.absolute()}")
     print(f"URL mapping file: {url_mapping_path.absolute()}")
+    print(f"Skip URLs file: {skip_urls_path.absolute()}")
+    if skip_tracker.count() > 0:
+        print(f"Loaded {skip_tracker.count()} URLs to skip (previous 404s)")
     print(f"Delay between downloads: {args.delay}s")
     print()
     
@@ -479,7 +558,9 @@ def main() -> int:
     downloaded_count = 0
     skipped_exists_count = 0
     skipped_host_count = 0
+    skipped_404_count = 0
     error_count = 0
+    error_404_count = 0
     
     for i, url in enumerate(morgue_urls, 1):
         filename = get_filename_from_url(url)
@@ -497,6 +578,7 @@ def main() -> int:
             host_error_counts,
             args.max_host_errors,
             url_tracker,
+            skip_tracker,
             verbose=args.verbose,
         )
         
@@ -506,6 +588,10 @@ def main() -> int:
             skipped_exists_count += 1
         elif result == DownloadResult.SKIPPED_HOST_FAILED:
             skipped_host_count += 1
+        elif result == DownloadResult.SKIPPED_404:
+            skipped_404_count += 1
+        elif result == DownloadResult.ERROR_404:
+            error_404_count += 1
         else:
             # ERROR or INVALID_CONTENT
             error_count += 1
@@ -515,13 +601,14 @@ def main() -> int:
         made_request = result in (
             DownloadResult.DOWNLOADED,
             DownloadResult.ERROR,
+            DownloadResult.ERROR_404,
             DownloadResult.INVALID_CONTENT,
         )
         
         # Record progress with result type
         if result == DownloadResult.DOWNLOADED:
             progress.record_result('downloaded')
-        elif result in (DownloadResult.ERROR, DownloadResult.INVALID_CONTENT):
+        elif result in (DownloadResult.ERROR, DownloadResult.ERROR_404, DownloadResult.INVALID_CONTENT):
             progress.record_result('error')
         else:
             progress.record_result('skipped')
@@ -544,7 +631,9 @@ def main() -> int:
     print(f"  Downloaded: {downloaded_count}")
     print(f"  Skipped (already exist): {skipped_exists_count}")
     print(f"  Skipped (host failed): {skipped_host_count}")
-    print(f"  Errors: {error_count}")
+    print(f"  Skipped (previous 404): {skipped_404_count}")
+    print(f"  Errors (404): {error_404_count}")
+    print(f"  Errors (other): {error_count}")
     if progress.successful_downloads > 0:
         print(f"  Average download rate: {progress.downloads_per_minute():.1f} downloads/min")
     if failed_hosts:

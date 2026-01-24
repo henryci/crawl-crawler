@@ -52,6 +52,7 @@ python download_morgues.py --max-host-errors 5 "http://crawl.akrasiac.org/scorin
 - **Rate limiting**: Configurable delay between downloads to be polite to servers
 - **Resume support**: Skips files that already exist in the output directory
 - **Host failure caching**: After N errors from a host, skips remaining URLs from that host
+- **404 skip list**: Remembers URLs that returned 404 and skips them on future runs (persisted to `skip_urls.txt`)
 - **Content validation**: Rejects responses that are HTML (expired domains, error pages) instead of morgue files
 - **Sampling mode**: Download a random subset for testing
 - **URL mapping**: Maintains a CSV file (`url_mapping.csv`) mapping each downloaded file to its source URL
@@ -74,6 +75,18 @@ morgue-player2-20231016-234567.txt,http://crawl.berotato.org/crawl/morgue/player
 
 **Atomicity guarantee**: The URL mapping entry is written to disk (with `fsync`) *before* the downloaded file is moved to its final location. This ensures that if the script is interrupted (e.g., with Ctrl+C), you will never have a downloaded file without a corresponding mapping entry.
 
+## Skip URLs (404 Handling)
+
+The script maintains a `skip_urls.txt` file in the output directory that tracks URLs which returned 404 errors. This prevents the script from repeatedly trying to download files that no longer exist, which can significantly slow down the download process.
+
+When a URL returns a 404:
+1. The URL is immediately added to `skip_urls.txt`
+2. On subsequent runs, these URLs are skipped without making a network request
+
+This is particularly useful when some servers have removed old morgue files - the script will remember which URLs are broken and skip them automatically.
+
+To reset the skip list (e.g., if you want to retry 404 URLs), simply delete the `skip_urls.txt` file from the output directory.
+
 ## Progress Output
 
 The script displays real-time progress information during downloads:
@@ -82,6 +95,8 @@ The script displays real-time progress information during downloads:
 Starting download of 1250 morgue files...
 Output directory: /path/to/outputs
 URL mapping file: /path/to/outputs/url_mapping.csv
+Skip URLs file: /path/to/outputs/skip_urls.txt
+Loaded 45 URLs to skip (previous 404s)
 Delay between downloads: 10s
 
 [0/1250] (0.0%) - morgue-player1-20231015-123456.txt
@@ -96,7 +111,9 @@ Download complete!
   Downloaded: 1100
   Skipped (already exist): 120
   Skipped (host failed): 25
-  Errors: 5
+  Skipped (previous 404): 45
+  Errors (404): 3
+  Errors (other): 2
   Average download rate: 5.3 downloads/min
 ```
 
