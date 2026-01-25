@@ -7,6 +7,8 @@ import {
   TrendingUp,
   Layers,
   Hash,
+  BarChart3,
+  Table2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,6 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   DIMENSIONS,
   METRICS,
@@ -138,6 +149,7 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
 
   const [hoveredSeries, setHoveredSeries] = useState<string | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{ series: string; over: string; value: number; rank: number } | null>(null);
+  const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1000); // Start with reasonable default
@@ -262,14 +274,14 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <Card className="bg-card border-border">
-        <CardHeader className="py-3">
+      <Card className="bg-card border-border py-3 gap-2">
+        <CardHeader>
           <div className="flex items-center gap-3">
             <TrendingUp className="w-4 h-4 text-health" />
             <CardTitle className="text-base">Trends</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-0">
+        <CardContent>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-muted-foreground" />
@@ -340,6 +352,12 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
         </CardContent>
       </Card>
 
+      {/* Work in progress banner */}
+      <div className="flex items-center gap-3 px-4 py-3 bg-mana/10 border border-mana/30 rounded-lg text-sm text-muted-foreground">
+        <AlertCircle className="w-4 h-4 text-mana flex-shrink-0" />
+        <span>I am still figuring out how to make this feature usable. It contains good data but it is difficult to visualize.</span>
+      </div>
+
       {/* Error */}
       {error && (
         <Card className="bg-card border-border">
@@ -360,51 +378,81 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
         </Card>
       )}
 
-      {/* Chart */}
+      {/* Chart / Table */}
       {!loading && !error && data && visibleSeries.length > 0 && (
         <Card className="bg-card border-border">
           <CardHeader className="py-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Top {topN} {trackLabel} by {metricLabel} over {overLabel}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Top {topN} {trackLabel} by {metricLabel} over {overLabel}
+              </CardTitle>
+              <div className="flex items-center gap-1 bg-secondary/30 rounded-md p-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 px-2 text-xs",
+                    viewMode === "chart" && "bg-background shadow-sm"
+                  )}
+                  onClick={() => setViewMode("chart")}
+                >
+                  <BarChart3 className="w-3.5 h-3.5 mr-1" />
+                  Chart
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 px-2 text-xs",
+                    viewMode === "table" && "bg-background shadow-sm"
+                  )}
+                  onClick={() => setViewMode("table")}
+                >
+                  <Table2 className="w-3.5 h-3.5 mr-1" />
+                  Table
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-4 w-full" ref={containerRef}>
-            {/* Hover info bar */}
-            <div className="h-8 mb-2 flex items-center">
-              {hoveredPoint ? (
-                <div className="flex items-center gap-3 text-sm">
-                  <span 
-                    className="font-bold text-lg"
-                    style={{ color: COLORS[visibleSeries.findIndex(s => s.name === hoveredPoint.series) % COLORS.length] }}
-                  >
-                    {hoveredPoint.series}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {overLabel}: <span className="text-foreground font-mono">{hoveredPoint.over}</span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    Rank: <span className="text-foreground font-bold">#{hoveredPoint.rank}</span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    {metricLabel}: <span className="text-mana font-mono">{hoveredPoint.value.toLocaleString()}{metric === "win_rate" && "%"}</span>
-                  </span>
+            {viewMode === "chart" ? (
+              <>
+                {/* Hover info bar */}
+                <div className="h-8 mb-2 flex items-center">
+                  {hoveredPoint ? (
+                    <div className="flex items-center gap-3 text-sm">
+                      <span 
+                        className="font-bold text-lg"
+                        style={{ color: COLORS[visibleSeries.findIndex(s => s.name === hoveredPoint.series) % COLORS.length] }}
+                      >
+                        {hoveredPoint.series}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {overLabel}: <span className="text-foreground font-mono">{hoveredPoint.over}</span>
+                      </span>
+                      <span className="text-muted-foreground">
+                        Rank: <span className="text-foreground font-bold">#{hoveredPoint.rank}</span>
+                      </span>
+                      <span className="text-muted-foreground">
+                        {metricLabel}: <span className="text-mana font-mono">{hoveredPoint.value.toLocaleString()}{metric === "win_rate" && "%"}</span>
+                      </span>
+                    </div>
+                  ) : hoveredSeries ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span 
+                        className="font-bold text-lg"
+                        style={{ color: COLORS[visibleSeries.findIndex(s => s.name === hoveredSeries) % COLORS.length] }}
+                      >
+                        {hoveredSeries}
+                      </span>
+                      <span className="text-muted-foreground">— hover over points for details</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Hover over the chart to see details</span>
+                  )}
                 </div>
-              ) : hoveredSeries ? (
-                <div className="flex items-center gap-2 text-sm">
-                  <span 
-                    className="font-bold text-lg"
-                    style={{ color: COLORS[visibleSeries.findIndex(s => s.name === hoveredSeries) % COLORS.length] }}
-                  >
-                    {hoveredSeries}
-                  </span>
-                  <span className="text-muted-foreground">— hover over points for details</span>
-                </div>
-              ) : (
-                <span className="text-muted-foreground text-sm">Hover over the chart to see details</span>
-              )}
-            </div>
 
-            {/* SVG Chart */}
+                {/* SVG Chart */}
             <svg 
               width="100%" 
               height={chartHeight} 
@@ -546,38 +594,82 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
               </text>
             </svg>
 
-            {/* Mini legend - just colored dots with names, compact */}
-            <div className="mt-4 pt-3 border-t border-border">
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                {visibleSeries.map((series, seriesIndex) => {
-                  const color = COLORS[seriesIndex % COLORS.length];
-                  const markerType = MARKER_TYPES[seriesIndex % MARKER_TYPES.length];
-                  const isHovered = hoveredSeries === series.name;
+                {/* Mini legend - just colored dots with names, compact */}
+                <div className="mt-4 pt-3 border-t border-border">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {visibleSeries.map((series, seriesIndex) => {
+                      const color = COLORS[seriesIndex % COLORS.length];
+                      const markerType = MARKER_TYPES[seriesIndex % MARKER_TYPES.length];
+                      const isHovered = hoveredSeries === series.name;
 
-                  return (
-                    <button
-                      key={series.name}
-                      className={cn(
-                        "flex items-center gap-1.5 text-xs transition-opacity",
-                        hoveredSeries && !isHovered ? "opacity-30" : "opacity-100"
-                      )}
-                      onMouseEnter={() => setHoveredSeries(series.name)}
-                      onMouseLeave={() => setHoveredSeries(null)}
-                    >
-                      <svg width="12" height="12" className="shrink-0">
-                        <path
-                          d={MARKERS[markerType](6, 6, 5)}
-                          fill={color}
-                        />
-                      </svg>
-                      <span style={{ color }} className={cn(isHovered && "font-bold")}>
-                        {series.name}
-                      </span>
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={series.name}
+                          className={cn(
+                            "flex items-center gap-1.5 text-xs transition-opacity",
+                            hoveredSeries && !isHovered ? "opacity-30" : "opacity-100"
+                          )}
+                          onMouseEnter={() => setHoveredSeries(series.name)}
+                          onMouseLeave={() => setHoveredSeries(null)}
+                        >
+                          <svg width="12" height="12" className="shrink-0">
+                            <path
+                              d={MARKERS[markerType](6, 6, 5)}
+                              fill={color}
+                            />
+                          </svg>
+                          <span style={{ color }} className={cn(isHovered && "font-bold")}>
+                            {series.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Table View */
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky left-0 bg-card">{trackLabel}</TableHead>
+                      {data.overValues.map((overValue) => (
+                        <TableHead key={overValue} className="text-center font-mono text-xs">
+                          {overValue}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleSeries.map((series, seriesIndex) => {
+                      const color = COLORS[seriesIndex % COLORS.length];
+                      return (
+                        <TableRow key={series.name}>
+                          <TableCell className="sticky left-0 bg-card font-medium" style={{ color }}>
+                            {series.name}
+                          </TableCell>
+                          {series.data.map((d, i) => (
+                            <TableCell key={i} className="text-center">
+                              {d.rank > 0 && d.rank <= topN ? (
+                                <div className="flex flex-col items-center">
+                                  <span className="font-bold text-foreground">#{d.rank}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">
+                                    {d.value.toLocaleString()}{metric === "win_rate" && "%"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground/50">—</span>
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

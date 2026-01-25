@@ -113,6 +113,46 @@ function MorgueViewerLoading() {
   );
 }
 
+/**
+ * Full-page loading overlay shown when fetching/parsing a morgue file.
+ */
+function LoadingOverlay({ url }: { url: string }) {
+  // Extract filename from URL for display
+  const filename = url ? url.split("/").pop() || "morgue file" : "morgue file";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-6 p-8 rounded-xl bg-card border border-border shadow-2xl max-w-md mx-4">
+        {/* Animated spinner with pulsing glow */}
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
+          <div className="relative w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+        </div>
+
+        {/* Loading text */}
+        <div className="text-center space-y-2">
+          <h3 className="text-lg font-semibold text-foreground">Loading Morgue</h3>
+          <p className="text-sm text-muted-foreground max-w-xs truncate font-mono">
+            {filename}
+          </p>
+        </div>
+
+        {/* Progress indicator dots */}
+        <div className="flex gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+
+        {/* Flavor text */}
+        <p className="text-xs text-muted-foreground/60 italic text-center">
+          Fetching and parsing your adventure...
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function MorgueViewerContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -226,6 +266,9 @@ function MorgueViewerContent() {
 
   return (
     <PageWrapper>
+      {/* Full-page loading overlay */}
+      {loadingState === "loading" && <LoadingOverlay url={url} />}
+
       {/* URL Input Section - Collapsible */}
       <div className="mb-6">
         {formExpanded ? (

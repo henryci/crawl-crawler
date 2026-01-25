@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Trophy, Crown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getMorgueViewerUrl } from "./utils";
 import type { PlayerData } from "dcss-player-parser";
 
 interface HighscoresSectionProps {
@@ -20,14 +22,9 @@ export function HighscoresSection({ data }: HighscoresSectionProps) {
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-3">
-          {data.comboHighscores.map((hs, i) => (
-            <a
-              key={`combo-${i}`}
-              href={hs.morgueUrl || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group"
-            >
+          {data.comboHighscores.map((hs, i) => {
+            const morgueLink = getMorgueViewerUrl(hs.morgueUrl);
+            const badge = (
               <Badge
                 variant="outline"
                 className="bg-gold/10 border-gold/30 text-gold hover:bg-gold/20 transition-colors px-3 py-1"
@@ -39,15 +36,18 @@ export function HighscoresSection({ data }: HighscoresSectionProps) {
                   ({hs.score.toLocaleString()})
                 </span>
               </Badge>
-            </a>
-          ))}
-          {data.speciesHighscores.map((hs, i) => (
-            <a
-              key={`species-${i}`}
-              href={hs.morgueUrl || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            );
+            return morgueLink ? (
+              <Link key={`combo-${i}`} href={morgueLink} className="group">
+                {badge}
+              </Link>
+            ) : (
+              <span key={`combo-${i}`}>{badge}</span>
+            );
+          })}
+          {data.speciesHighscores.map((hs, i) => {
+            const morgueLink = getMorgueViewerUrl(hs.morgueUrl);
+            const badge = (
               <Badge
                 variant="outline"
                 className="bg-mana/10 border-mana/30 text-mana hover:bg-mana/20 transition-colors px-3 py-1"
@@ -58,15 +58,18 @@ export function HighscoresSection({ data }: HighscoresSectionProps) {
                   ({hs.score.toLocaleString()})
                 </span>
               </Badge>
-            </a>
-          ))}
-          {data.classHighscores.map((hs, i) => (
-            <a
-              key={`class-${i}`}
-              href={hs.morgueUrl || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            );
+            return morgueLink ? (
+              <Link key={`species-${i}`} href={morgueLink}>
+                {badge}
+              </Link>
+            ) : (
+              <span key={`species-${i}`}>{badge}</span>
+            );
+          })}
+          {data.classHighscores.map((hs, i) => {
+            const morgueLink = getMorgueViewerUrl(hs.morgueUrl);
+            const badge = (
               <Badge
                 variant="outline"
                 className="bg-special/10 border-special/30 text-special hover:bg-special/20 transition-colors px-3 py-1"
@@ -77,8 +80,15 @@ export function HighscoresSection({ data }: HighscoresSectionProps) {
                   ({hs.score.toLocaleString()})
                 </span>
               </Badge>
-            </a>
-          ))}
+            );
+            return morgueLink ? (
+              <Link key={`class-${i}`} href={morgueLink}>
+                {badge}
+              </Link>
+            ) : (
+              <span key={`class-${i}`}>{badge}</span>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

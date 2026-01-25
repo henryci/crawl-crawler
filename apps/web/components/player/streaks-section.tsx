@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { TrendingUp, Trophy, Flame, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { getMorgueViewerUrl } from "./utils";
 import type { PlayerData } from "dcss-player-parser";
 
 interface StreaksSectionProps {
@@ -180,29 +182,44 @@ export function StreaksSection({ streaks }: StreaksSectionProps) {
                         {streak.start.split(" ")[0]} → {streak.end.split(" ")[0]}
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {streak.games.map((game, j) => (
-                          <a
-                            key={j}
-                            href={game.morgueUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-2 py-1 bg-health/20 rounded text-xs font-mono text-health hover:bg-health/30 transition-colors"
-                          >
-                            {game.character}
-                          </a>
-                        ))}
+                        {streak.games.map((game, j) => {
+                          const morgueLink = getMorgueViewerUrl(game.morgueUrl);
+                          return morgueLink ? (
+                            <Link
+                              key={j}
+                              href={morgueLink}
+                              className="px-2 py-1 bg-health/20 rounded text-xs font-mono text-health hover:bg-health/30 transition-colors"
+                            >
+                              {game.character}
+                            </Link>
+                          ) : (
+                            <span
+                              key={j}
+                              className="px-2 py-1 bg-health/20 rounded text-xs font-mono text-health"
+                            >
+                              {game.character}
+                            </span>
+                          );
+                        })}
                         {streak.streakBreaker && (
                           <>
                             <span className="self-center text-muted-foreground text-xs">→</span>
-                            <a
-                              href={streak.streakBreaker.morgueUrl || "#"}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-2 py-1 bg-destructive/20 rounded text-xs font-mono text-destructive hover:bg-destructive/30 transition-colors"
-                              title="Streak breaker"
-                            >
-                              {streak.streakBreaker.character} ✗
-                            </a>
+                            {getMorgueViewerUrl(streak.streakBreaker.morgueUrl) ? (
+                              <Link
+                                href={getMorgueViewerUrl(streak.streakBreaker.morgueUrl)!}
+                                className="px-2 py-1 bg-destructive/20 rounded text-xs font-mono text-destructive hover:bg-destructive/30 transition-colors"
+                                title="Streak breaker"
+                              >
+                                {streak.streakBreaker.character} ✗
+                              </Link>
+                            ) : (
+                              <span
+                                className="px-2 py-1 bg-destructive/20 rounded text-xs font-mono text-destructive"
+                                title="Streak breaker"
+                              >
+                                {streak.streakBreaker.character} ✗
+                              </span>
+                            )}
                           </>
                         )}
                       </div>

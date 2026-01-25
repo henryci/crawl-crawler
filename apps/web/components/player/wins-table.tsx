@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { SortIcon } from "@/components/sort-icon";
 import { useSortable } from "@/hooks/use-sortable";
+import { getMorgueViewerUrl } from "./utils";
 import type { Win } from "dcss-player-parser";
 
 interface WinsTableProps {
@@ -233,14 +235,16 @@ export function WinsTable({ wins }: WinsTableProps) {
                 <TableRow key={win.rank} className="hover:bg-secondary/30">
                   <TableCell className="font-mono text-muted-foreground">{win.rank}</TableCell>
                   <TableCell>
-                    <a
-                      href={win.morgueUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-health hover:underline"
-                    >
-                      {win.character}
-                    </a>
+                    {getMorgueViewerUrl(win.morgueUrl) ? (
+                      <Link
+                        href={getMorgueViewerUrl(win.morgueUrl)!}
+                        className="font-mono text-health hover:underline"
+                      >
+                        {win.character}
+                      </Link>
+                    ) : (
+                      <span className="font-mono text-health">{win.character}</span>
+                    )}
                     <span className="text-xs text-muted-foreground ml-2">{win.title}</span>
                   </TableCell>
                   <TableCell className="font-mono text-gold">

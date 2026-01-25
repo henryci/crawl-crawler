@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { Trophy, Skull, Gamepad2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { SortIcon } from "@/components/sort-icon";
 import { useSortable } from "@/hooks/use-sortable";
+import { getMorgueViewerUrl } from "./utils";
 import type { RecentGame } from "dcss-player-parser";
 
 interface RecentGamesSectionProps {
@@ -161,15 +163,13 @@ export function RecentGamesSection({ games }: RecentGamesSectionProps) {
                     className={`hover:bg-secondary/30 ${won ? "bg-health/5" : ""}`}
                   >
                     <TableCell className="font-mono">
-                      {game.morgueUrl ? (
-                        <a
-                          href={game.morgueUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {getMorgueViewerUrl(game.morgueUrl) ? (
+                        <Link
+                          href={getMorgueViewerUrl(game.morgueUrl)!}
                           className={`hover:underline ${won ? "text-gold" : "text-foreground"}`}
                         >
                           {game.score > 0 ? game.score.toLocaleString() : "—"}
-                        </a>
+                        </Link>
                       ) : (
                         <span className={won ? "text-gold" : ""}>
                           {game.score > 0 ? game.score.toLocaleString() : "—"}
