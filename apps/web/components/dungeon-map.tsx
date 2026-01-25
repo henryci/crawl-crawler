@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { BarChart3, FileText, User, Trophy, Info } from "lucide-react"
+import { navTooltips } from "@/lib/tooltips"
 
 // Map dimensions (odd numbers for center positioning)
 const MAP_WIDTH = 9
@@ -28,35 +29,35 @@ const locations: Record<string, Location> = {
     href: "/analytics",
     icon: BarChart3,
     color: "text-gold",
-    description: "Explore win streaks and trends",
+    description: navTooltips.analytics,
   },
   "6,1": {
     name: "Combo Records",
     href: "/records",
     icon: Trophy,
     color: "text-gold",
-    description: "Browse combo high scores",
+    description: navTooltips.records,
   },
   "1,5": {
     name: "Player Summary",
     href: "/player",
     icon: User,
     color: "text-mana",
-    description: "Look up player statistics",
+    description: navTooltips.playerSummary,
   },
   "4,5": {
     name: "Morgue Summary",
     href: "/morgue",
     icon: FileText,
     color: "text-health",
-    description: "Parse and view morgue files",
+    description: navTooltips.morgueViewer,
   },
   "7,5": {
     name: "About",
     href: "/about",
     icon: Info,
     color: "text-special",
-    description: "Learn about CrawlCrawler",
+    description: navTooltips.about,
   },
 }
 
