@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
   Trophy,
   Loader2,
@@ -8,7 +9,6 @@ import {
   Ghost,
   Calendar,
   X,
-  ExternalLink,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -459,36 +459,39 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
                         </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <a
-                          href={record.morgueUrl || "#"}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-health hover:underline inline-flex items-center gap-1"
-                        >
-                          {record.character}
-                          <ExternalLink className="w-3 h-3 opacity-50" />
-                        </a>
+                        {record.morgueUrl ? (
+                          <Link
+                            href={`/morgue?url=${encodeURIComponent(record.morgueUrl)}`}
+                            className="font-mono text-health hover:underline inline-flex items-center gap-1"
+                          >
+                            {record.character}
+                          </Link>
+                        ) : (
+                          <span className="font-mono text-health">{record.character}</span>
+                        )}
                         {isLegacy && (
                           <span title="Legacy combo (removed species, background, or restricted combination)">
                             <Ghost className="w-3 h-3 text-special" />
                           </span>
                         )}
-              </div>
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {getSpeciesName(record.species, data.legacyConfig, record.version)}{" "}
                         {getBackgroundName(record.background, data.legacyConfig, record.version)}
-              </div>
-                        </TableCell>
+                      </div>
+                    </TableCell>
                     <TableCell>
-                      <a
-                        href={record.playerUrl || "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-mana hover:underline"
-                      >
-                        {record.player}
-                      </a>
-                        </TableCell>
+                      {record.playerUrl ? (
+                        <Link
+                          href={`/player?url=${encodeURIComponent(record.playerUrl)}`}
+                          className="text-mana hover:underline"
+                        >
+                          {record.player}
+                        </Link>
+                      ) : (
+                        <span className="text-mana">{record.player}</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getRunesBadgeClass(record.runes)}>
                         {record.runes}
