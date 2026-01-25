@@ -8,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ServiceStats } from "./service-stats";
+import { ZigDeathModal } from "./zig-death-modal";
 
 export default function AboutPage() {
   return (
@@ -69,7 +70,8 @@ export default function AboutPage() {
                   I've been playing this game since <a href="/morgue?url=https%3A%2F%2Fcrawl.akrasiac.org%2Frawdata%2Fhenryci%2Fmorgue-henryci-20090627-221400.txt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">2009</a>.
                   As the community has grown beyond 20 people in an IRC channel so to has all the data we have available.
                   I've been writing one off scripts to answer questions like "What species/background ruins the most streaks?" or "Which god do most people pick here?"
-                  And recently, I killed a great character on zig:27 and decided to work out my frustration by putting together this app for people.
+                  Recently, I killed a great character on <ZigDeathModal /> and decided to work out my frustration by putting together this app for people.
+                  Perhaps it can serve to orient us more towards data. Let's make any moment from any game findable and replayable.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -79,8 +81,8 @@ export default function AboutPage() {
               <AccordionContent>
                 <p className="text-muted-foreground">
                   This is an important question because the answer is kind of terrible.
-                  I downloaded the streak files from CAO (over the course of a month so as not to create a bunch of load). Unfortunately, those files
-                  are plain text files that have undergone so many changes over the years. I had Claude read through a sample of them and develop a parser
+                  I downloaded the streak files from CAO (over the course of a month so as not to create a bunch of load). Unfortunately, those 
+                  are plain text files in a format that has undergone so many changes over the years. I had Claude read through a sample of them and develop a parser
                   which is of medium correctness. It is enough to provide some info but boy is is text not the best way to get this data into a database.
                 </p>
               </AccordionContent>
