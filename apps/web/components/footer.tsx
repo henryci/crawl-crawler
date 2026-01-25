@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,15 @@ export function Footer() {
               />
               <span className="font-mono text-sm text-muted-foreground">
                 Crawl<span className="text-primary">Crawler</span>
+              </span>
+              <span className="text-xs text-muted-foreground">
+                by{" "}
+                <Link
+                  href="/player?url=https%3A%2F%2Fcrawl.akrasiac.org%2Fscoring%2Fplayers%2Fhenryci.html"
+                  className="text-primary hover:underline"
+                >
+                  henryci
+                </Link>
               </span>
             </div>
 
