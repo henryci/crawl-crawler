@@ -84,13 +84,14 @@ export function SkillsHeatmap({ queryString }: SkillsHeatmapProps) {
   const xlColumns = Array.from({ length: 27 }, (_, i) => i + 1);
 
   // Get color intensity based on skill level
-  function getHeatColor(level: number | undefined): string {
-    if (!level || level === 0) return "bg-transparent";
-    if (level < 5) return "bg-mana/20";
-    if (level < 10) return "bg-mana/40";
-    if (level < 15) return "bg-mana/60";
-    if (level < 20) return "bg-mana/80";
-    return "bg-mana";
+  // Returns { bg, text, subtext } classes for proper contrast
+  function getHeatColors(level: number | undefined): { bg: string; text: string; subtext: string } {
+    if (!level || level === 0) return { bg: "bg-transparent", text: "", subtext: "text-muted-foreground/70" };
+    if (level < 5) return { bg: "bg-mana/20", text: "text-foreground", subtext: "text-muted-foreground" };
+    if (level < 10) return { bg: "bg-mana/40", text: "text-foreground", subtext: "text-foreground/70" };
+    if (level < 15) return { bg: "bg-mana/60", text: "text-white", subtext: "text-white/70" };
+    if (level < 20) return { bg: "bg-mana/80", text: "text-white", subtext: "text-white/70" };
+    return { bg: "bg-mana", text: "text-white", subtext: "text-white/70" };
   }
 
   if (loading) {
@@ -177,10 +178,11 @@ export function SkillsHeatmap({ queryString }: SkillsHeatmapProps) {
                       </TableCell>
                       {xlColumns.map((xl) => {
                         const data = xlMap.get(xl);
+                        const colors = getHeatColors(data?.avg);
                         return (
                           <TableCell
                             key={xl}
-                            className={`text-center px-0 py-0.5 ${getHeatColor(data?.avg)}`}
+                            className={`text-center px-0 py-0.5 ${colors.bg}`}
                             title={
                               data
                                 ? `${name} at XL ${xl}: avg ${data.avg} (${data.count} games)`
@@ -189,10 +191,10 @@ export function SkillsHeatmap({ queryString }: SkillsHeatmapProps) {
                           >
                             {data && data.avg > 0 && (
                               <div className="flex flex-col items-center leading-none">
-                                <span className="text-xs font-mono">
+                                <span className={`text-xs font-mono ${colors.text}`}>
                                   {Math.round(data.avg)}
                                 </span>
-                                <span className="text-[9px] text-muted-foreground/70">
+                                <span className={`text-[9px] ${colors.subtext}`}>
                                   {data.count}
                                 </span>
                               </div>
