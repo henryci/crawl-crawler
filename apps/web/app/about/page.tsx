@@ -19,18 +19,17 @@ export default function AboutPage() {
           <div>
             <h3 className="font-semibold text-foreground text-sm mb-0.5">Beta Software</h3>
             <p className="text-xs text-muted-foreground">
-              CrawlCrawler is still very much in beta. Things may break, data may be incomplete,
-              and features may change. If you encounter any bugs or have suggestions, please
-              report them on{" "}
+              CrawlCrawler is still very much in beta. The big thing to watch out for is that the morgue parser is very fragile, so there will be data errors.
+              I also have no sense of what load this service will see, so don't be surprised if it's slow, or down.
+              If you encounter any bugs or have suggestions, please report them on{" "}
               <a
                 href="https://github.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                GitHub
-              </a>{" "}
-              or reach out in the DCSS community channels.
+                GitHub.
+              </a>
             </p>
           </div>
         </div>
@@ -52,11 +51,13 @@ export default function AboutPage() {
             <AccordionItem value="what">
               <AccordionTrigger>What is this?</AccordionTrigger>
               <AccordionContent>
-                <p className="text-muted-foreground">
-                  CrawlCrawler is a collection of analytics and exploration tools for Dungeon Crawl
-                  Stone Soup (DCSS). It provides insights into winning streaks, combo records,
-                  player statistics, and morgue file analysis. Think of it as a data nerd&apos;s
-                  companion for one of the best roguelikes ever made.
+                <p className="text-muted-foreground">                  
+                  CrawlCrawler is a collection of analytics and exploration tools for <a href="https://crawl.develz.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dungeon Crawl
+                  Stone Soup (DCSS)</a>.
+                  It provides insights into what choices streak players are making and what combos records to go for.
+                  I've also included updated player and morgue summary pages to reflect the info I typically need.
+                  Perhaps most importantly, it's a proof of concept for a more general data platform.
+                  Please see <a href="/appeal" className="text-primary hover:underline">my appeal to the dev community</a> for my thoughts on what is possible.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -65,10 +66,10 @@ export default function AboutPage() {
               <AccordionTrigger>Why is this?</AccordionTrigger>
               <AccordionContent>
                 <p className="text-muted-foreground">
-                  Because data is beautiful, and DCSS generates a lot of interesting data. We
-                  wanted to answer questions like &ldquo;What species/background combos are most
-                  common in winning streaks?&rdquo; and &ldquo;How do players&apos; god choices
-                  evolve over a streak?&rdquo; Plus, parsing morgue files by hand is tedious.
+                  I've been playing this game since <a href="/morgue?url=https%3A%2F%2Fcrawl.akrasiac.org%2Frawdata%2Fhenryci%2Fmorgue-henryci-20090627-221400.txt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">2009</a>.
+                  As the community has grown beyond 20 people in an IRC channel so to has all the data we have available.
+                  I've been writing one off scripts to answer questions like "What species/background ruins the most streaks?" or "Which god do most people pick here?"
+                  And recently, I killed a great character on zig:27 and decided to work out my frustration by putting together this app for people.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -77,11 +78,10 @@ export default function AboutPage() {
               <AccordionTrigger>How is this?</AccordionTrigger>
               <AccordionContent>
                 <p className="text-muted-foreground">
-                  The streak analytics data comes from parsing thousands of morgue files from
-                  verified winning streaks. Combo records are sourced from the community-maintained
-                  records pages. Player summaries are fetched from official DCSS scoring servers.
-                  Everything is held together with TypeScript, Next.js, and an unreasonable amount
-                  of regex.
+                  This is an important question because the answer is kind of terrible.
+                  I downloaded the streak files from CAO (over the course of a month so as not to create a bunch of load). Unfortunately, those files
+                  are plain text files that have undergone so many changes over the years. I had Claude read through a sample of them and develop a parser
+                  which is of medium correctness. It is enough to provide some info but boy is is text not the best way to get this data into a database.
                 </p>
               </AccordionContent>
             </AccordionItem>
@@ -89,7 +89,11 @@ export default function AboutPage() {
             <AccordionItem value="is">
               <AccordionTrigger>Is this?</AccordionTrigger>
               <AccordionContent>
-                <p className="text-muted-foreground">Yes.</p>
+                {Math.random() < 0.5 ? (
+                  <p className="text-muted-foreground">Yes.</p>
+                ) : (
+                  <p className="text-muted-foreground">No.</p>
+                )}
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -106,8 +110,7 @@ export default function AboutPage() {
         </div>
         <div className="px-4 py-3">
           <p className="text-sm text-muted-foreground mb-3">
-            CrawlCrawler isn&apos;t the only community project for DCSS. Check out these other
-            excellent tools:
+            These are other tools I use, shoot me note if you'd like yours added.
           </p>
           <div className="space-y-3">
             <a
