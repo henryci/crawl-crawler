@@ -8,7 +8,6 @@ export {
   getServiceMetadata,
   getAllServiceMetadata,
   recordStreakDownloadDate,
-  recordComboRecordsDownloadDate,
 } from './service-metadata.js';
 export type { ServiceMetadataKey } from './service-metadata.js';
 

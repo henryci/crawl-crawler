@@ -5,7 +5,6 @@ import { query } from './connection.js';
  */
 export const SERVICE_METADATA_KEYS = {
   STREAK_DOWNLOAD_DATE: 'streak_download_date',
-  COMBO_RECORDS_DOWNLOAD_DATE: 'combo_records_download_date',
 } as const;
 
 export type ServiceMetadataKey = typeof SERVICE_METADATA_KEYS[keyof typeof SERVICE_METADATA_KEYS];
@@ -57,16 +56,6 @@ export async function getAllServiceMetadata(): Promise<Record<string, { value: s
 export async function recordStreakDownloadDate(): Promise<void> {
   await setServiceMetadata(
     SERVICE_METADATA_KEYS.STREAK_DOWNLOAD_DATE,
-    new Date().toISOString()
-  );
-}
-
-/**
- * Set the combo records download date to the current time
- */
-export async function recordComboRecordsDownloadDate(): Promise<void> {
-  await setServiceMetadata(
-    SERVICE_METADATA_KEYS.COMBO_RECORDS_DOWNLOAD_DATE,
     new Date().toISOString()
   );
 }

@@ -2,19 +2,20 @@
 /**
  * Combo Records Updater Script
  *
- * Downloads the latest combo records from the DCSS scoring page,
- * saves them to the web app's public data folder, and records
- * the download timestamp in the database.
+ * Downloads the latest combo records from the DCSS scoring page
+ * and saves them to the web app's public data folder.
+ *
+ * The fetchedAt timestamp is stored in the JSON file itself,
+ * so no database connection is required.
  *
  * Usage:
- *   PGDATABASE=crawl_crawler pnpm update
+ *   pnpm update
  */
 
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { dirname, resolve, join } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseComboRecordsWithAnalytics } from 'dcss-combo-records-parser';
-import { closePool, recordComboRecordsDownloadDate } from '@crawl-crawler/game-data-db';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -36,7 +37,7 @@ async function main(): Promise<void> {
       console.log(`
 Combo Records Updater
 
-Downloads combo records, saves to web app, and records timestamp in database.
+Downloads combo records and saves to web app's public data folder.
 
 Usage:
   pnpm update [options]
@@ -45,12 +46,6 @@ Options:
   -u, --url <url>   URL to fetch combo records from
                     (default: ${DEFAULT_URL})
   -h, --help        Show this help message
-
-Environment:
-  PGDATABASE        PostgreSQL database name (required)
-  PGHOST            PostgreSQL host (default: localhost)
-  PGUSER            PostgreSQL user (default: current user)
-  PGPASSWORD        PostgreSQL password (if required)
 `);
       process.exit(0);
     }
@@ -84,11 +79,6 @@ Environment:
     writeFileSync(OUTPUT_PATH, JSON.stringify(data, null, 2));
     console.log(`Saved to: ${OUTPUT_PATH}`);
 
-    // Record the download timestamp in the database
-    console.log('\nRecording combo records download date...');
-    await recordComboRecordsDownloadDate();
-    console.log('  ✓ Combo records download date recorded');
-
     // Print some summary stats
     const removedSpecies = data.speciesStats.filter(s => s.isRemoved).length;
     const removedBgs = data.backgroundStats.filter(b => b.isRemoved).length;
@@ -111,8 +101,6 @@ Environment:
   } catch (error) {
     console.error('Error:', error instanceof Error ? error.message : error);
     process.exit(1);
-  } finally {
-    await closePool();
   }
 }
 

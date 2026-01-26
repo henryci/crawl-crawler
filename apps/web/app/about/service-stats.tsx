@@ -24,18 +24,29 @@ export function ServiceStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const response = await fetch("/api/service-metadata");
+        // Fetch service metadata from database and combo records date from JSON file in parallel
+        const [metadataResponse, comboRecordsResponse] = await Promise.all([
+          fetch("/api/service-metadata"),
+          fetch("/data/combo-records.json"),
+        ]);
 
-        if (!response.ok) {
+        if (!metadataResponse.ok) {
           throw new Error("Failed to fetch service metadata");
         }
 
-        const result = await response.json();
+        const metadataResult = await metadataResponse.json();
+        
+        // Get combo records fetchedAt from the JSON file
+        let comboRecordsDownloadDate: string | null = null;
+        if (comboRecordsResponse.ok) {
+          const comboRecordsData = await comboRecordsResponse.json();
+          comboRecordsDownloadDate = comboRecordsData.fetchedAt ?? null;
+        }
 
         setData({
-          streakGamesCount: result.totalGamesCount ?? null,
-          streakDownloadDate: result.metadata?.streak_download_date?.value ?? null,
-          comboRecordsDownloadDate: result.metadata?.combo_records_download_date?.value ?? null,
+          streakGamesCount: metadataResult.totalGamesCount ?? null,
+          streakDownloadDate: metadataResult.metadata?.streak_download_date?.value ?? null,
+          comboRecordsDownloadDate,
           loading: false,
           error: null,
         });
