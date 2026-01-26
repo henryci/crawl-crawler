@@ -7,6 +7,9 @@ let pool: pg.Pool | null = null;
 
 export function getPool(): pg.Pool {
   if (!pool) {
+    // Enable SSL for remote databases (like DigitalOcean)
+    const isRemoteDb = process.env.PGHOST && process.env.PGHOST !== 'localhost';
+    
     pool = new Pool({
       host: process.env.PGHOST || 'localhost',
       port: parseInt(process.env.PGPORT || '5432', 10),
@@ -16,6 +19,7 @@ export function getPool(): pg.Pool {
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
+      ssl: isRemoteDb ? { rejectUnauthorized: false } : false,
     });
   }
   return pool;
