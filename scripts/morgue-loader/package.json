@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "load": "tsx load.ts"
+    "load": "tsx load.ts",
+    "generate-csv": "tsx generate-csv.ts"
   },
   "dependencies": {
     "@crawl-crawler/game-data-db": "workspace:*",

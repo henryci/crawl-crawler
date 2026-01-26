@@ -40,7 +40,7 @@ export const SPECIES: Species[] = [
   { code: 'Po', name: 'Poltergeist', addedInVersion: '0.33' },
   { code: 'Re', name: 'Revenant', addedInVersion: '0.33' },
   { code: 'Sp', name: 'Spriggan' },
-  { code: 'Te', name: 'Tengu', aliases: ['Kenku'] },
+  { code: 'Te', name: 'Tengu' },
   { code: 'Tr', name: 'Troll' },
   { code: 'VS', name: 'Vine Stalker', addedInVersion: '0.16' },
 
@@ -55,7 +55,7 @@ export const SPECIES: Species[] = [
   { code: 'HD', name: 'Hill Dwarf', removedInVersion: '0.10' },
   { code: 'HE', name: 'High Elf', removedInVersion: '0.24' },
   { code: 'HO', name: 'Hill Orc', removedInVersion: '0.27' },
-  { code: 'Ke', name: 'Kenku', removedInVersion: '0.10', aliases: ['Tengu'] },
+  { code: 'Ke', name: 'Kenku', removedInVersion: '0.10' },
   { code: 'LO', name: 'Lava Orc', addedInVersion: '0.14', removedInVersion: '0.15' },
   { code: 'MD', name: 'Mountain Dwarf', removedInVersion: '0.10' },
   { code: 'Me', name: 'Meteoran', addedInVersion: '0.30', removedInVersion: '0.32' },

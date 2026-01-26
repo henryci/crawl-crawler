@@ -6,42 +6,69 @@ Parses DCSS morgue files and loads them into a PostgreSQL database for analysis 
 
 1. **PostgreSQL database**: You need a running PostgreSQL instance with the schema applied.
 
-2. **Run migrations**: Before loading morgues, ensure the database schema is up to date:
-   ```bash
-   cd packages/game-data-db
-   PGDATABASE=crawl_crawler pnpm migrate
+2. **Environment configuration**: Create `apps/web/.env` with your database connection details:
+   ```
+   PGHOST=localhost
+   PGPORT=5432
+   PGDATABASE=crawl_crawler
+   PGUSER=your_username
+   PGPASSWORD=your_password
    ```
 
-3. **Morgue files**: A directory containing `.txt` morgue files (typically downloaded using the `streak-downloader` script).
+3. **Run migrations**: Before loading morgues, ensure the database schema is up to date:
+   ```bash
+   pnpm db:migrate
+   ```
+
+4. **Morgue files**: A directory containing `.txt` morgue files (typically downloaded using the `streak-downloader` script).
 
 ## Usage
 
+There are two ways to load morgues:
+
+### Option 1: CSV Generation + COPY (Recommended for bulk loading)
+
+For large datasets (1000+ morgues), generate CSV files and use PostgreSQL's `COPY` command for much faster loading:
+
 ```bash
 cd scripts/morgue-loader
-PGDATABASE=crawl_crawler pnpm load <directory>
+
+# Generate CSV files (no database connection needed)
+pnpm generate-csv <morgue-directory> <output-directory>
+
+# Load into PostgreSQL
+psql -d crawl_crawler -f <output-directory>/load.sql
 ```
 
-### Environment Variables
+**Example:**
+```bash
+pnpm generate-csv ../streak-downloader/outputs ./csv-output
+psql -d crawl_crawler -f ./csv-output/load.sql
+```
 
-The loader uses standard PostgreSQL environment variables for connection:
+This generates:
+- CSV files for all database tables (lookup tables, games, detail tables)
+- A `load.sql` script that loads all CSVs in the correct order
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PGHOST` | Database host | `localhost` |
-| `PGPORT` | Database port | `5432` |
-| `PGDATABASE` | Database name | (required) |
-| `PGUSER` | Database user | current user |
-| `PGPASSWORD` | Database password | (none) |
+**Why use this method?**
+- ~100x faster than individual INSERTs for large datasets
+- 30,000 morgues load in minutes instead of hours
+- Single pass through files, no transaction overhead per row
 
-### Examples
+### Option 2: Direct Database Loading (For incremental updates)
+
+For smaller batches or incremental updates where you want to preserve existing data, run from the repository root:
 
 ```bash
-# Load morgues from the streak-downloader output directory
-PGDATABASE=crawl_crawler pnpm load ../streak-downloader/outputs
-
-# With full connection details
-PGHOST=localhost PGPORT=5432 PGDATABASE=crawl_crawler PGUSER=myuser pnpm load /path/to/morgues
+pnpm load:morgues <directory>
 ```
+
+**Example:**
+```bash
+pnpm load:morgues scripts/streak-downloader/outputs
+```
+
+This uses the `.env` file for database connection and inserts records directly.
 
 ## URL Mapping Integration
 
@@ -116,16 +143,25 @@ Skipping morgue-xxx.txt (no player name)
 
 ### Connection errors
 
-Ensure PostgreSQL is running and the connection details are correct:
+Ensure PostgreSQL is running and your `.env` file has the correct connection details:
 ```bash
 # Test connection
-psql -h $PGHOST -p $PGPORT -d $PGDATABASE -c "SELECT 1"
+psql -d crawl_crawler -c "SELECT 1"
 ```
 
 ### Migration errors
 
 If you see errors about missing columns, run the migrations:
 ```bash
-cd packages/game-data-db
-PGDATABASE=crawl_crawler pnpm migrate
+pnpm db:migrate
 ```
+
+### CSV COPY errors
+
+If the `load.sql` script fails:
+
+1. **Check for existing data**: The script truncates all tables by default. If you want to append instead, comment out the `TRUNCATE` section in `load.sql`.
+
+2. **Permission errors**: Ensure the PostgreSQL user has permission to read the CSV files. The generated script uses `\copy` (client-side) which reads files from your local machine.
+
+3. **Data type mismatches**: If you see type errors, check that the CSV files aren't corrupted. Re-run `generate-csv` to regenerate them.
