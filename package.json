@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @crawl-crawler/web dev",
-    "build": "pnpm --filter @crawl-crawler/web build",
+    "build": "pnpm -r build",
     "start": "pnpm --filter @crawl-crawler/web start",
     "lint": "pnpm -r lint",
     "build:parser": "pnpm --filter dcss-morgue-parser build",
