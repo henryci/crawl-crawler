@@ -18,19 +18,11 @@ export default function AboutPage() {
         <div className="flex items-start gap-3">
           <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
           <div>
-            <h3 className="font-semibold text-foreground text-sm mb-0.5">Beta Software</h3>
+            <h3 className="font-semibold text-foreground text-sm mb-0.5">Test Software</h3>
             <p className="text-xs text-muted-foreground">
-              CrawlCrawler is still very much in beta. The big thing to watch out for is that the morgue parser is very fragile, so there will be data errors.
+              CrawlCrawler is still very much a test project. The big thing to watch out for is that the morgue parser is very fragile, so there will be data errors.
               I also have no sense of what load this service will see, so don't be surprised if it's slow, or down.
-              If you encounter any bugs or have suggestions, please report them on{" "}
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                GitHub.
-              </a>
+              If you encounter any bugs or have suggestions, please send me an email at: me(at)henrycipolla.com.
             </p>
           </div>
         </div>
@@ -48,7 +40,7 @@ export default function AboutPage() {
           </div>
         </div>
         <div className="px-4 py-2">
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible defaultValue="what" className="w-full">
             <AccordionItem value="what">
               <AccordionTrigger>What is this?</AccordionTrigger>
               <AccordionContent>
@@ -57,8 +49,8 @@ export default function AboutPage() {
                   Stone Soup (DCSS)</a>.
                   It provides insights into what choices streak players are making and what combos records to go for.
                   I've also included updated player and morgue summary pages to reflect the info I typically need.
-                  Perhaps most importantly, it's a proof of concept for a more general data platform.
-                  Please see <a href="/appeal" className="text-primary hover:underline">my appeal to the dev community</a> for my thoughts on what is possible.
+                  Perhaps most importantly, it's a proof of concept for what is possible with our game.
+                  Please see <a href="/appeal" className="text-primary hover:underline">my appeal to the dev community</a> for my thoughts on what we can do.
                 </p>
               </AccordionContent>
             </AccordionItem>

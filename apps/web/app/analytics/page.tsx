@@ -120,7 +120,7 @@ const defaultFilters: Filters = {
   minTurns: "",
   maxTurns: "",
   player: "",
-  minVersion: "0.30",
+  minVersion: "0.20",
   maxVersion: "",
   excludeLegacy: true,
 };
@@ -438,8 +438,8 @@ function AnalyticsContent() {
     return (
       <PageWrapper>
         <PageHeader
-          title="Game Analytics"
-          subtitle="Explore game data and statistics"
+          title="Streak Analytics"
+          subtitle="This site's main attraction"
           icon={BarChart3}
           variant="mana"
         />
@@ -457,8 +457,8 @@ function AnalyticsContent() {
   return (
     <PageWrapper>
       <PageHeader
-        title="Game Analytics"
-        subtitle="Explore game data and statistics"
+        title="Streak Analytics"
+        subtitle="This site's main attraction"
         icon={BarChart3}
         variant="mana"
       />
