@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -13,6 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  User,
+  Link,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +31,21 @@ import {
   RecentGamesSection,
 } from "@/components/player";
 import type { PlayerData } from "dcss-player-parser";
+
+const CAO_BASE_URL = "https://crawl.akrasiac.org/scoring/players/";
+
+// Detect if input looks like a URL or a username
+function isUrl(input: string): boolean {
+  return input.includes("://") || input.includes("/") || input.includes(".");
+}
+
+// Build the full URL from input
+function buildUrl(input: string): string {
+  if (!input.trim()) return "";
+  if (isUrl(input)) return input;
+  // It's a username - build CAO URL
+  return `${CAO_BASE_URL}${input.toLowerCase()}.html`;
+}
 
 // We'll use dynamic import for the parser to ensure it only runs client-side
 let parsePlayerPage: ((html: string) => PlayerData) | null = null;
@@ -59,15 +76,19 @@ function PlayerSummaryContent() {
   const router = useRouter();
 
   const urlFromParams = searchParams.get("url") || "";
-  const [url, setUrl] = useState(urlFromParams);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<PlayerData | null>(null);
   const [lastLoadedUrl, setLastLoadedUrl] = useState<string | null>(null);
 
+  // Determine if current input is a URL or username
+  const inputIsUrl = useMemo(() => isUrl(input), [input]);
+  const resolvedUrl = useMemo(() => buildUrl(input), [input]);
+
   const fetchAndParse = useCallback(async (targetUrl: string) => {
     if (!targetUrl) {
-      setError("Please enter a URL");
+      setError("Please enter a username or URL");
       return;
     }
 
@@ -106,18 +127,27 @@ function PlayerSummaryContent() {
   // Auto-load when URL param changes (including browser back/forward navigation)
   useEffect(() => {
     if (urlFromParams && urlFromParams !== lastLoadedUrl) {
-      setUrl(urlFromParams);
+      // Try to extract username from CAO URL for cleaner display
+      const caoMatch = urlFromParams.match(/crawl\.akrasiac\.org\/scoring\/players\/([^.]+)\.html/);
+      if (caoMatch) {
+        setInput(caoMatch[1]);
+      } else {
+        setInput(urlFromParams);
+      }
       fetchAndParse(urlFromParams);
     }
   }, [urlFromParams, lastLoadedUrl, fetchAndParse]);
 
   const handleFetchAndParse = async () => {
+    const targetUrl = resolvedUrl;
+    if (!targetUrl) return;
+    
     // Update URL params when user clicks Analyze
     const newParams = new URLSearchParams();
-    newParams.set("url", url);
+    newParams.set("url", targetUrl);
     router.push(`/player?${newParams.toString()}`, { scroll: false });
 
-    await fetchAndParse(url);
+    await fetchAndParse(targetUrl);
   };
 
   const [searchExpanded, setSearchExpanded] = useState(!playerData);
@@ -139,7 +169,7 @@ function PlayerSummaryContent() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Search className="w-5 h-5 text-health" />
-                  Enter Player Scoring Page URL
+                  Look Up Player
                 </CardTitle>
                 {playerData && (
                   <Button
@@ -155,17 +185,26 @@ function PlayerSummaryContent() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-3">
-                <Input
-                  type="text"
-                  placeholder="https://crawl.akrasiac.org/scoring/players/playername.html"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleFetchAndParse()}
-                  className="flex-1"
-                />
+                <div className="flex-1 relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {inputIsUrl ? (
+                      <Link className="w-4 h-4" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="username or full URL"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleFetchAndParse()}
+                    className="pl-10"
+                  />
+                </div>
                 <Button
                   onClick={handleFetchAndParse}
-                  disabled={loading}
+                  disabled={loading || !input.trim()}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {loading ? (
@@ -179,6 +218,16 @@ function PlayerSummaryContent() {
                 </Button>
               </div>
 
+              {/* Show resolved URL preview when typing a username */}
+              {input.trim() && !inputIsUrl && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="shrink-0">Will fetch:</span>
+                  <code className="bg-secondary/50 px-2 py-1 rounded text-[11px] truncate">
+                    {resolvedUrl}
+                  </code>
+                </div>
+              )}
+
               {error && (
                 <div className="mt-4 flex items-start gap-2 p-4 rounded-md bg-destructive/10 border border-destructive/20">
                   <AlertCircle className="w-5 h-5 text-destructive mt-0.5 shrink-0" />
@@ -190,7 +239,7 @@ function PlayerSummaryContent() {
               )}
 
               <p className="mt-4 text-xs text-muted-foreground">
-                Enter a player scoring page URL from crawl.akrasiac.org (CAO), crawl.xtahua.com
+                Enter a CAO username or a full player scoring page URL from crawl.akrasiac.org (CAO), crawl.xtahua.com
                 (CXC), or similar servers.
               </p>
             </CardContent>
