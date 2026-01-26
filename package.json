@@ -13,10 +13,10 @@
     "download:combo-records": "pnpm --filter dcss-combo-records-parser build && node packages/dcss-combo-records-parser/dist/cli.js --output apps/web/public/data/combo-records.json",
     "diagnose:morgue": "pnpm --filter dcss-morgue-parser build && pnpm --filter morgue-parser-diagnostic diagnose",
     "diagnose:morgue:verbose": "pnpm --filter dcss-morgue-parser build && pnpm --filter morgue-parser-diagnostic diagnose:verbose",
-    "db:migrate": "PGDATABASE=crawl_crawler pnpm --filter @crawl-crawler/game-data-db migrate",
-    "db:migrate:down": "PGDATABASE=crawl_crawler pnpm --filter @crawl-crawler/game-data-db migrate:down",
-    "db:reset": "PGDATABASE=crawl_crawler pnpm --filter @crawl-crawler/game-data-db migrate:reset",
-    "load:morgues": "PGDATABASE=crawl_crawler tsx scripts/morgue-loader/load.ts"
+    "db:migrate": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts",
+    "db:migrate:down": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts down",
+    "db:reset": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts reset",
+    "load:morgues": "tsx --env-file=apps/web/.env scripts/morgue-loader/load.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
