@@ -1,0 +1,19 @@
+name: crawl-crawler
+
+services:
+  - name: web
+    github:
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    build_command: pnpm install && pnpm build
+    run_command: pnpm start
+    environment_slug: node-js
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    http_port: 3000
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
