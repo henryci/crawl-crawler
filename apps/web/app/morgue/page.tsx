@@ -358,36 +358,6 @@ function MorgueViewerContent() {
       {/* Parsed Morgue Display */}
       {morgueData && <MorgueDisplay data={morgueData} />}
 
-      {/* Info Section (show when no data loaded) */}
-      {!morgueData && (
-        <Card className="bg-secondary/30 border-border">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Map className="w-4 h-4 text-muted-foreground" />
-              What is a Morgue File?
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>
-              A morgue file is a detailed text dump generated when your DCSS character dies (or wins!). It contains a
-              comprehensive record of your run including:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Character stats, skills, and equipment</li>
-              <li>Spells known and abilities acquired</li>
-              <li>Mutations and god gifts</li>
-              <li>Dungeon progress and discovered areas</li>
-              <li>Kill counts and notable events</li>
-              <li>Message history from the final moments</li>
-            </ul>
-            <p className="mt-4">
-              Morgue files are hosted on public servers like{" "}
-              <code className="px-1 py-0.5 rounded bg-secondary text-foreground">crawl.akrasiac.org</code> and{" "}
-              <code className="px-1 py-0.5 rounded bg-secondary text-foreground">crawl.xtahua.com</code>.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </PageWrapper>
   );
 }

@@ -8,7 +8,7 @@
 // =============================================================================
 
 export const navTooltips = {
-  analytics: "Filter through streak games looking for insights and ideas",
+  analytics: "Filter through streak games looking for insights. For example, what skills do DrEE typically train?",
   morgueViewer: "A morgue file viewer, bare-bones today but has potential",
   playerSummary: "A view of a player's games with basic sorting and filtering",
   records: "Sortable, filterable list of combo records. Find your next goal",
