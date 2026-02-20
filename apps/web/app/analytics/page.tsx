@@ -688,7 +688,7 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <TabsTrigger
                     value="games"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/30 data-[state=active]:border-mana data-[state=active]:text-foreground px-4 transition-colors"
+                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                   >
                     <Gamepad2 className="w-4 h-4 mr-2" />
                     Games
@@ -700,7 +700,7 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <TabsTrigger
                     value="deep-dive"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/30 data-[state=active]:border-mana data-[state=active]:text-foreground px-4 transition-colors"
+                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                   >
                     <Sparkles className="w-4 h-4 mr-2" />
                     Deep Dive
@@ -712,7 +712,7 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <TabsTrigger
                     value="trends"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/30 data-[state=active]:border-mana data-[state=active]:text-foreground px-4 transition-colors"
+                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                   >
                     <TrendingUp className="w-4 h-4 mr-2" />
                     Trends
@@ -724,7 +724,7 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <TabsTrigger
                     value="skills"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/30 data-[state=active]:border-mana data-[state=active]:text-foreground px-4 transition-colors"
+                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
                     Skills
@@ -736,7 +736,7 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <TabsTrigger
                     value="spells"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-mana/30 data-[state=active]:border-mana data-[state=active]:text-foreground px-4 transition-colors"
+                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                   >
                     <Wand2 className="w-4 h-4 mr-2" />
                     Spells
