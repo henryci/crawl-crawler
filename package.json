@@ -16,7 +16,8 @@
     "db:migrate": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts",
     "db:migrate:down": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts down",
     "db:reset": "tsx --env-file=apps/web/.env packages/game-data-db/src/migrate.ts reset",
-    "load:morgues": "tsx --env-file=apps/web/.env scripts/morgue-loader/load.ts"
+    "load:morgues": "tsx --env-file=apps/web/.env scripts/morgue-loader/load.ts",
+    "db:test": "tsx --env-file=apps/web/.env scripts/db-test.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
