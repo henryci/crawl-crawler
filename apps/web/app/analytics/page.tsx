@@ -686,61 +686,71 @@ function AnalyticsContent() {
             <TabsList className="bg-transparent gap-2 p-0">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="games"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-                  >
-                    <Gamepad2 className="w-4 h-4 mr-2" />
-                    Games
-                  </TabsTrigger>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="games"
+                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <Gamepad2 className="w-4 h-4 mr-2" />
+                      Games
+                    </TabsTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.games}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="deep-dive"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-                  >
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Deep Dive
-                  </TabsTrigger>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="deep-dive"
+                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Deep Dive
+                    </TabsTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.deepDive}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="trends"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    Trends
-                  </TabsTrigger>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="trends"
+                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Trends
+                    </TabsTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.trends}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="skills"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-                  >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Skills
-                  </TabsTrigger>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="skills"
+                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Skills
+                    </TabsTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.skills}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <TabsTrigger
-                    value="spells"
-                    className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-                  >
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Spells
-                  </TabsTrigger>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="spells"
+                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <Wand2 className="w-4 h-4 mr-2" />
+                      Spells
+                    </TabsTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.spells}</TooltipContent>
               </Tooltip>
