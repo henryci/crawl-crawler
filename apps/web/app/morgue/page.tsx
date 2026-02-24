@@ -774,32 +774,52 @@ function EquipmentSection({ data }: { data: MorgueData }) {
 }
 
 /**
- * Color palette for skills - distinct, visually appealing colors
+ * Shades per skill category — enough distinct shades for each category's skills.
+ * Ordered from brightest to most muted within each hue family.
  */
-const SKILL_COLORS = [
-  "#22d3ee", // cyan
-  "#f472b6", // pink
-  "#a78bfa", // violet
-  "#34d399", // emerald
-  "#fb923c", // orange
-  "#facc15", // yellow
-  "#60a5fa", // blue
-  "#f87171", // red
-  "#4ade80", // green
-  "#c084fc", // purple
-  "#2dd4bf", // teal
-  "#fbbf24", // amber
-  "#818cf8", // indigo
-  "#fb7185", // rose
-  "#38bdf8", // sky
-  "#a3e635", // lime
-];
+const SKILL_CATEGORY_SHADES: Record<string, string[]> = {
+  Offense: [
+    "#f87171", "#ef4444", "#fb923c", "#f97316", "#fbbf24",
+    "#e11d48", "#dc2626", "#c2410c", "#ea580c", "#d97706",
+    "#b91c1c", "#9f1239", "#a16207",
+  ],
+  Defense: [
+    "#60a5fa", "#3b82f6", "#38bdf8", "#06b6d4",
+    "#2563eb", "#0284c7", "#0369a1", "#1d4ed8",
+  ],
+  Magic: [
+    "#c084fc", "#a855f7", "#e879f9", "#d946ef", "#818cf8",
+    "#7c3aed", "#a21caf", "#6d28d9", "#9333ea", "#7e22ce",
+    "#6366f1", "#4f46e5", "#581c87", "#4338ca",
+  ],
+  Misc: [
+    "#fbbf24", "#f59e0b", "#34d399", "#d97706",
+    "#b45309", "#10b981", "#059669",
+  ],
+};
 
-/**
- * Get a consistent color for a skill based on its index
- */
-function getSkillColor(index: number): string {
-  return SKILL_COLORS[index % SKILL_COLORS.length];
+const SKILL_COLOR_FALLBACK = "#64748b";
+
+const _skillColorCache: Record<string, string> = {};
+
+function getSkillColor(skillName: string): string {
+  if (_skillColorCache[skillName]) return _skillColorCache[skillName];
+
+  for (const cat of SKILL_CATEGORIES) {
+    if (cat.skills.has(skillName)) {
+      const shades = SKILL_CATEGORY_SHADES[cat.label];
+      if (shades) {
+        const members = [...cat.skills];
+        const idx = members.indexOf(skillName);
+        const color = shades[idx % shades.length];
+        _skillColorCache[skillName] = color;
+        return color;
+      }
+    }
+  }
+
+  _skillColorCache[skillName] = SKILL_COLOR_FALLBACK;
+  return SKILL_COLOR_FALLBACK;
 }
 
 const ACTION_CATEGORY_COLORS: Record<string, string> = {
@@ -1169,6 +1189,72 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
   );
 }
 
+const SKILL_CATEGORIES: { label: string; color: string; skills: Set<string> }[] = [
+  {
+    label: "Offense",
+    color: "#ef4444",
+    skills: new Set([
+      "Fighting", "Maces & Flails", "Axes", "Polearms", "Staves",
+      "Short Blades", "Long Blades", "Ranged Weapons",
+      "Unarmed Combat", "Throwing",
+      // Older versions
+      "Crossbows", "Bows", "Slings",
+    ]),
+  },
+  {
+    label: "Defense",
+    color: "#3b82f6",
+    skills: new Set(["Armour", "Dodging", "Shields", "Stealth"]),
+  },
+  {
+    label: "Magic",
+    color: "#a855f7",
+    skills: new Set([
+      "Spellcasting", "Conjurations", "Hexes", "Summonings", "Necromancy",
+      "Forgecraft", "Translocations", "Alchemy", "Fire Magic", "Air Magic",
+      "Ice Magic", "Earth Magic",
+      // Older versions
+      "Poison Magic", "Transmutations", "Enchantments", "Charms",
+    ]),
+  },
+  {
+    label: "Misc",
+    color: "#f59e0b",
+    skills: new Set(["Invocations", "Evocations", "Shapeshifting"]),
+  },
+];
+
+function categorizeSkills(skills: Record<string, number>): { label: string; color: string; entries: [string, number][] }[] {
+  const assigned = new Set<string>();
+  const groups: { label: string; color: string; entries: [string, number][] }[] = [];
+
+  for (const cat of SKILL_CATEGORIES) {
+    const entries: [string, number][] = [];
+    for (const [skill, level] of Object.entries(skills)) {
+      if (cat.skills.has(skill)) {
+        entries.push([skill, level]);
+        assigned.add(skill);
+      }
+    }
+    if (entries.length > 0) {
+      entries.sort(([, a], [, b]) => b - a);
+      groups.push({ label: cat.label, color: cat.color, entries });
+    }
+  }
+
+  // Collect any unrecognized skills
+  const other: [string, number][] = [];
+  for (const [skill, level] of Object.entries(skills)) {
+    if (!assigned.has(skill)) other.push([skill, level]);
+  }
+  if (other.length > 0) {
+    other.sort(([, a], [, b]) => b - a);
+    groups.push({ label: "Other", color: "#64748b", entries: other });
+  }
+
+  return groups;
+}
+
 /**
  * Skills tab showing skill levels and progression visualization.
  */
@@ -1188,36 +1274,45 @@ function SkillsTab({ data }: { data: MorgueData }) {
     );
   }
 
-  // Sort skills by level descending
-  const sortedSkills = Object.entries(skills).sort(([, a], [, b]) => b - a);
+  const skillGroups = categorizeSkills(skills);
   const hasProgression = skillsByXl && Object.keys(skillsByXl).length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Final Skills Grid */}
+      {/* Final Skills Grid — grouped by category */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-mana" />
-            Skills
+            Ending Skill Levels
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-            {sortedSkills.map(([skill, level]) => (
-              <div
-                key={skill}
-                className="flex items-center justify-between py-1 px-2 rounded-sm bg-secondary/30"
-              >
-                <span className="text-sm text-foreground truncate">{skill}</span>
-                <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                  <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="space-y-4">
+            {skillGroups.map((group) => (
+              <div key={group.label}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{group.label}</span>
+                </div>
+                <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {group.entries.map(([skill, level]) => (
                     <div
-                      className="h-full bg-mana rounded-full"
-                      style={{ width: `${Math.min((level / 27) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <span className="font-mono text-xs text-mana w-8 text-right">{level.toFixed(1)}</span>
+                      key={skill}
+                      className="flex items-center justify-between py-1 px-2 rounded-sm bg-secondary/30"
+                    >
+                      <span className="text-sm text-foreground truncate">{skill}</span>
+                      <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                        <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${Math.min((level / 27) * 100, 100)}%`, backgroundColor: group.color }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs w-8 text-right" style={{ color: group.color }}>{level.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -1282,11 +1377,8 @@ function SkillsTab({ data }: { data: MorgueData }) {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Swords className="w-4 h-4 text-danger" />
-              Actions
+              Action Usage
             </CardTitle>
-            <CardDescription className="font-mono">
-              Action usage by experience level range
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <ActionsChart actions={data.actions} />
@@ -1418,8 +1510,8 @@ function SkillProgressionChart({
     <div>
       {/* Skill Legend / Filter */}
       <div className="flex flex-wrap gap-2 mb-4">
-          {sortedSkillNames.slice(0, 12).map((skillName, idx) => {
-            const color = getSkillColor(idx);
+          {sortedSkillNames.slice(0, 12).map((skillName) => {
+            const color = getSkillColor(skillName);
             const isSelected = selectedSkills.has(skillName);
             const isVisible = selectedSkills.size === 0 || isSelected;
             const isHovered = hoveredSkill === skillName;
@@ -1528,9 +1620,8 @@ function SkillProgressionChart({
             </text>
 
             {/* Skill lines - render in reverse order so higher skills are on top */}
-            {[...visibleSkills].reverse().map((skillName, i) => {
-              const idx = sortedSkillNames.indexOf(skillName);
-              const color = getSkillColor(idx);
+            {[...visibleSkills].reverse().map((skillName) => {
+              const color = getSkillColor(skillName);
               const isHighlighted = hoveredSkill === skillName || (selectedSkills.size > 0 && selectedSkills.has(skillName));
               const opacity = hoveredSkill
                 ? hoveredSkill === skillName
@@ -1598,8 +1689,7 @@ function SkillProgressionChart({
             {/* Points at hovered XL */}
             {hoveredXl !== null &&
               visibleSkills.map((skillName) => {
-                const idx = sortedSkillNames.indexOf(skillName);
-                const color = getSkillColor(idx);
+                const color = getSkillColor(skillName);
                 const level = getSkillAtXl(skillName, hoveredXl);
                 if (level === 0) return null;
 
@@ -1635,8 +1725,7 @@ function SkillProgressionChart({
                   .filter((s) => getSkillAtXl(s, hoveredXl) > 0)
                   .slice(0, 8)
                   .map((skillName) => {
-                    const idx = sortedSkillNames.indexOf(skillName);
-                    const color = getSkillColor(idx);
+                    const color = getSkillColor(skillName);
                     const level = getSkillAtXl(skillName, hoveredXl);
 
                     return (
@@ -1745,8 +1834,8 @@ function SkillProgressionTable({
           </tr>
         </thead>
         <tbody>
-          {sortedSkillNames.map((skillName, idx) => {
-            const color = getSkillColor(idx);
+          {sortedSkillNames.map((skillName) => {
+            const color = getSkillColor(skillName);
             return (
               <tr key={skillName} className="border-b border-border/50 hover:bg-secondary/30">
                 <td className="py-2 px-3 sticky left-0 bg-card">
