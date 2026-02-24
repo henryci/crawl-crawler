@@ -1464,6 +1464,18 @@ const BRANCH_COLORS: Record<string, string> = {
   Zig: "#f59e0b",
 };
 
+const BRANCH_FULL_TO_SHORT: Record<string, string> = {
+  Dungeon: "D", "Orcish Mines": "Orc", "Elven Halls": "Elf",
+  "Snake Pit": "Snake", "Spider Nest": "Spider", "Slime Pits": "Slime",
+  Pandemonium: "Pan", Gehenna: "Geh", Cocytus: "Coc", Tartarus: "Tar",
+  Ziggurat: "Zig", "Ice Cave": "IceCv", "Wizard Laboratory": "WizLab",
+  Labyrinth: "Lab", "Hall of Blades": "Blade", Desolation: "Desolation",
+};
+
+function getBranchColor(name: string): string {
+  return BRANCH_COLORS[name] ?? BRANCH_COLORS[BRANCH_FULL_TO_SHORT[name] ?? ""] ?? "#6b7280";
+}
+
 interface XpEntry {
   xl: number;
   turn: number | null;
@@ -1693,23 +1705,24 @@ function DungeonTab({ data }: { data: MorgueData }) {
           <CardTitle className="text-base flex items-center gap-2">
             <Map className="w-4 h-4 text-health" />
             Branches Explored ({data.branchesVisitedCount ?? Object.keys(branches).length})
+            {data.levelsSeenCount !== null && (
+              <span className="text-xs font-normal text-muted-foreground font-mono ml-1">
+                — {data.levelsSeenCount} levels seen
+              </span>
+            )}
           </CardTitle>
-          {data.levelsSeenCount !== null && (
-            <CardDescription className="font-mono">
-              {data.levelsSeenCount} total levels seen
-            </CardDescription>
-          )}
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {sortedBranches.map(([branch, info]) => (
               <div
                 key={branch}
-                className="flex items-center justify-between p-3 rounded bg-secondary/50"
+                className="flex items-center justify-between py-1 px-2 rounded-sm bg-secondary/30 border-l-2"
+                style={{ borderLeftColor: getBranchColor(branch) }}
               >
-                <span className="text-foreground font-medium">{branch}</span>
-                <span className="font-mono text-sm text-muted-foreground">
-                  {info.levelsSeen ?? info.deepest ?? "?"}/{info.levelsTotal ?? "?"}
+                <span className="text-foreground text-sm truncate">{branch}</span>
+                <span className="font-mono text-xs text-muted-foreground ml-2 shrink-0">
+                  {info.levelsSeen ?? info.deepest ?? "?"}
                 </span>
               </div>
             ))}
