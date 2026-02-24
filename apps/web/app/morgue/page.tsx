@@ -822,8 +822,12 @@ const ACTION_ITEM_COLORS = [
   "#a855f7", "#64748b", "#e879f9", "#fb923c", "#2dd4bf",
 ];
 
+type ScaleMode = "stacked" | "linear" | "log";
+const OVERVIEW_KEY = "__overview__";
+
 function ActionsChart({ actions }: { actions: Record<string, Record<string, Record<string, number>>> }) {
   const [hoveredRange, setHoveredRange] = useState<string | null>(null);
+  const [scaleMode, setScaleMode] = useState<ScaleMode>("stacked");
 
   // Build sorted categories with their totals
   const sortedCategories = useMemo(() => {
@@ -839,59 +843,116 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
     return cats.sort((a, b) => b.total - a.total);
   }, [actions]);
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const activeCategory = selectedCategory ?? sortedCategories[0]?.name ?? null;
+  const [selectedCategory, setSelectedCategory] = useState<string>(OVERVIEW_KEY);
 
-  // Build individual action data for the selected category
-  const { actionNames, actionData } = useMemo(() => {
-    if (!activeCategory || !actions[activeCategory]) return { actionNames: [], actionData: {} as Record<string, Record<string, number>> };
+  // Build segment data — either overview (categories) or drilldown (items within category)
+  const { segmentNames, segmentColorFn, stackedData } = useMemo(() => {
+    const isOverview = selectedCategory === OVERVIEW_KEY;
 
-    const items = actions[activeCategory];
-    const data: Record<string, Record<string, number>> = {};
+    // Build the raw data: name -> xlRange -> count
+    const rawData: Record<string, Record<string, number>> = {};
 
-    for (const [actionName, counts] of Object.entries(items)) {
-      const rangeTotals: Record<string, number> = {};
-      let hasAny = false;
-      for (const range of XL_RANGES) {
-        if (counts[range]) {
-          rangeTotals[range] = counts[range];
-          hasAny = true;
+    if (isOverview) {
+      for (const cat of sortedCategories) {
+        const items = actions[cat.name];
+        if (!items) continue;
+        const rangeTotals: Record<string, number> = {};
+        for (const [, counts] of Object.entries(items)) {
+          for (const range of XL_RANGES) {
+            if (counts[range]) rangeTotals[range] = (rangeTotals[range] ?? 0) + counts[range];
+          }
+        }
+        if (Object.values(rangeTotals).some((v) => v > 0)) rawData[cat.name] = rangeTotals;
+      }
+    } else {
+      const items = actions[selectedCategory];
+      if (items) {
+        for (const [actionName, counts] of Object.entries(items)) {
+          const rangeTotals: Record<string, number> = {};
+          for (const range of XL_RANGES) {
+            if (counts[range]) rangeTotals[range] = counts[range];
+          }
+          if (Object.values(rangeTotals).some((v) => v > 0)) rawData[actionName] = rangeTotals;
         }
       }
-      if (hasAny) data[actionName] = rangeTotals;
     }
 
-    const sorted = Object.keys(data).sort((a, b) => {
-      const totalA = Object.values(data[a] ?? {}).reduce((s, v) => s + v, 0);
-      const totalB = Object.values(data[b] ?? {}).reduce((s, v) => s + v, 0);
+    const names = Object.keys(rawData).sort((a, b) => {
+      const totalA = Object.values(rawData[a] ?? {}).reduce((s, v) => s + v, 0);
+      const totalB = Object.values(rawData[b] ?? {}).reduce((s, v) => s + v, 0);
       return totalB - totalA;
     });
 
-    return { actionNames: sorted, actionData: data };
-  }, [actions, activeCategory]);
+    const colorFn = (name: string, idx: number) =>
+      isOverview
+        ? ACTION_CATEGORY_COLORS[name] ?? ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length]
+        : ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length];
 
-  const stackedData = useMemo(() => {
-    return XL_RANGES.map((range) => {
-      const total = actionNames.reduce((s, name) => s + (actionData[name]?.[range] ?? 0), 0);
+    const stacked = XL_RANGES.map((range) => {
+      const total = names.reduce((s, name) => s + (rawData[name]?.[range] ?? 0), 0);
       let cumPct = 0;
-      const segments = actionNames.map((name) => {
-        const value = actionData[name]?.[range] ?? 0;
+      let cumVal = 0;
+      const segments = names.map((name) => {
+        const value = rawData[name]?.[range] ?? 0;
         const pct = total > 0 ? value / total : 0;
-        const segment = { name, value, pct, y0: cumPct, y1: cumPct + pct };
+        const seg = { name, value, pct, pctY0: cumPct, pctY1: cumPct + pct, valY0: cumVal, valY1: cumVal + value };
         cumPct += pct;
-        return segment;
+        cumVal += value;
+        return seg;
       });
       return { range, segments, total };
     });
-  }, [actionData, actionNames]);
+
+    return { segmentNames: names, segmentColorFn: colorFn, stackedData: stacked };
+  }, [actions, selectedCategory, sortedCategories]);
+
+  // Y-axis scale computations
+  const maxTotal = Math.max(...stackedData.map((d) => d.total), 1);
+
+  const yTicks = useMemo(() => {
+    if (scaleMode === "stacked") return [25, 50, 75, 100];
+    if (scaleMode === "log") {
+      const ticks: number[] = [];
+      let v = 1;
+      while (v <= maxTotal * 1.5) {
+        ticks.push(v);
+        v *= 10;
+      }
+      return ticks;
+    }
+    // linear
+    const tickCount = 4;
+    const rawStep = maxTotal / tickCount;
+    const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = Math.ceil(rawStep / mag) * mag;
+    return Array.from({ length: tickCount + 1 }, (_, i) => i * step);
+  }, [maxTotal, scaleMode]);
+
+  const effectiveMax = scaleMode === "stacked" ? 100 : scaleMode === "log" ? yTicks[yTicks.length - 1] ?? maxTotal : yTicks[yTicks.length - 1] ?? maxTotal;
 
   const chartWidth = 900;
   const chartHeight = 220;
-  const padding = { top: 24, right: 12, bottom: 28, left: 32 };
+  const padding = { top: 24, right: 12, bottom: 28, left: scaleMode === "stacked" ? 32 : 44 };
   const barAreaWidth = chartWidth - padding.left - padding.right;
   const barAreaHeight = chartHeight - padding.top - padding.bottom;
   const barGap = 8;
   const barWidth = (barAreaWidth - barGap * (XL_RANGES.length - 1)) / XL_RANGES.length;
+
+  function yPos(value: number): number {
+    if (scaleMode === "log") {
+      if (value <= 0) return padding.top + barAreaHeight;
+      const logMax = Math.log10(effectiveMax);
+      const logVal = Math.log10(value);
+      return padding.top + barAreaHeight * (1 - logVal / logMax);
+    }
+    return padding.top + barAreaHeight * (1 - value / effectiveMax);
+  }
+
+  function formatTick(n: number): string {
+    if (scaleMode === "stacked") return `${n}%`;
+    if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+    return String(n);
+  }
 
   function formatTotal(n: number): string {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -904,52 +965,90 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
 
   return (
     <div>
-      {/* Category selector */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        {sortedCategories.map((cat) => (
+      {/* Category selector + scale mode */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap gap-1.5">
           <button
-            key={cat.name}
-            onClick={() => setSelectedCategory(cat.name)}
+            onClick={() => setSelectedCategory(OVERVIEW_KEY)}
             className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
-              activeCategory === cat.name
+              selectedCategory === OVERVIEW_KEY
                 ? "bg-primary text-primary-foreground"
                 : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
             }`}
           >
-            {cat.name}
-            <span className="ml-1 opacity-70">{cat.total.toLocaleString()}</span>
+            Overview
           </button>
-        ))}
+          {sortedCategories.map((cat) => (
+            <button
+              key={cat.name}
+              onClick={() => setSelectedCategory(cat.name)}
+              className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                selectedCategory === cat.name
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              {cat.name}
+              <span className="ml-1 opacity-70">{cat.total.toLocaleString()}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-0.5 shrink-0">
+          {(["stacked", "linear", "log"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setScaleMode(mode)}
+              className={`px-2 py-0.5 text-xs font-medium rounded transition-colors ${
+                scaleMode === mode
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {mode === "stacked" ? "Stacked %" : mode === "linear" ? "Linear" : "Log"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="h-6 mb-1 flex items-center">
+      {/* Hover info — two lines: header + breakdown */}
+      <div className="min-h-[44px] mb-1">
         {hoveredData ? (
-          <div className="flex items-center gap-3 text-sm font-mono flex-wrap">
-            <span className="text-health font-bold">XL {hoveredData.range}</span>
-            <span className="text-muted-foreground">({hoveredData.total.toLocaleString()})</span>
-            {hoveredData.segments
-              .filter((s) => s.value > 0)
-              .sort((a, b) => b.value - a.value)
-              .slice(0, 6)
-              .map((s) => {
-                const idx = actionNames.indexOf(s.name);
-                return (
-                  <span key={s.name} style={{ color: ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length] }}>
-                    {s.name} {s.value}
-                  </span>
-                );
-              })}
-            {hoveredData.segments.filter((s) => s.value > 0).length > 6 && (
-              <span className="text-muted-foreground">
-                +{hoveredData.segments.filter((s) => s.value > 0).length - 6} more
-              </span>
-            )}
+          <div>
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="text-health font-bold text-base font-mono">XL {hoveredData.range}</span>
+              <span className="text-muted-foreground font-mono text-sm">{hoveredData.total.toLocaleString()} actions</span>
+            </div>
+            <div className="flex items-center gap-x-3 gap-y-0.5 flex-wrap text-xs font-mono">
+              {hoveredData.segments
+                .filter((s) => s.value > 0)
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 8)
+                .map((s) => {
+                  const idx = segmentNames.indexOf(s.name);
+                  return (
+                    <span key={s.name} className="flex items-center gap-1">
+                      <span
+                        className="inline-block w-2 h-2 rounded-sm"
+                        style={{ backgroundColor: segmentColorFn(s.name, idx) }}
+                      />
+                      <span style={{ color: segmentColorFn(s.name, idx) }}>{s.name}</span>
+                      <span className="text-muted-foreground">{s.value.toLocaleString()}</span>
+                    </span>
+                  );
+                })}
+              {hoveredData.segments.filter((s) => s.value > 0).length > 8 && (
+                <span className="text-muted-foreground">
+                  +{hoveredData.segments.filter((s) => s.value > 0).length - 8} more
+                </span>
+              )}
+            </div>
           </div>
         ) : (
           <span className="text-muted-foreground text-xs">Hover for details</span>
         )}
       </div>
 
+      {/* SVG chart */}
       <div>
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
@@ -957,18 +1056,31 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
           className="block w-full"
           onMouseLeave={() => setHoveredRange(null)}
         >
-          {[0.25, 0.5, 0.75].map((pct) => {
-            const y = padding.top + barAreaHeight * (1 - pct);
+          {/* Y-axis grid + labels */}
+          {yTicks.map((tick) => {
+            const y = scaleMode === "stacked" ? padding.top + barAreaHeight * (1 - tick / 100) : yPos(tick);
             return (
-              <line
-                key={pct}
-                x1={padding.left}
-                y1={y}
-                x2={chartWidth - padding.right}
-                y2={y}
-                className="stroke-border/20"
-                strokeWidth={1}
-              />
+              <g key={tick}>
+                {(scaleMode === "stacked" ? tick < 100 : tick > 0) && (
+                  <line
+                    x1={padding.left}
+                    y1={y}
+                    x2={chartWidth - padding.right}
+                    y2={y}
+                    className="stroke-border/20"
+                    strokeWidth={1}
+                  />
+                )}
+                <text
+                  x={padding.left - 6}
+                  y={y}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fill-muted-foreground text-[10px] font-mono"
+                >
+                  {formatTick(tick)}
+                </text>
+              </g>
             );
           })}
 
@@ -990,22 +1102,25 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
                   </text>
                 )}
 
-                {hasData && (
-                  <rect
-                    x={x}
-                    y={padding.top}
-                    width={barWidth}
-                    height={barAreaHeight}
-                    className="fill-secondary/20"
-                    rx={2}
-                  />
+                {hasData && scaleMode === "stacked" && (
+                  <rect x={x} y={padding.top} width={barWidth} height={barAreaHeight} className="fill-secondary/20" rx={2} />
                 )}
 
                 {d.segments.map((seg) => {
                   if (seg.value === 0) return null;
-                  const idx = actionNames.indexOf(seg.name);
-                  const y = padding.top + barAreaHeight * (1 - seg.y1);
-                  const h = barAreaHeight * seg.pct;
+                  const idx = segmentNames.indexOf(seg.name);
+                  let y: number, h: number;
+
+                  if (scaleMode === "stacked") {
+                    y = padding.top + barAreaHeight * (1 - seg.pctY1);
+                    h = barAreaHeight * seg.pct;
+                  } else {
+                    const top = yPos(seg.valY1);
+                    const bottom = yPos(seg.valY0);
+                    y = top;
+                    h = bottom - top;
+                  }
+
                   return (
                     <rect
                       key={seg.name}
@@ -1013,7 +1128,7 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
                       y={y}
                       width={barWidth}
                       height={Math.max(1, h)}
-                      fill={ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length]}
+                      fill={segmentColorFn(seg.name, idx)}
                       opacity={hoveredRange === null || isHovered ? 0.85 : 0.35}
                       rx={1}
                       className="transition-opacity duration-100 cursor-pointer"
@@ -1035,16 +1150,14 @@ function ActionsChart({ actions }: { actions: Record<string, Record<string, Reco
         </svg>
       </div>
 
+      {/* Legend */}
       <div className="mt-3 pt-3 border-t border-border">
         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {actionNames.map((name, idx) => {
-            const total = Object.values(actionData[name] ?? {}).reduce((s, v) => s + v, 0);
+          {segmentNames.map((name, idx) => {
+            const total = stackedData.reduce((s, d) => s + (d.segments.find((seg) => seg.name === name)?.value ?? 0), 0);
             return (
               <div key={name} className="flex items-center gap-1.5 text-xs">
-                <div
-                  className="w-3 h-3 rounded-sm"
-                  style={{ backgroundColor: ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length] }}
-                />
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: segmentColorFn(name, idx) }} />
                 <span className="text-muted-foreground">{name}</span>
                 <span className="font-mono text-muted-foreground/70">{total.toLocaleString()}</span>
               </div>
