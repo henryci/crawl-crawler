@@ -802,6 +802,260 @@ function getSkillColor(index: number): string {
   return SKILL_COLORS[index % SKILL_COLORS.length];
 }
 
+const ACTION_CATEGORY_COLORS: Record<string, string> = {
+  Cast: "#3b82f6",
+  Melee: "#ef4444",
+  Evoke: "#f59e0b",
+  Ability: "#8b5cf6",
+  Drink: "#22c55e",
+  Read: "#06b6d4",
+  Throw: "#f97316",
+  Stab: "#ec4899",
+};
+
+const SKIP_ACTION_CATEGORIES = new Set(["Attack", "Armour", "Dodge", "Block", "Form"]);
+const XL_RANGES = ["1-3", "4-6", "7-9", "10-12", "13-15", "16-18", "19-21", "22-24", "25-27"];
+
+const ACTION_ITEM_COLORS = [
+  "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
+  "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#14b8a6",
+  "#a855f7", "#64748b", "#e879f9", "#fb923c", "#2dd4bf",
+];
+
+function ActionsChart({ actions }: { actions: Record<string, Record<string, Record<string, number>>> }) {
+  const [hoveredRange, setHoveredRange] = useState<string | null>(null);
+
+  // Build sorted categories with their totals
+  const sortedCategories = useMemo(() => {
+    const cats: { name: string; total: number }[] = [];
+    for (const [category, items] of Object.entries(actions)) {
+      if (SKIP_ACTION_CATEGORIES.has(category)) continue;
+      let total = 0;
+      for (const [, counts] of Object.entries(items)) {
+        total += counts["total"] ?? 0;
+      }
+      if (total > 0) cats.push({ name: category, total });
+    }
+    return cats.sort((a, b) => b.total - a.total);
+  }, [actions]);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const activeCategory = selectedCategory ?? sortedCategories[0]?.name ?? null;
+
+  // Build individual action data for the selected category
+  const { actionNames, actionData } = useMemo(() => {
+    if (!activeCategory || !actions[activeCategory]) return { actionNames: [], actionData: {} as Record<string, Record<string, number>> };
+
+    const items = actions[activeCategory];
+    const data: Record<string, Record<string, number>> = {};
+
+    for (const [actionName, counts] of Object.entries(items)) {
+      const rangeTotals: Record<string, number> = {};
+      let hasAny = false;
+      for (const range of XL_RANGES) {
+        if (counts[range]) {
+          rangeTotals[range] = counts[range];
+          hasAny = true;
+        }
+      }
+      if (hasAny) data[actionName] = rangeTotals;
+    }
+
+    const sorted = Object.keys(data).sort((a, b) => {
+      const totalA = Object.values(data[a] ?? {}).reduce((s, v) => s + v, 0);
+      const totalB = Object.values(data[b] ?? {}).reduce((s, v) => s + v, 0);
+      return totalB - totalA;
+    });
+
+    return { actionNames: sorted, actionData: data };
+  }, [actions, activeCategory]);
+
+  const stackedData = useMemo(() => {
+    return XL_RANGES.map((range) => {
+      const total = actionNames.reduce((s, name) => s + (actionData[name]?.[range] ?? 0), 0);
+      let cumPct = 0;
+      const segments = actionNames.map((name) => {
+        const value = actionData[name]?.[range] ?? 0;
+        const pct = total > 0 ? value / total : 0;
+        const segment = { name, value, pct, y0: cumPct, y1: cumPct + pct };
+        cumPct += pct;
+        return segment;
+      });
+      return { range, segments, total };
+    });
+  }, [actionData, actionNames]);
+
+  const chartWidth = 900;
+  const chartHeight = 220;
+  const padding = { top: 24, right: 12, bottom: 28, left: 32 };
+  const barAreaWidth = chartWidth - padding.left - padding.right;
+  const barAreaHeight = chartHeight - padding.top - padding.bottom;
+  const barGap = 8;
+  const barWidth = (barAreaWidth - barGap * (XL_RANGES.length - 1)) / XL_RANGES.length;
+
+  function formatTotal(n: number): string {
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return String(n);
+  }
+
+  const hoveredData = hoveredRange ? stackedData.find((d) => d.range === hoveredRange) : null;
+
+  if (sortedCategories.length === 0) return null;
+
+  return (
+    <div>
+      {/* Category selector */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {sortedCategories.map((cat) => (
+          <button
+            key={cat.name}
+            onClick={() => setSelectedCategory(cat.name)}
+            className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+              activeCategory === cat.name
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            {cat.name}
+            <span className="ml-1 opacity-70">{cat.total.toLocaleString()}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="h-6 mb-1 flex items-center">
+        {hoveredData ? (
+          <div className="flex items-center gap-3 text-sm font-mono flex-wrap">
+            <span className="text-health font-bold">XL {hoveredData.range}</span>
+            <span className="text-muted-foreground">({hoveredData.total.toLocaleString()})</span>
+            {hoveredData.segments
+              .filter((s) => s.value > 0)
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 6)
+              .map((s) => {
+                const idx = actionNames.indexOf(s.name);
+                return (
+                  <span key={s.name} style={{ color: ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length] }}>
+                    {s.name} {s.value}
+                  </span>
+                );
+              })}
+            {hoveredData.segments.filter((s) => s.value > 0).length > 6 && (
+              <span className="text-muted-foreground">
+                +{hoveredData.segments.filter((s) => s.value > 0).length - 6} more
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs">Hover for details</span>
+        )}
+      </div>
+
+      <div>
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="block w-full"
+          onMouseLeave={() => setHoveredRange(null)}
+        >
+          {[0.25, 0.5, 0.75].map((pct) => {
+            const y = padding.top + barAreaHeight * (1 - pct);
+            return (
+              <line
+                key={pct}
+                x1={padding.left}
+                y1={y}
+                x2={chartWidth - padding.right}
+                y2={y}
+                className="stroke-border/20"
+                strokeWidth={1}
+              />
+            );
+          })}
+
+          {stackedData.map((d, i) => {
+            const x = padding.left + i * (barWidth + barGap);
+            const isHovered = hoveredRange === d.range;
+            const hasData = d.total > 0;
+
+            return (
+              <g key={d.range} onMouseEnter={() => setHoveredRange(d.range)}>
+                {hasData && (
+                  <text
+                    x={x + barWidth / 2}
+                    y={padding.top - 6}
+                    textAnchor="middle"
+                    className={`text-[9px] font-mono ${isHovered ? "fill-foreground" : "fill-muted-foreground/60"}`}
+                  >
+                    {formatTotal(d.total)}
+                  </text>
+                )}
+
+                {hasData && (
+                  <rect
+                    x={x}
+                    y={padding.top}
+                    width={barWidth}
+                    height={barAreaHeight}
+                    className="fill-secondary/20"
+                    rx={2}
+                  />
+                )}
+
+                {d.segments.map((seg) => {
+                  if (seg.value === 0) return null;
+                  const idx = actionNames.indexOf(seg.name);
+                  const y = padding.top + barAreaHeight * (1 - seg.y1);
+                  const h = barAreaHeight * seg.pct;
+                  return (
+                    <rect
+                      key={seg.name}
+                      x={x}
+                      y={y}
+                      width={barWidth}
+                      height={Math.max(1, h)}
+                      fill={ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length]}
+                      opacity={hoveredRange === null || isHovered ? 0.85 : 0.35}
+                      rx={1}
+                      className="transition-opacity duration-100 cursor-pointer"
+                    />
+                  );
+                })}
+
+                <text
+                  x={x + barWidth / 2}
+                  y={chartHeight - padding.bottom + 14}
+                  textAnchor="middle"
+                  className={`text-[10px] font-mono ${isHovered ? "fill-foreground" : "fill-muted-foreground"}`}
+                >
+                  {d.range}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-border">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {actionNames.map((name, idx) => {
+            const total = Object.values(actionData[name] ?? {}).reduce((s, v) => s + v, 0);
+            return (
+              <div key={name} className="flex items-center gap-1.5 text-xs">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: ACTION_ITEM_COLORS[idx % ACTION_ITEM_COLORS.length] }}
+                />
+                <span className="text-muted-foreground">{name}</span>
+                <span className="font-mono text-muted-foreground/70">{total.toLocaleString()}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Skills tab showing skill levels and progression visualization.
  */
@@ -905,6 +1159,24 @@ function SkillsTab({ data }: { data: MorgueData }) {
                 maxXl={data.characterLevel ?? 27}
               />
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      {data.actions && Object.keys(data.actions).length > 0 && (
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Swords className="w-4 h-4 text-danger" />
+              Actions
+            </CardTitle>
+            <CardDescription className="font-mono">
+              Action usage by experience level range
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ActionsChart actions={data.actions} />
           </CardContent>
         </Card>
       )}
