@@ -836,21 +836,21 @@ function SkillsTab({ data }: { data: MorgueData }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
             {sortedSkills.map(([skill, level]) => (
               <div
                 key={skill}
-                className="flex items-center justify-between p-2 rounded bg-secondary/50"
+                className="flex items-center justify-between py-1 px-2 rounded-sm bg-secondary/30"
               >
-                <span className="text-sm text-foreground">{skill}</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                <span className="text-sm text-foreground truncate">{skill}</span>
+                <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                  <div className="w-10 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-mana rounded-full transition-all"
+                      className="h-full bg-mana rounded-full"
                       style={{ width: `${Math.min((level / 27) * 100, 100)}%` }}
                     />
                   </div>
-                  <span className="font-mono text-sm text-mana w-8 text-right">{level.toFixed(1)}</span>
+                  <span className="font-mono text-xs text-mana w-8 text-right">{level.toFixed(1)}</span>
                 </div>
               </div>
             ))}
@@ -968,10 +968,10 @@ function SkillProgressionChart({
     return values;
   }, [maxXl]);
 
-  // Chart dimensions
+  // Chart dimensions — fixed viewBox, SVG scales to fill container
   const chartHeight = 300;
-  const chartPadding = { top: 20, right: 20, bottom: 40, left: 50 };
-  const chartWidth = xlValues.length * 30; // 30px per XL point
+  const chartPadding = { top: 20, right: 16, bottom: 40, left: 50 };
+  const chartWidth = 900;
 
   // Scales
   const maxSkillLevel = 27;
@@ -1074,11 +1074,11 @@ function SkillProgressionChart({
         </div>
 
         {/* Chart Container */}
-        <div className="relative overflow-x-auto">
+        <div className="relative">
           <svg
-            width={Math.max(chartWidth, 600)}
-            height={chartHeight}
-            className="block"
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="block w-full"
             onMouseLeave={() => setHoveredXl(null)}
           >
             {/* Background grid */}
@@ -1238,8 +1238,8 @@ function SkillProgressionChart({
             <div
               className="absolute bg-card border border-border rounded-lg shadow-lg p-3 pointer-events-none z-10"
               style={{
-                left: Math.min(xScale(hoveredXl) + 10, chartWidth - 200),
-                top: chartPadding.top,
+                left: `min(${(xScale(hoveredXl) / chartWidth) * 100}% + 10px, 100% - 200px)`,
+                top: `${(chartPadding.top / chartHeight) * 100}%`,
               }}
             >
               <div className="font-mono text-sm font-medium text-foreground mb-2">
