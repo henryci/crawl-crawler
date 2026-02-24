@@ -1438,6 +1438,231 @@ function SpellsSection({ data }: { data: MorgueData }) {
   );
 }
 
+const BRANCH_COLORS: Record<string, string> = {
+  D: "#6b7280",
+  Temple: "#eab308",
+  Lair: "#22c55e",
+  Orc: "#f97316",
+  Swamp: "#166534",
+  Shoals: "#06b6d4",
+  Snake: "#84cc16",
+  Spider: "#a16207",
+  Slime: "#4ade80",
+  Vaults: "#64748b",
+  Crypt: "#a855f7",
+  Depths: "#3b82f6",
+  Zot: "#ef4444",
+  Elf: "#818cf8",
+  Tomb: "#b45309",
+  Abyss: "#9333ea",
+  Pan: "#dc2626",
+  Hell: "#b91c1c",
+  Dis: "#94a3b8",
+  Geh: "#ea580c",
+  Coc: "#0ea5e9",
+  Tar: "#581c87",
+  Zig: "#f59e0b",
+};
+
+interface XpEntry {
+  xl: number;
+  turn: number | null;
+  location: string;
+  branch: string;
+  delta: number | null;
+}
+
+function XpProgressionChart({ xpProgression }: { xpProgression: Record<string, { turn: number | null; location: string }> }) {
+  const [hoveredXl, setHoveredXl] = useState<number | null>(null);
+
+  const entries: XpEntry[] = useMemo(() => {
+    const sorted = Object.entries(xpProgression)
+      .map(([xl, info]) => ({
+        xl: Number(xl),
+        turn: info.turn,
+        location: info.location,
+        branch: info.location.split(":")[0],
+      }))
+      .sort((a, b) => a.xl - b.xl);
+
+    return sorted.map((entry, i) => {
+      const prevTurn = i > 0 ? sorted[i - 1].turn : 0;
+      const delta = entry.turn !== null && prevTurn !== null ? entry.turn - prevTurn : null;
+      return { ...entry, delta };
+    });
+  }, [xpProgression]);
+
+  const hasTurnData = entries.some((e) => e.delta !== null && e.delta > 0);
+  const maxDelta = Math.max(...entries.map((e) => e.delta ?? 0), 1);
+
+  const hoveredEntry = hoveredXl !== null ? entries.find((e) => e.xl === hoveredXl) : null;
+
+  const branches = useMemo(() => {
+    const seen = new Set<string>();
+    return entries.reduce<string[]>((acc, e) => {
+      if (!seen.has(e.branch)) {
+        seen.add(e.branch);
+        acc.push(e.branch);
+      }
+      return acc;
+    }, []);
+  }, [entries]);
+
+  const yTicks = useMemo(() => {
+    if (!hasTurnData) return [];
+    const tickCount = 4;
+    const rawStep = maxDelta / tickCount;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    const ticks: number[] = [];
+    for (let i = 0; i <= tickCount; i++) {
+      ticks.push(i * step);
+    }
+    return ticks;
+  }, [maxDelta, hasTurnData]);
+
+  const effectiveMax = yTicks.length > 0 ? yTicks[yTicks.length - 1] : maxDelta;
+
+  const padding = { top: 12, right: 8, bottom: 28, left: hasTurnData ? 44 : 12 };
+  const maxXl = Math.max(...entries.map((e) => e.xl), 27);
+  const chartWidth = 900;
+  const barAreaWidth = chartWidth - padding.left - padding.right;
+  const barGap = 3;
+  const barWidth = (barAreaWidth - barGap * (maxXl - 1)) / maxXl;
+  const chartHeight = hasTurnData ? 220 : 56;
+  const barAreaHeight = chartHeight - padding.top - padding.bottom;
+
+  function formatTick(n: number): string {
+    if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+    return String(n);
+  }
+
+  return (
+    <div>
+      <div className="h-6 mb-1 flex items-center">
+        {hoveredEntry ? (
+          <div className="flex items-center gap-3 text-sm font-mono">
+            <span className="text-health font-bold">XL {hoveredEntry.xl}</span>
+            <span style={{ color: BRANCH_COLORS[hoveredEntry.branch] ?? "#888" }}>
+              {hoveredEntry.location}
+            </span>
+            {hoveredEntry.turn !== null && (
+              <span className="text-muted-foreground">
+                Turn <span className="text-foreground">{hoveredEntry.turn.toLocaleString()}</span>
+              </span>
+            )}
+            {hoveredEntry.delta !== null && hoveredEntry.delta > 0 && (
+              <span className="text-muted-foreground">
+                (+{hoveredEntry.delta.toLocaleString()} turns)
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs">Hover for details</span>
+        )}
+      </div>
+
+      <div>
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="block w-full"
+          onMouseLeave={() => setHoveredXl(null)}
+        >
+          {hasTurnData &&
+            yTicks.map((tick) => {
+              const y = padding.top + barAreaHeight - (tick / effectiveMax) * barAreaHeight;
+              return (
+                <g key={tick}>
+                  {tick > 0 && (
+                    <line
+                      x1={padding.left}
+                      y1={y}
+                      x2={chartWidth - padding.right}
+                      y2={y}
+                      className="stroke-border/30"
+                      strokeWidth={1}
+                    />
+                  )}
+                  <text
+                    x={padding.left - 6}
+                    y={y}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    className="fill-muted-foreground text-[10px] font-mono"
+                  >
+                    {formatTick(tick)}
+                  </text>
+                </g>
+              );
+            })}
+
+          {entries.map((entry) => {
+            const x = padding.left + (entry.xl - 1) * (barWidth + barGap);
+            const color = BRANCH_COLORS[entry.branch] ?? "#888";
+            const isHovered = hoveredXl === entry.xl;
+
+            const barHeight =
+              hasTurnData && entry.delta !== null
+                ? Math.max(3, (entry.delta / effectiveMax) * barAreaHeight)
+                : barAreaHeight;
+            const y = padding.top + barAreaHeight - barHeight;
+
+            return (
+              <g key={entry.xl} onMouseEnter={() => setHoveredXl(entry.xl)}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  fill={color}
+                  opacity={hoveredXl === null || isHovered ? 0.85 : 0.35}
+                  rx={2}
+                  className="transition-opacity duration-100 cursor-pointer"
+                />
+                {isHovered && (
+                  <rect
+                    x={x - 1}
+                    y={y - 1}
+                    width={barWidth + 2}
+                    height={barHeight + 2}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={2}
+                    rx={3}
+                  />
+                )}
+                <text
+                  x={x + barWidth / 2}
+                  y={chartHeight - padding.bottom + 14}
+                  textAnchor="middle"
+                  className={`text-[10px] font-mono ${isHovered ? "fill-foreground" : "fill-muted-foreground"}`}
+                >
+                  {entry.xl}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-border">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {branches.map((branch) => (
+            <div key={branch} className="flex items-center gap-1.5 text-xs">
+              <div
+                className="w-3 h-3 rounded-sm"
+                style={{ backgroundColor: BRANCH_COLORS[branch] ?? "#888" }}
+              />
+              <span className="text-muted-foreground">{branch}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Dungeon tab showing branches visited.
  */
@@ -1500,21 +1725,12 @@ function DungeonTab({ data }: { data: MorgueData }) {
               <Sparkles className="w-4 h-4 text-gold" />
               XP Progression
             </CardTitle>
+            <CardDescription className="font-mono">
+              Turns between experience levels, colored by dungeon branch
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {Object.entries(data.xpProgression)
-                .sort(([a], [b]) => Number(a) - Number(b))
-                .map(([xl, info]) => (
-                  <div
-                    key={xl}
-                    className="flex items-center justify-between p-2 rounded bg-secondary/50 font-mono text-sm"
-                  >
-                    <span className="text-health">XL {xl}</span>
-                    <span className="text-muted-foreground">{info.location}</span>
-                  </div>
-                ))}
-            </div>
+            <XpProgressionChart xpProgression={data.xpProgression} />
           </CardContent>
         </Card>
       )}
