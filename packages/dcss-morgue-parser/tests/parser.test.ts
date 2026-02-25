@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseMorgue, parseMorgueData } from '../src/parser.js';
@@ -237,8 +237,8 @@ describe('parseMorgue', () => {
     it('extracts player information', () => {
       expect(data.playerName).toBe('hyperbolic');
       expect(data.title).toBe('Annihilator');
-      expect(data.race).toBe('Deep');
-      expect(data.background).toContain('Elf');
+      expect(data.race).toBe('Deep Elf');
+      expect(data.background).toBe('Fire Elementalist');
       expect(data.characterLevel).toBe(27);
     });
 
@@ -467,6 +467,282 @@ describe('parseMorgue', () => {
       expect(data.xpProgression?.['27']).toBeDefined();
       expect(data.xpProgression?.['1']?.turn).toBe(0);
       expect(data.xpProgression?.['1']?.location).toBe('D:1');
+    });
+  });
+
+  describe('cross-version compatibility', () => {
+    const allSampleFiles = readdirSync(SAMPLE_DIR).filter((f) => f.endsWith('.txt'));
+
+    it('has sample files covering versions 0.5 through 0.33', () => {
+      expect(allSampleFiles.length).toBeGreaterThanOrEqual(10);
+    });
+
+    for (const filename of allSampleFiles) {
+      describe(filename, () => {
+        let data: MorgueData;
+
+        beforeAll(async () => {
+          const content = loadMorgue(filename);
+          const result = await parseMorgue(content);
+          data = result.data;
+        });
+
+        it('parses without errors', () => {
+          expect(data.parseErrors).toHaveLength(0);
+        });
+
+        it('extracts version', () => {
+          expect(data.version).toBeTruthy();
+        });
+
+        it('extracts player name', () => {
+          expect(data.playerName).toBeTruthy();
+        });
+
+        it('extracts character level', () => {
+          expect(data.characterLevel).toBeGreaterThanOrEqual(1);
+        });
+
+        it('extracts race and background', () => {
+          expect(data.race).toBeTruthy();
+          expect(data.background).toBeTruthy();
+        });
+
+        it('extracts ending stats', () => {
+          expect(data.endingStats).not.toBeNull();
+          expect(data.endingStats?.hpMax).toBeGreaterThan(0);
+          expect(data.endingStats?.ac).toBeGreaterThanOrEqual(0);
+          expect(data.endingStats?.ev).toBeGreaterThanOrEqual(0);
+        });
+
+        it('extracts skills', () => {
+          expect(data.endingSkills).not.toBeNull();
+          expect(Object.keys(data.endingSkills || {})).not.toHaveLength(0);
+        });
+
+        it('extracts score', () => {
+          expect(data.score).toBeGreaterThan(0);
+        });
+
+        it('generates a valid morgue hash', () => {
+          expect(data.morgueHash).toMatch(/^[a-f0-9]{64}$/);
+        });
+      });
+    }
+  });
+
+  describe('very old morgue file (0.5 - 78291)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-78291-20090802-132054.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.5.1');
+      expect(data.isWebtiles).toBe(false);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('78291');
+      expect(data.title).toBe('Orcish Barricade');
+      expect(data.race).toBe('Hill Orc');
+      expect(data.background).toBe('Fighter');
+      expect(data.characterLevel).toBe(27);
+    });
+
+    it('extracts score', () => {
+      expect(data.score).toBe(2180227);
+    });
+
+    it('extracts runes', () => {
+      expect(data.runesList.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('extracts character stats', () => {
+      expect(data.endingStats).not.toBeNull();
+      expect(data.endingStats?.hpCurrent).toBe(297);
+      expect(data.endingStats?.hpMax).toBe(297);
+      expect(data.endingStats?.ac).toBe(48);
+      expect(data.endingStats?.ev).toBe(5);
+      expect(data.endingStats?.str).toBe(31);
+    });
+  });
+
+  describe('mid-era morgue file (0.13 - zugundertherug)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-zugundertherug-20131016-200626.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.13.0-9-gbc74161');
+      expect(data.isWebtiles).toBe(true);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('zugundertherug');
+      expect(data.title).toBe('Evocator');
+      expect(data.race).toBe('Halfling');
+      expect(data.background).toBe('Wanderer');
+      expect(data.characterLevel).toBe(27);
+    });
+
+    it('extracts score', () => {
+      expect(data.score).toBe(1590349);
+    });
+
+    it('extracts runes', () => {
+      expect(data.runesList.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('extracts god worship', () => {
+      expect(data.endingStats?.god).toBe('Nemelex Xobeh');
+      expect(data.endingStats?.piety).toBe(6);
+    });
+  });
+
+  describe('morgue file (0.21 - 0xDEADFACE)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-0xDEADFACE-20180605-051901.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.21.1-1-g345015f');
+      expect(data.isWebtiles).toBe(true);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('0xDEADFACE');
+      expect(data.title).toBe('Cloud Mage');
+      expect(data.race).toBe('Tengu');
+      expect(data.background).toBe('Air Elementalist');
+      expect(data.characterLevel).toBe(27);
+    });
+
+    it('extracts score', () => {
+      expect(data.score).toBe(1474415);
+    });
+
+    it('extracts runes', () => {
+      expect(data.runesList.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('extracts god worship', () => {
+      expect(data.endingStats?.god).toBe('Vehumet');
+    });
+  });
+
+  describe('morgue file (0.29 - 0xDEADFACE)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-0xDEADFACE-20220910-042145.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.29.0-4-gdea44cf6ec');
+      expect(data.isWebtiles).toBe(true);
+    });
+
+    it('extracts game seed', () => {
+      expect(data.gameSeed).toBe('10555898958019510794');
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('0xDEADFACE');
+      expect(data.title).toBe('Acrobat');
+      expect(data.race).toBe('Tengu');
+      expect(data.background).toBe('Gladiator');
+      expect(data.characterLevel).toBe(26);
+    });
+
+    it('extracts score', () => {
+      expect(data.score).toBe(1677105);
+    });
+
+    it('extracts runes', () => {
+      expect(data.runesList.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('extracts god worship', () => {
+      expect(data.endingStats?.god).toBe('Uskayaw');
+    });
+  });
+
+  describe('death morgue file (0.30 - zkyp)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-zkyp-20230510-154758.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.30-b1-2-g02819fbbbe');
+      expect(data.isWebtiles).toBe(true);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('zkyp');
+      expect(data.race).toBe('Ogre');
+      expect(data.background).toBe('Artificer');
+      expect(data.characterLevel).toBe(10);
+    });
+
+    it('handles death (no runes escaped with)', () => {
+      expect(data.runesList ?? []).toHaveLength(0);
+    });
+
+    it('extracts god worship', () => {
+      expect(data.endingStats?.god).toBe('Fedhas');
+    });
+  });
+
+  describe('trunk morgue file (0.33 - zkxksk0)', () => {
+    let data: MorgueData;
+
+    beforeAll(async () => {
+      const content = loadMorgue('morgue-zkxksk0-20241105-160150.txt');
+      const result = await parseMorgue(content);
+      data = result.data;
+    });
+
+    it('extracts version information', () => {
+      expect(data.version).toBe('0.33-a0-298-g559140af29');
+      expect(data.isWebtiles).toBe(true);
+    });
+
+    it('extracts player information', () => {
+      expect(data.playerName).toBe('zkxksk0');
+      expect(data.race).toBe('Merfolk');
+      expect(data.background).toBe('Ice Elementalist');
+      expect(data.characterLevel).toBe(20);
+    });
+
+    it('extracts score', () => {
+      expect(data.score).toBe(338468);
+    });
+
+    it('extracts god worship', () => {
+      expect(data.endingStats?.god).toBe('Ashenzari');
+    });
+
+    it('extracts spells', () => {
+      expect(data.endingSpells).not.toBeNull();
+      expect(data.endingSpells?.length).toBeGreaterThan(0);
     });
   });
 });

@@ -1,0 +1,1292 @@
+ Dungeon Crawl Stone Soup version 0.13.0-9-gbc74161 (webtiles) character file.
+
+1590349 zugundertherug the Evocator (level 27, 193/193 HPs)
+             Began as a Halfling Wanderer on Oct 15, 2013.
+             Was the Champion of Nemelex Xobeh.
+             Escaped with the Orb
+             ... and 3 runes on Oct 16, 2013!
+             
+             The game lasted 10:49:45 (77013 turns).
+
+zugundertherug the Evocator (Halfling Wanderer)    Turns: 77013, Time: 10:49:45
+
+HP 193/193       AC 23     Str 15      XL: 27
+MP  44/44        EV 37     Int 20      God: Nemelex Xobeh [******]
+Gold 1507        SH 35     Dex 26      Spells:  8 memorised,  9 levels left
+
+Res.Fire  : + + .   See Invis. : +   h - +0,+1 scimitar "Sowov" {elec, rElec rN+ MR++ Dex+2 SInv}
+Res.Cold  : + + .   Warding    : +   B - +3 leather armour {rF+}
+Life Prot.: + + +   Conserve   : .   k - +3 shield of Starshine {rF+}
+Res.Poison: +       Res.Corr.  : .   Q - +1 wizard hat {Int+3}
+Res.Elec. : +       Clarity    : .   f - +2 cloak {rPois}
+Sust.Abil.: . .     Spirit.Shd : .   J - +2 pair of gloves {Str+3}
+Res.Mut.  : .       Prev.Telep.: +   w - +2 pair of orc boots {Stlth+}
+Res.Rott. : .       Flight     : .   t - amulet of Cekugob {Ward -Tele Hunger rElec rPois rN+ AC+1 EV+1}
+Saprovore : . . .                    m - ring of regeneration
+                                     F - ring of Crofoeff {rC++ EV+2 Int+3 Acc+3}
+
+@: extraordinarily resistant to hostile enchantments, quite stealthy
+A: berserk 1, mutation resistance 1, slow metabolism 1, AC +4
+a: Draw One, Peek at Two, Triple Draw, Deal Four, Stack Five, Renounce Religion
+}: 3/15 runes: barnacled, abyssal, gossamer
+
+
+You escaped.
+You worshipped Nemelex Xobeh.
+Nemelex Xobeh was exalted by your worship.
+You were not hungry.
+
+You visited 8 branches of the dungeon, and saw 58 of its levels.
+You visited the Abyss 3 times.
+You also visited: Labyrinth and Trove.
+
+You collected 5887 gold pieces.
+You spent 4430 gold pieces at shops.
+
+Inventory:
+
+Hand weapons
+ a - a +7,+7 demon blade of flaming
+ b - a +2,+5 orcish dagger of electrocution (quivered) {!f}
+ h - the +0,+1 scimitar "Sowov" (weapon) {elec, rElec rN+ MR++ Dex+2 SInv}
+   (You found it in a treasure trove)   
+   
+   Occasionally, upon striking a foe, it will discharge some electrical energy
+   and cause terrible harm.
+   
+   It affects your dexterity (+2).
+   It insulates you from electricity.
+   It protects you from negative energy.
+   It affects your resistance to hostile enchantments.
+   It enhances your eyesight.
+Armour
+ f - a +2 cloak of poison resistance (worn)
+ k - the +3 shield of Starshine (worn) {rF+}
+   (You took it off Donald on level 1 of the Shoals)   
+   
+   It protects you from fire.
+ w - a +2 pair of orcish boots of stealth (worn)
+ B - a +3 leather armour of fire resistance (worn)
+ J - a +2 pair of gloves of strength (worn)
+ Q - a +1 wizard hat of intelligence (worn)
+Magical devices
+ g - a wand of heal wounds (6)
+ U - a wand of teleportation (8)
+Comestibles
+ r - 2 meat rations
+ G - 3 bread rations
+Jewellery
+ l - an uncursed ring of protection from fire
+ m - a ring of regeneration (right hand)
+ o - an uncursed amulet of conservation
+ t - the amulet of Cekugob (around neck) {Ward -Tele Hunger rElec rPois rN+ AC+1 EV+1}
+   (You bought it in a shop on level 4 of the Orcish Mines)   
+   
+   [amulet of warding]
+   It affects your AC (+1).
+   It affects your evasion (+1).
+   It insulates you from electricity.
+   It protects you from poison.
+   It protects you from negative energy.
+   It prevents most forms of teleportation.
+   It speeds your metabolism. 
+ u - an uncursed ring of invisibility
+ A - an uncursed ring of protection from magic
+ F - the ring of Crofoeff (left hand) {rC++ EV+2 Int+3 Acc+3}
+   (You found it on level 5 of the Shoals)   
+   
+   [ring of evasion]
+   It affects your evasion (+2).
+   It affects your intelligence (+3).
+   It affects your accuracy (+3).
+   It greatly protects you from cold.
+ K - an uncursed amulet of resist mutation
+Potions
+ n - 3 potions of might
+ q - 2 potions of agility
+ D - 2 potions of restore abilities
+ I - 10 potions of curing
+Orbs of Power
+ p - the Orb of Zot
+Miscellaneous
+ c - an ornate deck of wonders
+ e - a lamp of fire (inert)
+ i - a lamp of fire
+ j - a legendary deck of escape {the Warp, left: 3}
+ v - a legendary deck of summonings {drawn: 1}
+ x - an ornate deck of destruction {drawn: 1}
+ y - a legendary deck of summonings {drawn: 3}
+ z - a legendary deck of destruction {drawn: 11}
+ C - a legendary deck of destruction {Frost}
+ E - a legendary deck of destruction {drawn: 1}
+ H - a legendary deck of destruction {drawn: 1}
+ L - a lantern of shadows
+ M - a legendary deck of escape {the Warp, left: 3}
+ N - a legendary deck of summonings {drawn: 1}
+ O - a legendary deck of summonings {drawn: 1}
+ P - a legendary deck of destruction {drawn: 1}
+ S - a legendary deck of destruction {drawn: 1}
+ T - a legendary deck of destruction {drawn: 5}
+ V - a stone of tremors
+ W - an ornate deck of destruction
+ X - a legendary deck of destruction {drawn: 3}
+ Y - a legendary deck of summonings {drawn: 1}
+ Z - a fan of gales (inert)
+
+
+   Skills:
+ + Level 17.2 Fighting
+ - Level 10.0 Short Blades
+ + Level 21.8 Long Blades
+ - Level 1.3 Throwing
+ - Level 9.8 Armour
+ - Level 17.5 Dodging
+ - Level 15.0 Stealth
+ - Level 16.2 Shields
+ - Level 3.2 Spellcasting
+ - Level 7.0 Charms
+   Level 1.2 Transmutations
+ - Level 8.5 Earth Magic
+ + Level 23.7 Evocations
+
+
+You had 9 spell levels left.
+You knew the following spells:
+
+ Your Spells              Type           Power        Failure   Level  Hunger
+a - Haste                 Chrm           ####....     97%         6    #######
+b - Regeneration          Chrm/Necr      ###.......   14%         3    ###....
+c - Blink                 Tloc           N/A          28%         2    ##.....
+d - Repel Missiles        Chrm/Air       ###.......   8%          2    ##.....
+e - Swiftness             Chrm/Air       ###.......   8%          2    ##.....
+f - Flight                Chrm/Air       ###.......   14%         3    ###....
+g - Dig                   Erth           #####...     6%          4    ####...
+h - Apportation           Tloc           #.........   17%         1    None
+
+
+Dungeon Overview and Level Annotations
+
+Branches:
+Dungeon (27/27)            Temple (0/1) D:5             Orc (4/4) D:8
+    Elf (1/3) Orc:3          Lair (8/8) D:10         Shoals (5/5) Lair:6
+ Spider (5/5) Lair:6        Slime (0/6) Lair:8       Vaults (3/5) D:19
+  Crypt (0/5) Vaults:3        Zot (5/5) D:27        
+ Blade: Vaults:3-4  
+
+Altars:
+Cheibriados
+Elyvilon
+Kikubaaqudgha
+Nemelex Xobeh
+Okawaru
+Sif Muna
+Trog
+Xom
+Yredelemnul
+the Shining One
+Lugonu
+
+Shops:
+D:5 +   D:13 }   D:15 }   D:19 [(%(=   D:27 [   Orc:4 =(%[   Elf:1 %
+Shoals:4 !+??   Vaults:1 [   Vaults:3 *
+
+Portals:
+Hell: D:21 D:22 D:23 D:24 D:25 D:26 D:27
+Abyss: D:21 D:24 D:25 D:26
+Pandemonium: D:24 D:26 D:27
+
+Annotations:
+D:5 Name63's ghost, experienced DEIE
+D:9 Erolcha
+D:13 !stash
+D:19 !stash, Mara
+D:24 !stash
+Lair:2 exclusion: ice statue
+Lair:6 !stash
+Shoals:3 Frances
+Spider:5 Agnes; Boris
+Vaults:3 Sojobo
+
+
+Innate Abilities, Weirdness & Mutations
+
+You are small and have problems with some larger weapons.
+You are somewhat resistant to further mutation.
+You have a slow metabolism.
+You are partially covered in iridescent scales (AC +4).
+You tend to lose your temper in combat.
+
+
+Message History
+
+A mysterious force pulls you upwards. The hatch slams shut behind you.
+You sense a powerful magical force warping space.
+You start to feel a little slower.
+You see here an animal skin.
+You feel sluggish.
+Casting: Swiftness
+Confirm with . or Enter, or press ? or * to list all spells.
+You feel quick.
+Casting: Swiftness
+Confirm with . or Enter, or press ? or * to list all spells.
+Aiming: Dig
+Press: ? - help, Shift-Dir - straight line
+The rock shatters into small pieces.
+There is an open door here.
+Really walk into a travel-excluded area? 
+You start to feel a little slower.
+A giant eyeball comes into view.
+You feel sluggish.
+There is a staircase leading out of the dungeon here.
+You have escaped!
+
+         #.# #.##.#
+         #.# #.##.#
+         #.# #.#..#
+   #######.# #.#.##
+   #.......# #.#.#
+   #.###.#########
+   #'#...........###
+#  #.#...........#.##
+####'#.#%.#..#..@#..##
+.....'..§§.......#.>.#
+..####.8........<#..##
+.....+.§≈........#..#
+.###'#.#..#..#..<##.#
+...#.#.......G...##.#
+..##'#...........##.#
+#.##.###.##########.#
+#.##.....##...#####.#
+
+
+You could see a giant eyeball.
+
+Vanquished Creatures
+  2 orbs of fire (Zot:5)
+  6 ancient liches
+  2 Killer Klowns
+  6 golden dragons
+  2 curse toes
+  Jory (D:22)
+  2 electric golems (Zot:5)
+  Arachne (Spider:2)
+  7 bone dragons
+  19 Orb Guardians (Zot:5)
+  12 tentacled monstrosities
+  15 storm dragons
+  A storm dragon (shapeshifter) (D:26)
+  6 liches
+  Rupert (Lair:5)
+  4 draconian monks
+  3 shadow dragons
+  Roxanne (Shoals:1)
+  Ilsuiw (Shoals:5)
+  5 tengu reavers
+  3 fire giants
+  Donald (Shoals:1)
+  Wiglaf (Shoals:2)
+  A draconian scorcher (Zot:4)
+  4 ghost moths
+  4 draconian knights
+  2 deep elf sorcerers
+  A cacodemon (D:26)
+  6 emperor scorpions
+  4 vault wardens
+  3 draconian zealots (Zot:4)
+  3 frost giants
+  2 tentacled starspawn
+  5 draconian annihilators
+  Jorgrun (Shoals:3)
+  3 draconian shifters
+  22 stone giants
+  7 grey draconians
+  12 green draconians
+  2 draconian callers
+  4 yellow draconians
+  A green death (D:20)
+  A deep elf annihilator (Vaults:2)
+  7 white draconians
+  5 pale draconians
+  10 purple draconians
+  7 merfolk javelineers
+  3 mottled draconians
+  5 black draconians
+  11 red draconians
+  2 vault guards (Vaults:2)
+  A deep elf death mage (D:21)
+  The ghost of Syneil the Severer, a powerful HOFi of Beogh (Orc:4)
+  A minotaur (Lab)
+  4 ettins
+  4 ironheart preservers
+  6 merfolk impalers (Shoals:5)
+  2 great orbs of eyes
+  A jiangshi (Vaults:3)
+  5 dragons
+  22 yaktaur captains
+  3 sirens
+  Fannar (Spider:1)
+  4 death cobs
+  Harold (D:12)
+  Josephine (Orc:2)
+  3 hydras
+  12 ice dragons
+  A dancing weapon (D:26)
+  2 merfolk aquamancers (Shoals:5)
+  Nessos (Spider:2)
+  6 ogre magi
+  Erica (D:14)
+  5 deep troll earth magi
+  3 orc high priests (Orc:4)
+  A rakshasa (Abyss:1)
+  3 very ugly things
+  8 deep troll shamans
+  3 hell knights
+  2 wretched stars (Abyss:1)
+  A catoblepas (Shoals:2)
+  6 deep elf knights
+  18 centaur warriors
+  Nergalle (Lair:5)
+  The ghost of Sleepwalker the Covert, an experienced OpAs of Xom (D:8)
+  A shadow demon (Abyss:1)
+  5 skeletal warriors (D:16)
+  A sun demon (Abyss:3)
+  2 soul eaters
+  4 unseen horrors
+  2 storm dragon skeletons
+  6 iron trolls
+  A spatial maelstrom (Abyss:3)
+  An ice devil (Zot:4)
+  9 flayed ghosts
+  A giant orange brain (Abyss:3)
+  2 death drakes (shapeshifter)
+  13 large abominations
+  7 sea snakes
+  A death drake (D:27)
+  6 harpies
+  2 giant amoebae
+  The ghost of dscm the Thaumaturge, an experienced GrEE of Vehumet (D:9)
+  27 deep trolls
+  5 ironbrand convokers
+  2 necromancers
+  16 orc knights
+  27 wolf spiders
+  6 orc sorcerers
+  4 deep elf conjurers
+  2 griffons
+  5 red wasps
+  4 stone giant zombies
+  8 hill giants
+  22 moths of wrath
+  A shadow dragon skeleton (D:22)
+  An apocalypse crab (Abyss:1)
+  4 oklob plants (Lair:1)
+  A sixfirhy (Abyss:1)
+  6 cyclopes
+  11 stone giant skeletons
+  7 elephants
+  A guardian serpent (Abyss:3)
+  A phantasmal warrior (D:26)
+  11 spiny frogs
+  4 black mambas
+  A frost giant skeleton (Vaults:3)
+  A black mamba (shapeshifter) (Vaults:2)
+  A spiny worm (Vaults:3)
+  4 fire giant skeletons
+  2 deep elf summoners
+  2 vault sentinels (Vaults:2)
+  A feature mimic (Orc:3)
+  14 orange demons
+  A moth of suppression (Zot:1)
+  14 mermaids
+  38 yaktaurs
+  An iron troll zombie (D:19)
+  A fire drake (shapeshifter) (Vaults:1)
+  A smoke demon (Abyss:1)
+  12 demonic crawlers
+  A purple draconian skeleton (Abyss:1)
+  4 wandering mushrooms (Zot:5)
+  11 orb spiders
+  A red devil (Shoals:2)
+  2 hellwings (Abyss:1)
+  3 giant fireflies (Shoals:2)
+  2 ancient zymes
+  9 deep elf priests
+  17 jumping spiders
+  A mottled draconian skeleton (Abyss:3)
+  A silent spectre (Vaults:3)
+  19 blink frogs
+  A blue devil (Zot:4)
+  4 fire drakes
+  6 komodo dragons
+  A red wasp zombie (Vaults:1)
+  3 polar bears (Lair:2)
+  Prince Ribbit (D:5)
+  A dragon zombie (D:12)
+  A giant leech (Lair:8)
+  A trapdoor spider zombie (D:14)
+  13 boulder beetles
+  5 trolls
+  A death drake skeleton (Abyss:3)
+  10 snapping turtles
+  A fire giant simulacrum (D:21)
+  67 slime creatures
+  A basilisk (shapeshifter) (D:25)
+  6 two-headed ogres
+  An octopode (shapeshifter) (D:26)
+  A jumping spider (shapeshifter) (Vaults:2)
+  3 basilisks
+  An ettin zombie (D:22)
+  A stone giant simulacrum (D:21)
+  7 ynoxinuls
+  2 wyverns
+  2 ettin skeletons
+  50 yaks
+  A wyvern (shapeshifter) (D:21)
+  A guardian serpent skeleton (Abyss:1)
+  74 ugly things
+  6 shadows
+  2 wraiths
+  9 deep elf magi
+  A griffon skeleton (D:14)
+  3 vampires
+  18 redbacks
+  15 trapdoor spiders
+  A hog (D:17)
+  An ice dragon skeleton (D:19)
+  18 water elementals
+  A hill giant zombie (D:16)
+  2 hippogriffs (shapeshifter) (D:19)
+  20 tarantellas
+  3 neqoxecs
+  7 octopodes (Shoals:3)
+  A yak (shapeshifter) (D:26)
+  An elephant slug (Lair:7)
+  10 hippogriffs
+  54 merfolk
+  3 hill giant skeletons
+  22 sharks
+  Grum (D:10)
+  A steam dragon (D:14)
+  16 vampire mosquitoes
+  13 manticores
+  5 hungry ghosts
+  Edmund (D:9)
+  A swamp drake (D:27)
+  A wolf (D:10)
+  A deep troll zombie (Vaults:2)
+  5 mottled dragons
+  An iron troll simulacrum (Vaults:1)
+  24 deep elf fighters
+  2 manticores (shapeshifter)
+  7 rock worms
+  6 small abominations
+  12 freezing wraiths
+  36 orc warriors
+  9 porcupines
+  2 soldier ants
+  2 deep troll skeletons
+  4 phantoms
+  An ettin simulacrum (D:24)
+  A black bear (Lair:1)
+  6 giant goldfish
+  7 yellow wasps
+  A deep dwarf (D:12)
+  A sky beast (D:15)
+  32 centaurs
+  10 ice beasts
+  A red wasp simulacrum (D:16)
+  31 ogres
+  Duvessa (D:5)
+  5 big kobolds
+  4 giant slugs
+  A giant slug (shapeshifter) (D:25)
+  6 wargs
+  A brain worm (D:22)
+  15 water moccasins
+  11 crocodiles
+  Blork the orc (D:9)
+  A cyclops zombie (D:13)
+  2 giant slug zombies
+  26 giant frogs
+  9 agate snails
+  2 yaktaur skeletons (D:18)
+  15 jellyfish
+  4 insubstantial wisps
+  An eye of draining (D:14)
+  7 killer bees
+  2 yak skeletons
+  A hippogriff skeleton (D:12)
+  3 wights (D:14)
+  A fire bat (Abyss:2)
+  3 electric eels
+  11 crimson imps
+  8 goliath beetles
+  Dowan (D:5)
+  2 giant frog skeletons
+  40 spiders
+  3 jellies (D:9)
+  Crazy Yiuf (D:6)
+  A basilisk skeleton (D:11)
+  A gnoll shaman (D:9)
+  10 iguanas
+  An iron imp (Abyss:2)
+  34 orc wizards
+  27 orc priests
+  11 hounds
+  11 scorpions
+  5 orange rats
+  A rock worm simulacrum (D:17)
+  7 big fish
+  12 worker ants
+  18 sheep
+  A mottled dragon zombie (D:13)
+  A big kobold zombie (D:14)
+  2 ogre skeletons
+  A mummy (D:10)
+  12 gnolls
+  2 lemures
+  28 adders
+  5 giant centipedes
+  A giant mite (D:5)
+  58 green rats
+  3 white imps
+  8 worms
+  17 ufetubi
+  An adder skeleton (D:9)
+  A giant eyeball (D:4)
+  5 giant geckos
+  209 orcs
+  27 bats
+  A bat skeleton (D:7)
+  7 giant cockroaches
+  15 goblins
+  18 hobgoblins
+  28 jackals
+  29 kobolds
+  19 quokkas
+  2 ball pythons
+  4 giant newts
+  A giant newt skeleton (D:4)
+  3 giant spores
+  A goblin zombie (Orc:2)
+  A hobgoblin zombie (Orc:2)
+  2 orc simulacra (Orc:2)
+  An orc skeleton (Orc:2)
+  3 orc zombies
+  22 rats
+  5 ballistomycetes
+  2 plants
+2360 creatures vanquished.
+
+Vanquished Creatures (collateral kills)
+  2 orbs of fire (Zot:5)
+  Saint Roka (Shoals:3)
+  Nikola (D:17)
+  3 Orb Guardians (Zot:5)
+  2 frost giants
+  A tengu reaver (D:25)
+  Maud (Spider:1)
+  A ghost moth (Spider:5)
+  An orc warlord (D:27)
+  A tentacled starspawn (Abyss:3)
+  Aizul (Spider:4)
+  Louise (Spider:4)
+  2 draconian shifters (Zot:5)
+  A stone giant (D:25)
+  A mottled draconian (Zot:5)
+  A white draconian (Zot:5)
+  A merfolk javelineer (Shoals:2)
+  4 yaktaur captains (D:25)
+  A siren (Shoals:2)
+  An ettin (D:26)
+  An ice dragon (D:27)
+  3 hydras
+  2 death yaks (Shoals:2)
+  A deep troll shaman (D:27)
+  A thrashing horror (Abyss:3)
+  2 very ugly things
+  2 deep troll earth magi
+  A death drake (D:27)
+  2 deep elf knights (D:25)
+  3 sea snakes (Shoals:1)
+  2 unseen horrors (D:17)
+  2 large abominations (Abyss:3)
+  2 hill giants
+  6 orc knights
+  5 wolf spiders
+  2 red wasps (Vaults:2)
+  A moth of wrath (D:27)
+  3 harpies (Vaults:2)
+  A sixfirhy (D:20)
+  A deep elf summoner (Elf:1)
+  4 elephants (Lair:8)
+  A stone giant skeleton (Vaults:2)
+  An orange demon (Shoals:3)
+  4 spiny frogs
+  A mermaid (Shoals:2)
+  4 demonic crawlers
+  6 yaktaurs
+  3 komodo dragons
+  3 vapours (Spider:4)
+  A deep elf priest (Elf:1)
+  A polar bear (Spider:1)
+  3 giant fireflies
+  11 jumping spiders
+  A giant leech (Lair:8)
+  3 orb spiders
+  An iron troll skeleton (Vaults:2)
+  9 blink frogs (Lair:8)
+  3 slime creatures (D:22)
+  A basilisk (Lair:6)
+  An ettin zombie (D:22)
+  An octopode (Shoals:3)
+  A snapping turtle (Shoals:3)
+  3 starcursed masses (Abyss:3)
+  3 trapdoor spiders
+  A yak (D:10)
+  7 ugly things
+  9 redbacks
+  3 tarantellas
+  An elephant slug (Lair:8)
+  A shadow (D:17)
+  2 sharks
+  A hippogriff (D:23)
+  A deep elf fighter (Elf:1)
+  4 merfolk
+  3 wolves (D:10)
+  A deep troll zombie (Vaults:2)
+  12 vampire mosquitoes
+  2 manticores
+  A freezing wraith (Abyss:3)
+  2 porcupines
+  2 yellow wasps (Lair:8)
+  4 orc warriors
+  A sky beast (D:14)
+  A giant goldfish (Spider:5)
+  2 boring beetles
+  An ogre (Orc:4)
+  A warg (D:26)
+  8 giant frogs
+  5 giant slugs
+  2 crocodiles (Lair:4)
+  A water moccasin (Lair:7)
+  An insubstantial wisp (Spider:1)
+  5 electric eels (Lair:8)
+  4 jellyfish
+  An iron imp (Orc:4)
+  An orc priest (Orc:4)
+  3 iguanas
+  A big fish (Spider:1)
+  3 hounds
+  A scorpion (Spider:1)
+  A sheep (Vaults:2)
+  A giant centipede (Lair:5)
+  28 green rats
+  2 adders
+  4 orcs
+  A bat (Lair:4)
+  A quokka (D:10)
+  A rat (Lair:4)
+  3 fungi (Lair:8)
+  A plant (Lair:8)
+283 creatures vanquished.
+
+Vanquished Creatures (others)
+  A bone dragon (D:25)
+  A Brimstone Fiend (Zot:5)
+  Kirke (D:17)
+  2 draconian scorchers
+  A draconian knight (Zot:3)
+  A draconian annihilator (Zot:3)
+  A purple draconian (Zot:3)
+  A merfolk impaler (Shoals:5)
+  A merfolk aquamancer (Shoals:5)
+  7 very ugly things
+  7 dancing weapons
+  An ogre mage (D:23)
+  A skeletal warrior (D:23)
+  A giant orange brain (Abyss:3)
+  7 air elementals
+  A hellion (Shoals:3)
+  A griffon (Lair:5)
+  2 red wasps (Vaults:2)
+  2 elephants (D:23)
+  A spiny frog (D:26)
+  5 vapours
+  A tormentor (Spider:2)
+  2 yaktaurs
+  6 giant fireflies
+  2 komodo dragons
+  A deep elf priest (Elf:1)
+  2 polar bears
+  A ynoxinul (Lair:8)
+  2 grizzly bears
+  3 basilisks
+  35 shadows
+  2 earth elementals (Zot:3)
+  2 hippogriffs
+  4 ugly things
+  2 hogs
+  3 yaks
+  A deep elf mage (D:21)
+  4 humans (D:17)
+  5 wolves
+  8 soldier ants (Zot:5)
+  12 vampire mosquitoes
+  2 orc warriors
+  An ogre (D:23)
+  7 yellow wasps
+  A boring beetle (D:23)
+  A rotting devil (Lair:8)
+  9 insubstantial wisps
+  2 agate snails (Zot:5)
+  A cyclops simulacrum (D:17)
+  2 orc priests (D:8)
+  9 hounds
+  2 orc wizards
+  3 orange rats
+  9 ufetubi
+  An orc (D:23)
+  A goblin (D:1)
+  A jackal (D:9)
+  A kobold (D:5)
+  2 rats (D:9)
+  4 fungi (Lair:8)
+  4 plants
+  6 starspawn tentacles (Abyss:3)
+  9 starspawn tentacle segments (Abyss:3)
+222 creatures vanquished.
+
+Grand Total: 2865 creatures vanquished
+
+Notes
+Turn   | Place    | Note
+--------------------------------------------------------------
+     0 | D:1      | zugundertherug, the Halfling Wanderer, began the quest for the Orb.
+     0 | D:1      | Reached XP level 1. HP: 12/12 MP: 3/3
+   147 | D:1      | Reached skill level 1 in Short Blades
+   250 | D:1      | Reached XP level 2. HP: 16/18 MP: 5/5
+   768 | D:2      | Reached XP level 3. HP: 18/22 MP: 7/7
+   976 | D:2      | Found a bloodstained altar of Trog.
+   991 | D:2      | Reached XP level 4. HP: 24/27 MP: 9/9
+  1337 | D:2      | Reached skill level 1 in Dodging
+  1423 | D:2      | Found a deep blue altar of Sif Muna.
+  1607 | D:2      | Reached skill level 4 in Stealth
+  1640 | D:2      | Reached XP level 5. HP: 28/32 MP: 11/11
+  2597 | D:4      | Found a glowing golden altar of the Shining One.
+  2828 | D:4      | Found a sparkling altar of Nemelex Xobeh.
+  2834 | D:4      | Became a worshipper of Nemelex Xobeh
+  2846 | D:4      | Received a gift from Nemelex Xobeh
+  2956 | D:4      | Noticed a phantom
+  3078 | D:4      | Reached skill level 1 in Evocations
+  3378 | D:4      | Killed a phantom
+  3378 | D:4      | Reached skill level 5 in Short Blades
+  3378 | D:4      | Reached XP level 6. HP: 26/37 MP: 12/12
+  3522 | D:4      | Paralysed by a giant eyeball for 2 turns
+  3855 | D:4      | Acquired Nemelex Xobeh's first power
+  4129 | D:5      | Entered Level 5 of the Dungeon
+  4134 | D:5      | Reached XP level 7. HP: 42/42 MP: 14/14
+  4484 | D:5      | Acquired Nemelex Xobeh's second power
+  4486 | D:5      | Received a gift from Nemelex Xobeh
+  4489 | D:5      | Noticed Dowan
+  4505 | D:5      | Reached skill level 5 in Stealth
+  4505 | D:5      | Reached skill level 5 in Evocations
+  4519 | D:5      | Killed Dowan
+  4728 | D:5      | Received a gift from Nemelex Xobeh
+  4737 | D:5      | Learned a level 1 spell: Magic Dart
+  4740 | D:5      | Learned a level 2 spell: Blink
+  4743 | D:5      | Learned a level 2 spell: Repel Missiles
+  4925 | D:5      | Reached skill level 6 in Stealth
+  5051 | D:5      | Found a staircase to the Ecumenical Temple.
+  5135 | D:5      | Reached XP level 8. HP: 42/47 MP: 16/18
+  5276 | D:5      | Noticed Duvessa
+  5279 | D:5      | Found Plurarph's Book Emporium.
+  5284 | D:5      | Found a snail-covered altar of Cheibriados.
+  5288 | D:5      | Noticed Prince Ribbit
+  5706 | D:5      | Acquired Nemelex Xobeh's third power
+  5708 | D:5      | Killed Prince Ribbit
+  5708 | D:5      | Reached skill level 7 in Evocations
+  6343 | D:5      | Killed Duvessa
+  6456 | D:5      | Noticed Name63's ghost (experienced DEIE)
+  6692 | D:5      | Reached skill level 5 in Dodging
+  6692 | D:5      | Reached skill level 8 in Evocations
+  6692 | D:5      | Reached XP level 9. HP: 45/52 MP: 21/21
+  6740 | D:5      | Received a gift from Nemelex Xobeh
+  7718 | D:6      | Noticed Crazy Yiuf
+  7727 | D:6      | Killed Crazy Yiuf
+  7835 | D:6      | Acquired Nemelex Xobeh's fourth power
+  7883 | D:6      | Found an iron altar of Okawaru.
+  8228 | D:7      | Reached skill level 9 in Evocations
+  8756 | D:7      | Received a gift from Nemelex Xobeh
+  9134 | D:7      | Reached XP level 10. HP: 51/57 MP: 23/23
+  9321 | D:8      | Found an ancient bone altar of Kikubaaqudgha.
+  9457 | D:8      | Reached skill level 10 in Evocations
+  9516 | D:8      | Acquired Nemelex Xobeh's fifth power
+  9615 | D:8      | Noticed Sleepwalker's ghost (experienced OpAs)
+  9617 | D:8      | Received a gift from Nemelex Xobeh
+  9620 | D:8      | Killed Sleepwalker's ghost
+  9799 | D:8      | Got an encrusted cloak
+  9803 | D:8      | Identified the +2 cloak of Hedge Wizardry {Acc+5 Dam+3} (You found it on level 8 of the Dungeon)
+  9982 | D:8      | Found a staircase to the Orcish Mines.
+ 10388 | D:9      | Noticed Blork the orc
+ 10400 | D:9      | Killed Blork the orc
+ 10400 | D:9      | Reached skill level 10 in Short Blades
+ 10610 | D:9      | Reached skill level 1 in Fighting
+ 10622 | D:9      | Reached skill level 11 in Evocations
+ 10629 | D:9      | Noticed Edmund
+ 10652 | D:9      | Killed Edmund
+ 10693 | D:9      | Noticed dscm's ghost (experienced GrEE)
+ 10697 | D:9      | Received a gift from Nemelex Xobeh
+ 10791 | D:9      | Killed dscm's ghost
+ 10791 | D:9      | Reached XP level 11. HP: 48/64 MP: 22/25
+ 10934 | D:9      | Reached skill level 10 in Dodging
+ 11141 | D:9      | Noticed Erolcha
+ 11265 | D:9      | Found a shimmering altar of Xom.
+ 11494 | D:10     | Entered Level 10 of the Dungeon
+ 11644 | D:10     | Received a gift from Nemelex Xobeh
+ 11649 | D:10     | Noticed Grum
+ 11653 | D:10     | Reached skill level 12 in Evocations
+ 11659 | D:10     | Killed Grum
+ 11740 | D:10     | Found a portal to a secret trove of treasure.
+ 11906 | D:10     | Found a staircase to the Lair.
+ 12183 | D:10     | Learned a level 2 spell: Swiftness
+ 12187 | D:10     | Learned a level 3 spell: Flight
+ 12250 | D:11     | Noticed a hill giant
+ 12279 | D:11     | Noticed a hill giant
+ 12282 | D:11     | Noticed a hill giant
+ 12408 | D:11     | Killed a hill giant
+ 12419 | D:11     | Killed a hill giant
+ 12542 | D:11     | Received a gift from Nemelex Xobeh
+ 12586 | D:11     | Killed a hill giant
+ 12623 | D:11     | Noticed an eight-headed hydra
+ 12718 | D:11     | Found a white marble altar of Elyvilon.
+ 12918 | D:11     | Received a gift from Nemelex Xobeh
+ 13030 | D:11     | Killed an eight-headed hydra
+ 13030 | D:11     | Reached XP level 12. HP: 72/72 MP: 26/28
+ 13106 | D:12     | Noticed Harold
+ 13163 | D:12     | Killed Harold
+ 13353 | D:12     | Reached skill level 13 in Evocations
+ 13997 | D:10     | Received a gift from Nemelex Xobeh
+ 14008 | Lair:1   | Entered Level 1 of the Lair of Beasts
+ 14341 | Lair:1   | Reached skill level 10 in Stealth
+ 14488 | Lair:1   | Found an ancient bone altar of Kikubaaqudgha.
+ 15328 | Lair:2   | Received a gift from Nemelex Xobeh
+ 15885 | Lair:2   | Reached XP level 13. HP: 70/77 MP: 29/29
+ 15945 | Lair:2   | Reached skill level 14 in Evocations
+ 15984 | Lair:2   | Reached skill level 1 in Long Blades
+ 16552 | Lair:3   | Learned a level 2 spell: Stoneskin
+ 16638 | Lair:3   | Received a gift from Nemelex Xobeh
+ 17614 | Lair:4   | Got a polished scale mail
+ 17626 | Lair:4   | Identified the +3 scale mail of the Harvest {+Inv rF+} (You found it on level 4 of the Lair of Beasts)
+ 17651 | Lair:4   | Received a gift from Nemelex Xobeh
+ 17652 | Lair:4   | Reached skill level 5 in Long Blades
+ 17775 | Lair:4   | Identified a scroll of acquirement
+ 18052 | Lair:4   | Received a gift from Nemelex Xobeh
+ 18154 | Lair:5   | Found a deep blue altar of Sif Muna.
+ 18462 | Lair:5   | Noticed Rupert
+ 18474 | Lair:5   | Killed Rupert
+ 18521 | Lair:5   | Noticed Nergalle
+ 18599 | Lair:5   | Killed Nergalle
+ 18732 | Lair:5   | Received a gift from Nemelex Xobeh
+ 18776 | Lair:5   | Reached skill level 15 in Evocations
+ 18780 | Lair:5   | Reached skill level 5 in Fighting
+ 18790 | Lair:5   | Received a gift from Nemelex Xobeh
+ 19063 | Lair:5   | Received a gift from Nemelex Xobeh
+ 19785 | Lair:6   | Found a staircase to the Shoals.
+ 19932 | Lair:6   | Reached XP level 14. HP: 66/85 MP: 31/31
+ 19988 | Lair:6   | Found a labyrinth entrance.
+ 20005 | Lab      | Entered a labyrinth
+ 20710 | Lab      | Got an ancient ring mail
+ 20716 | Lab      | Learned a level 4 spell: Dig
+ 20729 | Lab      | Identified the cursed -1 ring mail of the Princeling {Stlth++} (You found it in a labyrinth)
+ 20822 | Lair:6   | Received a gift from Nemelex Xobeh
+ 20857 | Lair:6   | Found a hole to the Spider Nest.
+ 21512 | Lair:7   | Reached skill level 1 in Charms
+ 22054 | Lair:7   | Reached skill level 5 in Charms
+ 22549 | Lair:8   | Entered Level 8 of the Lair of Beasts
+ 22549 | Lair:8   | Found a staircase to the Slime Pits.
+ 22691 | Lair:8   | Received a gift from Nemelex Xobeh
+ 22838 | Lair:8   | Received a gift from Nemelex Xobeh
+ 22895 | Lair:8   | Reached skill level 16 in Evocations
+ 23645 | Lair:8   | Received a gift from Nemelex Xobeh
+ 23692 | Lair:8   | Got a transparent robe
+ 23700 | Lair:8   | Identified the cursed -3 robe of the Last Ships {Int+4 Curse} (You found it on level 8 of the Lair of Beasts)
+ 24271 | D:13     | Found Quenuima's Gadget Shoppe.
+ 24441 | D:13     | Reached skill level 15 in Stealth
+ 24596 | D:13     | Found a corrupted altar of Lugonu.
+ 24674 | D:13     | Received a gift from Nemelex Xobeh
+ 24881 | D:14     | Entered Level 14 of the Dungeon
+ 25221 | D:14     | Reached XP level 15. HP: 67/91 MP: 33/33
+ 25738 | D:14     | Noticed Erica
+ 25747 | D:14     | Killed Erica
+ 25751 | D:14     | Received a gift from Nemelex Xobeh
+ 26321 | D:15     | Entered Level 15 of the Dungeon
+ 26718 | D:15     | Found Vil Ikas' Gadget Boutique.
+ 26843 | D:15     | Got a brightly glowing dagger
+ 26844 | D:15     | Identified the dagger of the Five Deaths {drain, Int+2} (You found it on level 15 of the Dungeon)
+ 27603 | D:16     | Reached skill level 1 in Shields
+ 27909 | D:16     | Received a gift from Nemelex Xobeh
+ 28116 | D:16     | Reached skill level 5 in Shields
+ 28569 | D:17     | Noticed Kirke
+ 28592 | D:17     | Killed Kirke
+ 28644 | D:17     | Gained mutation: You are frail (-10% HP). [mutagenic glow]
+ 28646 | D:17     | Lost mutation: You are frail (-10% HP). [potion of cure mutation]
+ 28656 | D:17     | Received a gift from Nemelex Xobeh
+ 29315 | D:17     | Received a gift from Nemelex Xobeh
+ 29365 | D:17     | Noticed Nikola
+ 29702 | D:17     | Killed Nikola
+ 29942 | D:17     | Received a gift from Nemelex Xobeh
+ 30575 | Orc:1    | Entered Level 1 of the Orcish Mines
+ 30610 | Orc:1    | Received a gift from Nemelex Xobeh
+ 30884 | Orc:2    | Noticed Josephine
+ 30898 | Orc:2    | Killed Josephine
+ 30898 | Orc:2    | Reached XP level 16. HP: 98/98 MP: 34/34
+ 31056 | Orc:3    | Received a gift from Nemelex Xobeh
+ 31189 | Orc:2    | Received a gift from Nemelex Xobeh
+ 31584 | Orc:1    | Received a gift from Nemelex Xobeh
+ 31664 | Orc:1    | Found a deep blue altar of Sif Muna.
+ 31701 | Orc:1    | Identified Sif Muna's Compendium of Stones (You found it on level 1 of the Orcish Mines)
+ 31769 | Orc:3    | Found a staircase to the Elven Halls.
+ 31944 | Orc:4    | Entered Level 4 of the Orcish Mines
+ 32056 | Orc:4    | Received a gift from Nemelex Xobeh
+ 32218 | Orc:4    | Received a gift from Nemelex Xobeh
+ 32355 | Orc:4    | Noticed Syneil's ghost (powerful HOFi)
+ 32357 | Orc:4    | Received a gift from Nemelex Xobeh
+ 32371 | Orc:4    | Killed Syneil's ghost
+ 32541 | Orc:4    | Cast into the Abyss (a card of wild magic)
+ 32635 | Abyss:1  | Noticed a bone dragon
+ 32646 | Abyss:1  | Noticed a lich
+ 32703 | Abyss:1  | Reached skill level 17 in Evocations
+ 33014 | Abyss:3  | Noticed a bone dragon
+ 33031 | Abyss:3  | Found a corrupted altar of Lugonu.
+ 33041 | Abyss:3  | Noticed an Executioner
+ 33131 | Abyss:3  | Found a corrupted altar of Lugonu.
+ 33448 | Abyss:3  | Found a blossoming altar of Fedhas.
+ 33520 | Abyss:3  | Noticed a bone dragon
+ 33903 | Orc:4    | Escaped the Abyss
+ 33986 | Orc:4    | Found Axaez's Armour Shop.
+ 33991 | Orc:4    | Found Ponon's Weapon Shoppe.
+ 34320 | Orc:4    | Received a gift from Nemelex Xobeh
+ 34389 | Orc:4    | Reached skill level 15 in Dodging
+ 34427 | Orc:4    | Received a gift from Nemelex Xobeh
+ 34463 | Orc:4    | Found Miaqamn's Food Shop.
+ 34479 | Orc:4    | Found Shyfaot's Jewellery Shoppe.
+ 34482 | Orc:4    | Bought a meat ration for 40 gold pieces
+ 34482 | Orc:4    | Bought a bread ration for 40 gold pieces
+ 34482 | Orc:4    | Bought a bread ration for 40 gold pieces
+ 34482 | Orc:4    | Bought a meat ration for 40 gold pieces
+ 34491 | Orc:4    | Received a gift from Nemelex Xobeh
+ 34507 | Orc:4    | Gained mutation: You are weak. (Str -2) [a neqoxec]
+ 34552 | Orc:4    | Bought an uncursed ring of regeneration for 360 gold pieces
+ 34552 | Orc:4    | Bought the amulet of Cekugob {Ward -Tele Hunger rElec rPois rN+ AC+1 EV+1} for 675 gold pieces
+ 34567 | Orc:4    | Bought a +1 pair of orcish boots of stealth for 190 gold pieces
+ 35039 | Spider:1 | Entered Level 1 of the Spider Nest
+ 35077 | Spider:1 | Noticed Maud
+ 35078 | Spider:1 | Received a gift from Nemelex Xobeh
+ 35096 | Spider:1 | Killed Maud
+ 35096 | Spider:1 | Reached skill level 10 in Shields
+ 35133 | Spider:1 | Noticed Fannar
+ 35166 | Spider:1 | Killed Fannar
+ 35260 | Spider:1 | Received a gift from Nemelex Xobeh
+ 35464 | Spider:1 | Received a gift from Nemelex Xobeh
+ 35752 | Spider:1 | Received a gift from Nemelex Xobeh
+ 36373 | Spider:2 | Noticed Arachne
+ 36441 | Spider:2 | Killed Arachne
+ 36538 | Spider:2 | Noticed Nessos
+ 36580 | Spider:2 | Killed Nessos
+ 36580 | Spider:2 | Received a gift from Nemelex Xobeh
+ 36619 | Spider:2 | Reached XP level 17. HP: 102/102 MP: 30/35
+ 37239 | Spider:3 | Reached skill level 18 in Evocations
+ 37926 | Spider:4 | Noticed Louise
+ 37926 | Spider:4 | Noticed Aizul
+ 37926 | Spider:4 | Noticed a bone dragon
+ 38126 | Spider:4 | Received a gift from Nemelex Xobeh
+ 38149 | Spider:4 | Killed Louise
+ 38160 | Spider:4 | Killed Aizul
+ 38421 | Spider:4 | Received a gift from Nemelex Xobeh
+ 38564 | Spider:5 | Entered Level 5 of the Spider Nest
+ 38565 | Spider:5 | Noticed Boris
+ 38596 | Spider:5 | Noticed Agnes
+ 38738 | Spider:5 | Received a gift from Nemelex Xobeh
+ 39486 | Spider:5 | Received a gift from Nemelex Xobeh
+ 39910 | Spider:5 | Reached skill level 19 in Evocations
+ 39953 | Spider:5 | Received a gift from Nemelex Xobeh
+ 39969 | Spider:5 | Got a gossamer rune of Zot
+ 40144 | Lair:6   | Upgraded the game from 0.13.0-6-g40e4d2d to 0.13.0-7-g3df9ff1
+ 40216 | Shoals:1 | Entered Level 1 of the Shoals
+ 40281 | Shoals:1 | Noticed Donald
+ 40291 | Shoals:1 | Killed Donald
+ 40293 | Shoals:1 | Got a steaming shield {Donald}
+ 40561 | D:13     | Reached skill level 10 in Long Blades
+ 40578 | D:13     | Identified the +3 shield of Starshine {rF+} (You took it off Donald on level 1 of the Shoals)
+ 41104 | Shoals:1 | Received a gift from Nemelex Xobeh
+ 41331 | Shoals:1 | Noticed Roxanne
+ 41353 | Shoals:1 | Received a gift from Nemelex Xobeh
+ 41385 | Shoals:1 | NoamChomsky: Hafling nemelx eiwht a demon blade
+ 41385 | Shoals:1 | NoamChomsky: you're the man zuggy
+ 41421 | Shoals:1 | Killed Roxanne
+ 41421 | Shoals:1 | Reached XP level 18. HP: 91/108 MP: 36/36
+ 41508 | Shoals:2 | Noticed Wiglaf
+ 41521 | Shoals:2 | Received a gift from Nemelex Xobeh
+ 41523 | Shoals:2 | Killed Wiglaf
+ 41780 | Shoals:2 | Received a gift from Nemelex Xobeh
+ 42104 | Shoals:3 | Noticed Jorgrun
+ 42122 | Shoals:3 | Killed Jorgrun
+ 42184 | Shoals:3 | Received a gift from Nemelex Xobeh
+ 42187 | Shoals:3 | Got a pitted scale mail
+ 42191 | Shoals:3 | Identified the +2 scale mail "Wios" {+Blink +Fly rPois Dam+4 SInv} (You found it on level 3 of the Shoals)
+ 42280 | Shoals:3 | Received a gift from Nemelex Xobeh
+ 42385 | Shoals:3 | Noticed Saint Roka
+ 42464 | Shoals:3 | Noticed Frances
+ 42475 | Shoals:3 | Killed Saint Roka
+ 42524 | Shoals:3 | Received a gift from Nemelex Xobeh
+ 42777 | Shoals:3 | Received a gift from Nemelex Xobeh
+ 43185 | Shoals:4 | Found Ragh's Distillery.
+ 43195 | Shoals:4 | Bought a potion of might for 47 gold pieces
+ 43195 | Shoals:4 | Bought a potion of curing for 38 gold pieces
+ 43238 | Shoals:4 | Found Udghampe's Book Shop.
+ 43290 | Shoals:4 | Found Cuacic's Magic Scroll Shop.
+ 43295 | Shoals:4 | Found Axinlate's Magic Scroll Shop.
+ 43307 | Shoals:4 | Bought a scroll of teleportation for 63 gold pieces
+ 43316 | Shoals:4 | Bought a scroll of enchant armour for 93 gold pieces
+ 43316 | Shoals:4 | Bought a scroll of enchant weapon I for 93 gold pieces
+ 43316 | Shoals:4 | Bought a scroll of enchant weapon I for 93 gold pieces
+ 43656 | Shoals:5 | Entered Level 5 of the Shoals
+ 43856 | Shoals:5 | Received a gift from Nemelex Xobeh
+ 43890 | Shoals:5 | Noticed Ilsuiw
+ 43941 | Shoals:5 | Killed Ilsuiw
+ 43983 | Shoals:5 | Received a gift from Nemelex Xobeh
+ 44076 | Shoals:5 | Got a faintly glowing bronze ring
+ 44077 | Shoals:5 | Identified the ring of Crofoeff {rC++ EV+2 Int+3 Acc+3} (You found it on level 5 of the Shoals)
+ 44204 | Shoals:5 | Got a bronze scale mail
+ 44205 | Shoals:5 | Identified the cursed -2 scale mail "Skaem" {Dex+2 Acc+4} (You found it on level 5 of the Shoals)
+ 44273 | Shoals:5 | Received a gift from Nemelex Xobeh
+ 44358 | Shoals:5 | Got a barnacled rune of Zot
+ 45123 | Elf:1    | Entered Level 1 of the Elven Halls
+ 45189 | Elf:1    | Reached XP level 19. HP: 114/114 MP: 37/37
+ 45344 | Orc:3    | Received a gift from Nemelex Xobeh
+ 45603 | Elf:1    | Found Gianol's Food Shoppe.
+ 45612 | Elf:1    | Bought a meat ration for 44 gold pieces
+ 45612 | Elf:1    | Bought a bread ration for 44 gold pieces
+ 45884 | Elf:1    | Received a gift from Nemelex Xobeh
+ 46691 | D:18     | Paralysed by a great orb of eyes for 3 turns
+ 46706 | D:18     | Reached XP level 20. HP: 120/120 MP: 38/38
+ 46722 | D:18     | Lost mutation: You are weak. (Str -2) [helix card]
+ 46850 | D:18     | Received a gift from Nemelex Xobeh
+ 47225 | D:18     | Reached skill level 15 in Shields
+ 47294 | D:18     | Received a gift from Nemelex Xobeh
+ 47606 | D:19     | Found Brounkoa's Armour Emporium.
+ 47658 | D:19     | Found Ydic's Antique Weapon Shop.
+ 47676 | D:19     | mahrgell: a 3runer? :(
+ 47677 | D:19     | zugundertherug: yup
+ 47677 | D:19     | zugundertherug: tourney doesn't encourages lots of 15 runers
+ 47685 | D:19     | mahrgell: the tourney has blinded your spirit
+ 47685 | D:19     | mahrgell: :(
+ 47685 | D:19     | zugundertherug: lol
+ 47690 | D:19     | Found Klial's Food Emporium.
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47707 | D:19     | Bought a meat ration for 52 gold pieces
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47707 | D:19     | Bought a meat ration for 52 gold pieces
+ 47707 | D:19     | Bought a bread ration for 52 gold pieces
+ 47808 | D:19     | Found Plimem's Weapon Shop.
+ 47819 | D:19     | Found Kuitt's Jewellery Shoppe.
+ 47933 | D:19     | Bought an uncursed amulet of resist mutation for 680 gold pieces
+ 48114 | D:19     | Noticed Mara
+ 48146 | D:20     | Entered Level 20 of the Dungeon
+ 48476 | D:19     | Received a gift from Nemelex Xobeh
+ 48812 | D:19     | Found a staircase to the Vaults.
+ 48817 | Vaults:1 | Entered Level 1 of the Vaults
+ 49065 | Vaults:1 | Reached XP level 21. HP: 121/125 MP: 34/38
+ 49122 | Vaults:1 | Received a gift from Nemelex Xobeh
+ 49244 | Vaults:1 | Learned a level 6 spell: Haste
+ 49370 | Vaults:1 | Found Anoph's Antique Armour Shoppe.
+ 49374 | Vaults:1 | Bought a shimmering robe for 165 gold pieces
+ 49375 | Vaults:1 | Identified the +0 robe "Steuh" {rC+ Dam+2} (You bought it in a shop on level 1 of the Vaults)
+ 49414 | Vaults:1 | Received a gift from Nemelex Xobeh
+ 49976 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 50352 | Vaults:2 | Reached skill level 15 in Long Blades
+ 50385 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 50563 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 50638 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 51102 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 51112 | Vaults:2 | Learned a level 3 spell: Regeneration
+ 51515 | Vaults:2 | Reached XP level 22. HP: 95/136 MP: 39/39
+ 51529 | Vaults:2 | Received a gift from Nemelex Xobeh
+ 51770 | Vaults:3 | Noticed Sojobo
+ 51825 | Vaults:3 | Found a staircase to the Crypt.
+ 52177 | Vaults:3 | Received a gift from Nemelex Xobeh
+ 52258 | Vaults:3 | Found Julep's Assorted Antiques.
+ 52287 | Vaults:3 | Bought 2 potions of heal wounds for 228 gold pieces
+ 52287 | Vaults:3 | Bought a scroll of blinking for 209 gold pieces
+ 52292 | Vaults:3 | Bought a scroll labeled NEUF HOROTSOAGO for 38 gold pieces
+ 53325 | D:20     | Received a gift from Nemelex Xobeh
+ 53354 | D:20     | Reached skill level 10 in Fighting
+ 53354 | D:20     | Reached XP level 23. HP: 144/147 MP: 34/40
+ 54616 | D:21     | Received a gift from Nemelex Xobeh
+ 54806 | D:21     | Found a gateway to Hell.
+ 54885 | D:21     | Found a one-way gate to the infinite horrors of the Abyss.
+ 55680 | D:22     | Received a gift from Nemelex Xobeh
+ 55699 | D:22     | Noticed Jory
+ 55729 | D:22     | Killed Jory
+ 56204 | D:22     | Found a deep blue altar of Sif Muna.
+ 56309 | D:22     | Received a gift from Nemelex Xobeh
+ 56933 | D:22     | Received a gift from Nemelex Xobeh
+ 57225 | D:23     | Reached XP level 24. HP: 105/157 MP: 37/40
+ 57253 | D:23     | Received a gift from Nemelex Xobeh
+ 57647 | D:23     | Received a gift from Nemelex Xobeh
+ 57700 | D:23     | XOM: harmless Necr miscast
+ 57723 | D:23     | Reached skill level 1 in Armour
+ 57775 | D:23     | Received a gift from Nemelex Xobeh
+ 58741 | D:24     | Reached skill level 5 in Armour
+ 58743 | D:24     | Received a gift from Nemelex Xobeh
+ 59118 | D:24     | Found a one-way gate leading to the halls of Pandemonium.
+ 59420 | D:24     | Received a gift from Nemelex Xobeh
+ 59758 | D:25     | Entered Level 25 of the Dungeon
+ 59837 | D:25     | Received a gift from Nemelex Xobeh
+ 59867 | D:25     | Got a warped steel ring
+ 59868 | D:25     | Identified the ring "Tyitwen" {Wiz Str+4 Int+5} (You found it on level 25 of the Dungeon)
+ 60141 | D:25     | Received a gift from Nemelex Xobeh
+ 60299 | D:25     | Received a gift from Nemelex Xobeh
+ 60512 | D:25     | Received a gift from Nemelex Xobeh
+ 60815 | D:26     | Received a gift from Nemelex Xobeh
+ 60953 | D:26     | Learned a level 1 spell: Apportation
+ 60977 | D:26     | Found a glowing golden altar of the Shining One.
+ 61217 | D:26     | Received a gift from Nemelex Xobeh
+ 61219 | D:26     | XOM: cast spell 'Discord'
+ 61378 | D:26     | Received a gift from Nemelex Xobeh
+ 61404 | D:26     | Upgraded the game from 0.13.0-7-g3df9ff1 to 0.13.0-9-gbc74161
+ 61573 | D:25     | Received a gift from Nemelex Xobeh
+ 61633 | D:26     | Reached XP level 25. HP: 124/164 MP: 41/41
+ 61905 | D:26     | Received a gift from Nemelex Xobeh
+ 62139 | D:26     | Received a gift from Nemelex Xobeh
+ 62896 | D:26     | Received a gift from Nemelex Xobeh
+ 62931 | D:27     | Entered Level 27 of the Dungeon
+ 63065 | D:27     | Acidian: dats a lot of dicks
+ 63065 | D:27     | Acidian: i mean decks
+ 63066 | D:27     | zugundertherug: lol
+ 63095 | D:27     | Gained mutation: You are partially covered in iridescent scales (AC +4). [potion of beneficial mutation]
+ 63261 | D:27     | Found a bloodstained altar of Trog.
+ 63363 | D:27     | Found Dyhywi's Armour Shoppe.
+ 63411 | D:27     | Received a gift from Nemelex Xobeh
+ 63424 | D:27     | Bought a +3 leather armour of fire resistance for 794 gold pieces
+ 63961 | D:27     | Received a gift from Nemelex Xobeh
+ 64284 | D:27     | Reached skill level 20 in Evocations
+ 64346 | D:27     | Received a gift from Nemelex Xobeh
+ 64889 | D:21     | Voluntarily entered the Abyss.
+ 64926 | Abyss:1  | Noticed a lich
+ 64948 | D:21     | Escaped the Abyss
+ 64950 | D:21     | Voluntarily entered the Abyss.
+ 65281 | Abyss:1  | Found a corrupted altar of Lugonu.
+ 65535 | Abyss:3  | Found a corrupted altar of Lugonu.
+ 65850 | Abyss:3  | Found a corrupted altar of Lugonu.
+ 65954 | Abyss:3  | Noticed an ancient lich
+ 65957 | Abyss:3  | Killed an ancient lich
+ 65961 | Abyss:3  | Reached XP level 26. HP: 176/176 MP: 42/42
+ 65963 | Abyss:3  | Noticed an ancient lich
+ 65965 | Abyss:3  | Killed an ancient lich
+ 65975 | Abyss:3  | Got an abyssal rune of Zot
+ 65978 | Abyss:3  | Noticed an ancient lich
+ 65980 | Abyss:3  | Killed an ancient lich
+ 66046 | Abyss:3  | Found a blossoming altar of Fedhas.
+ 66090 | Abyss:3  | Found a corrupted altar of Lugonu.
+ 66148 | Abyss:3  | Found a basalt altar of Yredelemnul.
+ 66245 | D:21     | Escaped the Abyss
+ 66419 | Zot:1    | Entered Level 1 of the Realm of Zot
+ 66438 | Zot:1    | Received a gift from Nemelex Xobeh
+ 67248 | Trove    | Entered a treasure trove
+ 67252 | Trove    | Acidian: oh hey, a unrandart
+ 67252 | Trove    | zugundertherug: yeah, like my wep better though
+ 67252 | Trove    | Acidian: aye
+ 67257 | Trove    | Got a crude scimitar
+ 67263 | Trove    | Acidian: take it anyways for a bigger score
+ 67267 | Trove    | Got a transparent scimitar
+ 67272 | Trove    | zugundertherug: doesn't do that
+ 67279 | D:10     | Identified the scimitar "Skekhon" {pain, *Rage rC++} (You found it in a treasure trove)
+ 67281 | D:10     | Identified the scimitar "Sowov" {elec, rElec rN+ MR++ Dex+2 SInv} (You found it in a treasure trove)
+ 67282 | D:10     | Acidian: oh
+ 67862 | Zot:1    | Reached skill level 21 in Evocations
+ 68451 | D:26     | Received a gift from Nemelex Xobeh
+ 68482 | D:27     | Reached XP level 27. HP: 184/186 MP: 40/43
+ 68712 | Zot:2    | Reached skill level 5 in Earth Magic
+ 68934 | Zot:2    | Received a gift from Nemelex Xobeh
+ 69056 | Zot:2    | Reached skill level 15 in Fighting
+ 70008 | Zot:3    | Received a gift from Nemelex Xobeh
+ 72086 | Zot:4    | Received a gift from Nemelex Xobeh
+ 72372 | Zot:4    | Reached skill level 22 in Evocations
+ 72909 | Zot:4    | Received a gift from Nemelex Xobeh
+ 73517 | Zot:4    | Identified Sif Muna's Compendium of Summoning (You found it on level 4 of the Realm of Zot)
+ 73700 | Zot:5    | Entered Level 5 of the Realm of Zot
+ 74687 | Zot:5    | Received a gift from Nemelex Xobeh
+ 74818 | Zot:5    | Noticed an ancient lich
+ 74822 | Zot:5    | Killed an ancient lich
+ 74923 | Zot:5    | Noticed an orb of fire
+ 74964 | Zot:5    | Killed an orb of fire
+ 74964 | Zot:5    | Reached skill level 23 in Evocations
+ 75068 | Zot:5    | Noticed an orb of fire
+ 75068 | Zot:5    | Gained mutation: Your body is slowly deteriorating. [an orb of fire]
+ 75101 | Zot:5    | Received a gift from Nemelex Xobeh
+ 75110 | Zot:5    | Killed an orb of fire
+ 75168 | Zot:5    | Noticed an ancient lich
+ 75175 | Zot:5    | Noticed an orb of fire
+ 75177 | Zot:5    | Acidian: oh shit
+ 75179 | Zot:5    | Acidian: nice!
+ 75249 | Zot:5    | Gained mutation: You tend to lose your temper in combat. [an orb of fire]
+ 75252 | Zot:5    | Killed an ancient lich
+ 75254 | Zot:5    | Received a gift from Nemelex Xobeh
+ 75258 | Zot:5    | Killed an orb of fire
+ 75259 | Zot:5    | Acidian: nice, crystal spear
+ 75478 | D:26     | Lost mutation: Your body is slowly deteriorating. [potion of cure mutation]
+ 75478 | D:26     | Lost mutation: You tend to lose your temper in combat. [potion of cure mutation]
+ 75675 | Zot:4    | Received a gift from Nemelex Xobeh
+ 76077 | Zot:5    | Noticed an orb of fire
+ 76100 | Zot:5    | Gained mutation: You tend to lose your temper in combat. [an orb of fire]
+ 76124 | Zot:5    | Killed an orb of fire
+ 76209 | Zot:5    | Noticed an ancient lich
+ 76214 | Zot:5    | Received a gift from Nemelex Xobeh
+ 76215 | Zot:5    | Killed an ancient lich
+ 76224 | Zot:5    | Got the Orb of Zot
+ 76275 | Zot:5    | Noticed Rusijuh the pandemonium lord
+ 76526 | D:20     | Noticed Pecwakko the pandemonium lord
+ 76532 | D:20     | Paralysed by a giant eyeball for 3 turns
+ 76555 | D:20     | zugundertherug: that is one nasty pan lord
+ 76560 | D:20     | Noticed Pesap the pandemonium lord
+ 76715 | D:8      | Found a basalt altar of Yredelemnul.
+ 77013 | D:$      | Escaped with the Orb!
+             
+
+
+Action                   |  1- 3 |  4- 6 |  7- 9 | 10-12 | 13-15 | 16-18 | 19-21 | 22-24 | 25-27 || total
+-------------------------+-------+-------+-------+-------+-------+-------+-------+-------+-------++-------
+Melee: Short sword       |    94 |   294 |   307 |       |       |       |       |       |       ||   695
+       Dagger            |    12 |       |   251 |   684 |  1528 |  1555 |    97 |    35 |    63 ||  4225
+       Unarmed           |       |       |       |       |     1 |       |       |       |       ||     1
+       Scimitar          |       |       |       |       |    81 |       |       |       |    39 ||   120
+       Demon blade       |       |       |       |       |       |   838 |   959 |  1657 |  2234 ||  5688
+Throw: Dart              |       |       |     2 |     2 |       |       |       |       |       ||     4
+ Cast: Flight            |       |       |       |       |       |    17 |       |       |       ||    17
+       Swiftness         |       |       |       |       |       |     1 |       |     1 |    26 ||    28
+       Dig               |       |       |       |       |       |       |       |       |    33 ||    33
+Invok: Draw One          |       |       |       |       |    12 |   141 |    33 |    68 |    58 ||   312
+       Stack Five        |       |       |       |       |     1 |     6 |       |     1 |     1 ||     9
+       Peek at Two       |       |       |       |       |     1 |       |       |       |       ||     1
+       Triple Draw       |       |       |       |       |       |     3 |     7 |     6 |     4 ||    20
+       Deal Four         |       |       |       |       |       |     1 |       |     1 |       ||     2
+ Abil: Evoke Invisibilit |       |       |    12 |    20 |    28 |    19 |    12 |     2 |    13 ||   106
+       Turn Visible      |       |       |       |       |     3 |       |       |       |     1 ||     4
+Evoke: Wand              |       |     2 |       |     8 |    11 |    15 |     3 |     4 |     7 ||    50
+       Deck              |       |     4 |    21 |    18 |    44 |       |     1 |       |       ||    88
+       Miscellaneous     |       |       |       |       |       |     1 |       |       |     6 ||     7
+  Use: Potion            |       |     5 |     3 |     2 |     8 |    15 |     1 |     6 |    14 ||    54
+       Scroll            |       |     2 |    21 |     9 |    23 |    28 |     5 |    11 |    18 ||   117
+ Stab: Sleeping          |     7 |     4 |     8 |    73 |   128 |   116 |    60 |    49 |    63 ||   508
+       Invisible         |       |     2 |    25 |    33 |    64 |    93 |    17 |    18 |    43 ||   295
+       Distracted        |       |       |     1 |     3 |    11 |    27 |     4 |    13 |    27 ||    86
+       Betrayed ally     |       |       |       |       |     2 |     2 |       |       |       ||     4
+       Fleeing           |       |       |       |       |     1 |       |     1 |       |     2 ||     4
+       Held in net/web   |       |       |       |       |       |     1 |       |       |       ||     1
+       Paralysed         |       |       |       |       |       |     1 |       |       |       ||     1
+

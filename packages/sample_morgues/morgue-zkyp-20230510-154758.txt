@@ -1,0 +1,379 @@
+ Dungeon Crawl Stone Soup version 0.30-b1-2-g02819fbbbe (webtiles) character file.
+
+Game seed: 8641561742976712406
+
+5191 zkyp the Fighter (level 10, -13/114 HPs)
+             Began as an Ogre Artificer on May 10, 2023.
+             Was a Believer of Fedhas.
+             Mangled by a two-headed ogre
+             ... wielding a +0 giant club
+              (18 damage)
+             ... on level 10 of the Dungeon.
+             The game lasted 00:20:07 (13412 turns).
+
+zkyp the Fighter (Ogre Artificer)                  Turns: 13412, Time: 00:20:08
+
+Health: -13/114    AC:  8    Str: 22    XL:     10   Next: 60%
+Magic:  19/19      EV: 12    Int: 12    God:    Fedhas [**....]
+Gold:   567        SH:  0    Dex:  9    Spells: 9/9 levels left
+
+rFire   . . .        b - +3 giant spiked club
+rCold   . . .        (shield currently unavailable)
+rNeg    . . .        n - +0 steam dragon scales
+rPois   .            (helmet restricted)
+rElec   .            E - +1 cloak
+rCorr   .            (gloves unavailable)
+SInv    .            (boots unavailable)
+Will    +....        (no amulet)
+Stlth   +            (no ring)
+HPRegen 0.39/turn    s - ring of magical power
+MPRegen 0.16/turn
+
+%: no passive effects
+@: flying
+A: large, unfitting armour, tough skin 1
+a: Renounce Religion, Wall of Briars
+
+
+You were on level 10 of the Dungeon.
+You worshipped Fedhas.
+Fedhas was pleased with you.
+You visited 2 branches of the dungeon, and saw 11 of its levels.
+
+You collected 567 gold pieces.
+
+Inventory:
+
+Hand Weapons
+ a - a +0 flail
+ b - a +3 giant spiked club (weapon)
+ h - a +0 mace
+ u - a +0 whip
+ G - a +2 battleaxe of flaming
+ H - a +4 battleaxe of freezing
+Missiles
+ e - a throwing net {=f =F}
+ l - 8 poisoned darts (quivered)
+ O - 4 silver javelins
+Armour
+ n - +0 steam dragon scales (worn)
+ E - a +1 cloak (worn)
+Jewellery
+ s - a ring of magical power (right hand)
+Wands
+ c - a wand of flame (5)
+ d - a wand of charming (10)
+ r - a wand of roots (23)
+ w - a wand of mindburst (7)
+ F - a wand of polymorph (4)
+Scrolls
+ j - 5 scrolls of fog
+ o - 2 scrolls of enchant armour
+ q - 3 scrolls of amnesia
+ x - a scroll of teleportation
+ D - a scroll of magic mapping
+Potions
+ f - 6 potions of attraction
+ i - 5 potions of curing {@q1}
+ k - a potion of might
+ m - a potion of mutation {!q}
+ p - a potion of resistance {unknown}
+ v - a potion of flight
+ z - a potion of cancellation
+ C - a potion of magic
+ I - a potion of invisibility {unknown}
+ J - a potion of haste {unknown}
+
+
+   Skills:
+ + Level 11.5 Fighting
+ * Level 8.6 Maces & Flails
+ - Level 8.1 Dodging
+ - Level 0.6 Stealth
+ - Level 2.4 Evocations
+
+
+You had 9 spell levels left.
+You didn't know any spells.
+Your spell library contained the following spells:
+
+ Spells                   Type           Power      Damage    Failure   Level
+ Inner Flame              Hex/Fire       0%         N/A       69%         3
+ Flame Wave               Conj/Fire      0%         2d4       97%         4
+ Sticky Flame             Conj/Fire      0%         2d3       97%         4
+ Summon Forest            Summ/Tloc      0%         N/A       100%        5
+ Eringya's Noxious Bog    Tmut/Pois      0%         N/A       100%        6
+ Summon Hydra             Summ           0%         N/A       100%        7
+
+
+Dungeon Overview and Level Annotations
+
+Branches:
+Dungeon (10/15)            Temple (1/1) D:6         
+  Lair: D:8-11         Orc: D:9-12      
+
+Altars:
+Ashenzari
+Cheibriados
+Dithmenos
+Elyvilon
+Fedhas
+Gozag
+Hepliaklqana
+Kikubaaqudgha
+Makhleb
+Nemelex Xobeh
+Okawaru
+Qazlal
+Ru
+Sif Muna
+Trog
+Uskayaw
+Vehumet
+Wu Jian
+Xom
+Yredelemnul
+Zin
+The Shining One
+
+Shops:
+D:3 [   D:4 :
+
+
+Innate Abilities, Weirdness & Mutations
+
+You are too large for most types of armour.
+You have tough skin. (AC +1)
+
+Message History
+
+ Anything else - Cancel.
+Gang up on whom?
+Press: ? - help, Dir - move target, f - yak, p - two-headed ogre
+Aim: a yak
+Attack!
+The two-headed ogre is no longer charmed.
+The two-headed ogre closely misses you.
+The two-headed ogre hits you with a +0 giant club!
+The yak bellows!
+You puncture the yak!
+The yak is moderately wounded.
+You hear an angry hiss.
+The yak gores you!
+A gnoll comes into view. It is wielding a +0 spear.
+The two-headed ogre hits you with a +0 giant club. x2
+You closely miss the yak.
+The yak is lightly wounded.
+A kobold brigand comes into view. It is wielding a +0 dagger and quivering
+poisoned darts.
+The yak gores you! The yak gores you. The yak gores you!
+The yak closely misses you.
+The two-headed ogre hits you with a +0 giant club!
+The two-headed ogre hits you with a +0 giant club!!
+* * * LOW HITPOINT WARNING * * *
+Okay, then.
+Okay, then.
+Okay, then.
+Okay, then.
+Unknown command.
+You feel very buoyant.
+You fly up into the air.
+The yak bellows!
+The yak gores you!
+* * * LOW HITPOINT WARNING * * *
+A kobold brigand comes into view. It is wielding a +0 dagger and quivering
+curare-tipped darts.
+The yak gores you.
+* * * LOW HITPOINT WARNING * * *
+The two-headed ogre attacks as you move away!
+The two-headed ogre hits you with a +0 giant club!!
+You die...
+Fedhas appreciates your contribution to the ecosystem.
+
+   #....................
+####...§≈≈≈§............
+.......≈§≈§§............
+......§§§≈§≈§...........
+......§≈≈§§§§.........§
+.[.....≈≈§≈§.....≈≈≈§§..
+.........§§......≈≈§≈≈...#
+..........<....O@≈≈§≈§...#####:
+........#######YY≈≈§≈§.........
+........      #YY≈≈≈≈≈......../
+§≈≈§≈≈§.      #YYY.............
+§≈§≈§≈§.      #Yg..............
+.§≈≈§≈§.      #KY..............
+ ≈§≈§≈§.      #.Y.....<........
+  ≈≈≈≈..      #K...§§§.........
+               ..§§§≈≈.........
+
+
+You could see a two-headed ogre, 10 yaks, 2 kobold brigands and a gnoll.
+
+Vanquished Creatures
+  Harold (D:9)
+  Grinder (D:3)
+  A shadow (D:9)
+  2 wyverns
+  Eustachio (D:5)
+  3 yaks (D:8)
+  2 steam dragons
+  2 acid dragons (D:9)
+  3 orc warriors
+  3 black bears
+  A centaur (D:9)
+  An ogre (D:7)
+  2 phantoms
+  2 scorpions (D:5)
+  7 bullfrogs
+  7 wights
+  5 killer bees
+  A howler monkey (D:6)
+  A lava snake (D:10)
+  3 hounds
+  2 jellies (D:6)
+  2 orc priests
+  2 sleepcaps
+  An iguana (D:7)
+  Terence (D:3)
+  4 orc wizards
+  10 adders
+  3 gnolls
+  3 shadow imps
+  A white imp (D:5)
+  3 ufetubi
+  2 worms
+  2 dart slugs
+  17 orcs
+  2 ball pythons
+  4 bats
+  2 endoplasms (D:1)
+  3 giant cockroaches (D:1)
+  3 goblins
+  2 hobgoblins
+  7 quokkas
+  4 frilled lizards
+  5 kobolds
+  6 rats
+140 creatures vanquished.
+
+Vanquished Creatures (collateral kills)
+  A scorpion (D:6)
+  A killer bee (D:9)
+  A hound (D:6)
+  An adder (D:6)
+4 creatures vanquished.
+
+Vanquished Creatures (others)
+  A two-headed ogre (D:9)
+  A human (D:3)
+  2 ogres (D:6)
+  A centaur (D:9)
+  2 killer bees (D:9)
+  An iguana (D:6)
+  4 orcs (D:8)
+12 creatures vanquished.
+
+Grand Total: 156 creatures vanquished
+
+Notes
+Turn   | Place    | Note
+-------+----------+-------------------------------------------
+     0 | D:1      | zkyp the Ogre Artificer began the quest for the Orb.
+     0 | D:1      | Reached XP level 1. HP: 19/19 MP: 1/1
+   164 | D:1      | Reached skill level 2 in Fighting
+   167 | D:1      | Reached XP level 2. HP: 10/28 MP: 2/2
+   334 | D:1      | Reached skill level 1 in Maces & Flails
+   540 | D:1      | Reached XP level 3. HP: 36/36 MP: 3/3
+   603 | D:1      | Reached skill level 3 in Fighting
+  1612 | D:2      | Reached XP level 4. HP: 43/48 MP: 4/4
+  1916 | D:3      | Noticed Grinder
+  1922 | D:3      | Killed Grinder
+  1923 | D:3      | Reached skill level 5 in Fighting
+  1923 | D:3      | Reached XP level 5. HP: 53/59 MP: 5/5
+  1923 | D:3      | Reached XP level 6. HP: 61/67 MP: 6/6
+  1964 | D:3      | Noticed Terence
+  1977 | D:3      | Killed Terence
+  2135 | D:3      | Found Zegusk's Antique Armour Shoppe.
+  2223 | D:3      | You fall into a shaft and drop 2 floors!
+  2223 | D:5      | Entered Level 5 of the Dungeon
+  2263 | D:5      | Reached skill level 6 in Fighting
+  2690 | D:3      | Found an ancient bone altar of Kikubaaqudgha.
+  2731 | D:3      | Noticed a human
+  2733 | D:3      | Killed a human
+  2943 | D:4      | Found Fifyg's Book Emporium.
+  3028 | D:4      | Reached XP level 7. HP: 65/76 MP: 7/7
+  4078 | D:5      | Reached skill level 7 in Fighting
+  4614 | D:5      | Reached skill level 5 in Maces & Flails
+  5298 | D:5      | Reached skill level 8 in Fighting
+  5356 | D:6      | Noticed Eustachio
+  5764 | D:5      | Killed Eustachio
+  5765 | D:5      | Reached XP level 8. HP: 89/89 MP: 8/8
+  5871 | D:6      | Reached skill level 9 in Fighting
+  6700 | D:6      | Reached skill level 10 in Fighting
+  6963 | D:6      | Found a staircase to the Ecumenical Temple.
+  6972 | Temple   | Entered the Ecumenical Temple
+  7136 | Temple   | Became a worshipper of Fedhas Madash
+  7224 | D:6      | Reached XP level 9. HP: 81/101 MP: 9/9
+  7882 | D:7      | Found a white marble altar of Elyvilon.
+  8001 | D:7      | Found a shimmering blue altar of Sif Muna.
+  8581 | D:8      | Found a shadowy altar of Dithmenos.
+  8795 | D:8      | Reached skill level 5 in Dodging
+ 10120 | D:9      | Reached * piety under Fedhas
+ 10651 | D:8      | Reached XP level 10. HP: 61/111 MP: 10/10
+ 11549 | D:9      | Noticed Harold
+ 11954 | D:9      | Noticed a two-headed ogre
+ 12233 | D:10     | Entered Level 10 of the Dungeon
+ 12847 | D:9      | Reached skill level 11 in Fighting
+ 13222 | D:9      | Killed Harold
+ 13395 | D:10     | Reached ** piety under Fedhas
+ 13395 | D:10     | Noticed a two-headed ogre
+ 13411 | D:10     | HP: 5/114 [yak (5)]
+ 13412 | D:10     | Mangled by a two-headed ogre
+
+Illustrated notes
+
+Levels and vault maps discovered:
+D:1:      onia_arrival_pentagram, layout_basic
+D:2:      layout_rooms
+D:3:      layout_basic, tgw_kikubaaqudgha, serial_shops, shop, uniq_grinder,
+          uniq_terence
+D:4:      layout_rooms, nicolae_inconvenience_store, grunt_decor_cap,
+          grunt_decor_arrowhead
+D:5:      minmay_chambers_of_fours, layout_basic, chequers_decorated_corner,
+          grunt_ministairs_1, minivault_26
+D:6:      layout_basic, lemuel_temple_firewalk_b,
+          chequers_serial_rivers_small_3, minmay_joined_circles, uniq_eustachio
+D:7:      layout_basic, mainiacjoe_overflow_large_starburst
+D:8:      layout_basic, kennysheep_mini, eino_tiny_chamber
+D:9:      layout_loops_ring, uniq_harold
+D:10:     layout_big_octagon, lair_entry_dummy,
+          kennysheep_orc_monster_closet_entryway, minivault_7, uniq_fannar
+Temple:   regret_index_temple_mists
+
+Skill      XL: |  1  2  3  4  5  6  7  8  9 10 |
+---------------+-------------------------------+-----
+Fighting       |  2     3  5     6  8 10    11 | 11.5
+Maces & Flails |     1  2  3     4  5  7     8 |  8.6
+Dodging        |                          7  8 |  8.1
+Stealth        |                               |  0.6
+Evocations     |                               |  2.4
+
+Action                     |  1- 3 |  4- 6 |  7- 9 | 10-12 || total
+---------------------------+-------+-------+-------+-------++-------
+  Melee: Club              |    76 |       |       |       ||    76
+         Punch             |     2 |     1 |     6 |       ||     9
+         Whip              |    76 |    87 |       |       ||   163
+         Flail             |       |    13 |   306 |    48 ||   367
+         Giant spiked club |       |       |    35 |    70 ||   105
+  Throw: Dart              |       |       |    11 |     4 ||    15
+         Javelin           |       |       |       |     2 ||     2
+  Evoke: Wand              |    10 |     5 |    25 |     8 ||    48
+    Use: Scroll            |     6 |     1 |    18 |     2 ||    27
+         Potion            |       |       |     7 |     4 ||    11
+   Stab: Sleeping          |     1 |     2 |       |       ||     3
+         Distracted        |       |       |     1 |       ||     1
+ Armour: Robe              |    67 |    22 |    97 |       ||   186
+         Steam dragon scal |       |       |    13 |    47 ||    60
+  Dodge: Dodged            |    88 |    54 |   214 |    81 ||   437
+

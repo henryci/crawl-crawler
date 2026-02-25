@@ -1,0 +1,2273 @@
+ Dungeon Crawl Stone Soup version 0.5.1 (crawl-ref) character file.
+
+2180227 78291 the Orcish Barricade (level 27, 297/297 HPs)
+             Began as a Hill Orc Fighter on Aug 1, 2009.
+             Escaped with the Orb
+             ... and 5 runes (of 5 types) on Aug 2, 2009!
+             
+             The game lasted 07:12:51 (131118 turns).
+
+78291 the Orcish Barricade (Hill Orc Fighter)     Turns: 131118, Time: 07:12:51
+
+HP 297/297       AC 48     Str 31      Exp: 27/1707960 (19751)
+MP  20/20        EV  5     Int 13      God: No God
+Gold 5069        SH 14     Dex 10      Spells:  0 memorised, 28 levels left
+
+Res.Fire  : + . .   See Invis. : .   a - +8,+9 broad axe (chop)
+Res.Cold  : + + .   Warding    : .   o - +7 gold dragon armour
+Life Prot.: + + .   Conserve   : +   B - +3 shield of Ivacirad {rC+ rN+ MR}
+Res.Poison: +       Res.Corr.  : +   T - +2 dwarf horned helmet {Int+3}
+Res.Elec. : +       Clarity    : .   w - +2 dwarf cloak {rCorr, Cons}
+                                     H - +2 pair of gloves
+Sust.Abil.: .       Rnd.Telep. : +   j - -1 pair of boots {run}
+Res.Mut.  : +       Ctrl.Telep.: +   i - amulet of resist mutation
+Res.Slow  : .       Levitation : .   L - ring of teleport control
+Saprovore : + . .   Ctrl.Flight: .   n - cursed ring "Durer" {rElec rN+ Str+3}
+
+@: quick, extremely resistant to magic, extremely unstealthy
+A: teleportitis 1, teleport at will 1, mutation resistance 1, saprovore 1
+a: Teleportation
+
+
+You escaped.
+You were not hungry.
+
+You visited 15 branches of the dungeon, and saw 94 of its levels.
+You visited the Abyss 2 times.
+You visited 3 portal chambers (including bazaars).
+
+You collected 9864 gold pieces.
+You spent 4803 gold pieces at shops.
+
+Inventory:
+
+Hand weapons
+ a - a +8,+9 broad axe of chopping (weapon)
+   (You took it off a hell knight on level 5 of the Crypt)
+ F - a +0,+0 blowgun
+   (You found it on level 8 of the Dungeon)
+Missiles
+ A - 10 curare-tipped +0 needles {!f}
+Armour
+ d - the +1 pair of gloves of Lubure
+   (You found it on level 5 of the Realm of Zot)   
+   It affects your evasion (+2).
+   It lets you turn invisible.
+ j - a -1 pair of boots of running (worn)
+   (You found it in the Abyss)
+ o - a +7 gold dragon armour (worn)
+   (You bought it in a shop in a bazaar)
+ w - a +2 dwarven cloak of preservation (worn)
+   (You found it on level 6 of the Dungeon)
+ B - the +3 shield of Ivacirad (worn) {rC+ rN+ MR}
+   (You bought it in a shop on level 2 of the Lair of Beasts)   
+   It protects you from cold.
+   It protects you from negative energy.
+   It increases your resistance to enchantments.
+ H - a +2 pair of gloves (worn)
+   (You found it on level 1 of the Swamp)
+ T - a +2 dwarven horned helmet of intelligence (worn)
+   (You found it on level 7 of the Elven Halls)
+Magical devices
+ s - a wand of teleportation (9)
+   (You found it on level 3 of the Dungeon)
+ t - a wand of disintegration (4)
+   (You found it on level 5 of the Vaults)
+ u - a wand of invisibility (6)
+   (You found it on level 8 of the Vaults)
+ C - a wand of teleportation (7)
+   (You took it off a yaktaur on level 8 of the Vaults)
+ Y - a wand of teleportation (8)
+   (You bought it in a shop on level 19 of the Dungeon)
+ Z - a wand of digging (9)
+   (You found it on level 9 of the Lair of Beasts)
+Comestibles
+ e - 4 royal jellies
+ g - 2 honeycombs
+ v - 7 bread rations
+Scrolls
+ l - a scroll of blinking
+ r - a scroll of magic mapping
+ z - 4 scrolls of teleportation
+ S - 2 scrolls of fog
+Jewellery
+ b - an uncursed amulet of warding
+   (You bought it in a shop on level 23 of the Dungeon)
+ c - an uncursed ring of regeneration
+   (You found it on level 20 of the Dungeon)
+ h - an uncursed ring of sustenance
+   (You found it on level 1 of the Lair of Beasts)
+ i - an amulet of resist mutation (around neck)
+   (You found it on level 1 of the Elven Halls)
+ n - the cursed ring "Durer" (left hand) {rElec rN+ Str+3}
+   (You found it on level 8 of the Vaults)   
+   [ring of life protection]
+   It affects your strength (+3).
+   It insulates you from electricity.
+   It has a curse placed upon it.
+ x - the ring of Tension {rF+ rC+ Str+2 Dex+2}
+   (You found it on level 6 of the Pits of Slime)   
+   [ring of strength]
+   It affects your strength (+2).
+   It affects your dexterity (+2).
+   It protects you from fire.
+   It protects you from cold.
+ E - an uncursed ring of teleportation
+   (You found it on level 9 of the Dungeon)
+ K - an uncursed ring of levitation
+   (You found it on level 7 of the Lair of Beasts)
+ L - a ring of teleport control (right hand)
+   (You found it on level 19 of the Dungeon)
+ P - an uncursed ring of see invisible
+   (You found it on level 7 of the Lair of Beasts)
+Potions
+ f - 6 potions of heal wounds
+ k - 6 potions of speed
+ p - 5 potions of might
+ Q - 3 potions of restore abilities
+ R - 4 potions of healing
+Orbs of Power
+ m - the Orb of Zot
+   (You found it on level 5 of the Realm of Zot)
+Miscellaneous
+ y - a lantern of shadows
+   (You found it on level 4 of the Lair of Beasts)
+ J - a bone rune of Zot
+   (You found it on level 7 of Tartarus)
+ M - a decaying rune of Zot
+   (You found it on level 5 of the Swamp)
+ N - a serpentine rune of Zot
+   (You found it on level 5 of the Snake Pit)
+ U - a silver rune of Zot
+   (You found it on level 8 of the Vaults)
+ V - a slimy rune of Zot
+   (You found it on level 6 of the Pits of Slime)
+
+
+ You had 19751 experience left.
+
+   Skills:
+ * Level 27 Fighting
+ - Level 1 Long Blades
+ * Level 27 Axes
+ + Level 3 Bows
+ - Level 2 Throwing
+ + Level 17 Armour
+ - Level 1 Stabbing
+ * Level 27 Shields
+ + Level 7 Traps & Doors
+ + Level 1 Spellcasting
+ + Level 13 Poison Magic
+ + Level 5 Evocations
+
+
+You had 28 spell levels left.
+You didn't know any spells.
+
+Overview of the Dungeon
+
+Branches:
+Temple: D:5       Orc   : D:9       Elf   : Orc:3     Lair  : D:13   
+Swamp : Lair:4    Slime : Lair:9    Snake : Lair:4    Hive  : D:13   
+Vault : D:19      Blade : Vault:6   Crypt : Vault:3   Dis   : Hell   
+Geh   : Hell      Coc   : Hell      Tar   : Hell      Zot   : D:27   
+
+Altars:
+Zin: Vault:1
+Kikubaaqudgha: Crypt:3, Crypt:4
+Yredelemnul: Crypt:2, Crypt:5
+Elyvilon: Elf:4, Vault:3
+
+Shops:
+D:14: *  D:18: (  D:19: /  D:23: =  D:27: [  Elf:5: *  Lair:2: [  Lair:4: *
+Lair:9: /  Swamp:4: ?  Vault:4: (!([/
+
+Portals:
+Hell: D:15 D:21 D:22 D:23 D:24 D:25 D:26 D:27
+Abyss: D:22 D:23 D:25 D:26 D:27
+Pan: D:26 D:27
+
+
+                    Innate Abilities, Weirdness & Mutations
+
+You can tolerate rotten meat.
+Space occasionally distorts in your vicinity.
+You can teleport at will.
+You are somewhat resistant to further mutation.
+
+
+Message History
+
+(H) Hive           (V) Vaults         (B) Hall of Blades (C) Crypt          
+(U) Hell           (I) Dis            (N) Gehenna        (X) Cocytus        
+(Y) Tartarus       (Z) Zot            
+You found a trap!
+Your Traps & Doors skill increases to level 7!
+A teleportation trap.
+There is a stone staircase leading up here.
+
+..#     #..#         #.# 
+#########..#         #.# 
+...........#         #.# 
+##########.#         #.# 
+#        #.###########.# 
+#        #)##..........# 
+##########.##.########## 
+..............#...#### 
+..########.####@#.#<.# 
+..#      #.# ####.##.# 
+..########.###.......# 
+................^.#### 
+##########.###....^..# 
+         #.# ####.##.# 
+##########.#  #<#.#<.# 
+...........#  #...#### 
+#######....#  ##### 
+
+
+There were no monsters in sight!
+
+Vanquished Creatures
+  Monster Symbol
+    All ';'
+      10 giant goldfish
+      A lava fish (Hell)
+      26 big fish
+      19 electrical eels
+    56 creatures vanquished.
+
+    All '('
+      52 dancing weapons
+    52 creatures vanquished.
+
+    All ')'
+      30 mimics
+    30 creatures vanquished.
+
+    All '@'
+      2 Killer Klowns (Zot:5)
+      Margery (Vault:7)
+      Frederick (Snake:5)
+      Rupert (Elf:7)
+      Frances (Vault:4)
+      Wayne (Swamp:5)
+      Francis (D:22)
+      Jozef (Elf:4)
+      24 vault guards (Vault:7)
+      Erica (D:15)
+      Josephine (D:11)
+      Harold (D:16)
+      Joseph (D:11)
+      15 hell knights
+      A wizard (D:19)
+      12 necromancers
+      2 humans (shapeshifter)
+      Terence (D:4)
+    68 creatures vanquished.
+
+    All '*'
+      2 orbs of fire (Zot:5)
+    2 creatures vanquished.
+
+    All '&'
+      Ereshkigal (Tar:7)
+      Geryon (D:27)
+    2 creatures vanquished.
+
+    All '#'
+      2 fire elementals (D:15)
+    2 creatures vanquished.
+
+    All '%'
+      A death cob (Zot:5)
+    1 creature vanquished.
+
+    All '1'
+      A Balrug (D:4)
+      18 Shadow Fiends
+      4 Executioners
+      2 Green Deaths (Zot:5)
+      2 Blue Deaths
+      2 Cacodemons
+    29 creatures vanquished.
+
+    All '2'
+      5 ice devils
+      7 soul eaters
+      15 reapers
+    27 creatures vanquished.
+
+    All '3'
+      6 hellions
+      7 orange demons
+      5 hellwings
+      4 tormentors
+      An iron devil (D:19)
+      4 blue devils
+      4 shadow demons
+      3 neqoxecs
+      2 ynoxinuls
+    36 creatures vanquished.
+
+    All '4'
+      6 smoke demons
+      2 hairy devils
+      3 red devils
+      7 beasts
+      6 rotting devils
+    24 creatures vanquished.
+
+    All '5'
+      25 imps
+      3 quasits
+      7 manes
+      14 midges
+      17 shadow imps
+      12 lemures
+      12 white imps
+      29 ufetubi
+    119 creatures vanquished.
+
+    All '8'
+      An electric golem (Zot:5)
+      4 iron golems (Crypt:5)
+      3 crystal golems (Crypt:5)
+      A wood golem (D:15)
+    9 creatures vanquished.
+
+    All 'a'
+      4 soldier ants
+      18 giant ants
+      6 giant cockroaches
+    28 creatures vanquished.
+
+    All 'A'
+      A Daeva (Abyss)
+      An Angel (Abyss)
+    2 creatures vanquished.
+
+    All 'b'
+      2 butterflies
+      94 giant bats
+      A giant bat (shapeshifter) (Hell)
+    97 creatures vanquished.
+
+    All 'B'
+      A boring beetle (shapeshifter) (Vault:8)
+      5 boring beetles
+      6 boulder beetles
+      2 giant beetles
+    14 creatures vanquished.
+
+    All 'c'
+      47 yaktaur captains
+      15 centaur warriors
+      A yaktaur (shapeshifter) (D:16)
+      82 yaktaurs
+      25 centaurs
+    170 creatures vanquished.
+
+    All 'C'
+      6 titans (Vault:8)
+      10 frost giants
+      11 fire giants
+      41 stone giants
+      A fire giant (shapeshifter) (D:25)
+      2 stone giants (shapeshifter)
+      12 hill giants
+      8 cyclopes
+      3 ettins
+    94 creatures vanquished.
+
+    All 'd'
+      2 draconian monks (Zot:1)
+      A draconian knight (Zot:3)
+      3 draconian scorchers
+      A draconian zealot (Zot:1)
+      3 pale draconians
+      A draconian shifter (Zot:1)
+      2 draconian annihilators
+      2 black draconians
+      2 red draconians
+      5 mottled draconians
+      A white draconian (Zot:5)
+      4 yellow draconians
+      3 green draconians
+      2 draconians (shapeshifter) (Hell)
+    32 creatures vanquished.
+
+    All 'D'
+      Xtahua (Vault:4)
+      3 golden dragons
+      A quicksilver dragon (Vault:8)
+      13 shadow dragons
+      6 storm dragons
+      12 skeletal dragons
+      5 dragons
+      17 hydras
+      A hydra (shapeshifter) (D:13)
+      3 ice dragons (Zot:1)
+      A swamp dragon (Swamp:3)
+      2 wyverns
+      A mottled dragon (D:18)
+    66 creatures vanquished.
+
+    All 'e'
+      2 deep elf blademasters (Elf:7)
+      11 deep elf annihilators (Elf:7)
+      2 deep elf master archers (Elf:7)
+      4 deep elf sorcerers (Elf:7)
+      6 deep elf death magi (Elf:7)
+      4 deep elf demonologists (Elf:7)
+      3 deep elf high priests
+      30 deep elf knights
+      16 deep elf conjurers
+      15 deep elf summoners
+      45 deep elf fighters
+      22 deep elf priests
+      35 deep elf magi
+      58 deep elf soldiers
+    253 creatures vanquished.
+
+    All 'E'
+      Azrael (D:15)
+    1 creature vanquished.
+
+    All 'f'
+      6 wandering mushrooms
+      2 fungi
+    8 creatures vanquished.
+
+    All 'F'
+      26 giant brown frogs
+      14 blink frogs
+      9 spiny frogs
+      22 giant frogs
+    71 creatures vanquished.
+
+    All 'g'
+      A boggart (D:8)
+      7 gnolls
+      20 hobgoblins
+      31 goblins
+    59 creatures vanquished.
+
+    All 'G'
+      4 great orbs of eyes
+      2 giant orange brains
+      7 shining eyes
+      A shining eye (shapeshifter) (Vault:8)
+      An eye of devastation (Slime:4)
+      4 eyes of draining
+      9 giant eyeballs
+      5 giant spores
+    33 creatures vanquished.
+
+    All 'h'
+      28 hell hounds
+      6 wargs
+      8 war dogs
+      15 hounds
+      16 jackals
+    73 creatures vanquished.
+
+    All 'H'
+      A sphinx (shapeshifter) (Hell)
+      3 sphinxes
+      5 griffons
+      5 hippogriffs
+      A hippogriff (shapeshifter) (Vault:4)
+      5 manticores
+    20 creatures vanquished.
+
+    All 'I'
+      7 ice beasts
+    7 creatures vanquished.
+
+    All 'j'
+      2 elephant slugs
+      A giant snail (shapeshifter) (Vault:7)
+      9 giant snails
+      10 giant slugs
+    22 creatures vanquished.
+
+    All 'J'
+      the royal jelly (Slime:6)
+      24 acid blobs
+      7 azure jellies
+      4 death oozes
+      A giant amoeba (shapeshifter) (Vault:7)
+      14 giant amoebae
+      A slime creature (shapeshifter) (Vault:8)
+      153 slime creatures
+      6 brown oozes
+      11 jellyfish
+      A pulsating lump (shapeshifter) (Vault:8)
+      24 jellies
+      5 oozes
+    252 creatures vanquished.
+
+    All 'k'
+      113 killer bees
+    113 creatures vanquished.
+
+    All 'K'
+      18 big kobolds
+      53 kobolds
+      A kobold (shapeshifter) (Vault:8)
+    72 creatures vanquished.
+
+    All 'l'
+      A lindwurm (Lair:8)
+      A komodo dragon (Lair:9)
+      2 firedrakes
+      7 gila monsters
+      13 giant lizards
+      A gila monster (shapeshifter) (Vault:4)
+      7 swamp drakes
+      6 giant iguanas
+      13 giant geckos
+      9 giant newts
+    60 creatures vanquished.
+
+    All 'L'
+      2 ancient liches (Zot:5)
+      Boris (D:25)
+      4 liches
+    7 creatures vanquished.
+
+    All 'M'
+      4 guardian mummies (Crypt:2)
+      4 mummies
+    8 creatures vanquished.
+
+    All 'n'
+      30 necrophages
+      12 ghouls
+    42 creatures vanquished.
+
+    All 'N'
+      6 greater nagas (Snake:5)
+      11 naga warriors
+      A guardian naga (Elf:2)
+      25 naga magi
+      64 nagas
+    107 creatures vanquished.
+
+    All 'o'
+      An orc warlord (Orc:1)
+      An orc high priest (Vault:4)
+      19 orc knights
+      3 orc sorcerers
+      52 orc warriors
+      Blork the orc (D:6)
+      28 orc priests
+      41 orc wizards
+      An orc (shapeshifter) (Vault:8)
+      200 orcs
+    347 creatures vanquished.
+
+    All 'O'
+      7 ogre-magi
+      12 two-headed ogres
+      34 ogres
+    53 creatures vanquished.
+
+    All 'p'
+      5 flayed ghosts
+      The ghost of nate879 the Cleaver, an experienced MiGl of Okawaru (D:8)
+      The ghost of Lazarenth the Reanimator, an experienced DDNe of Makhleb (D:6)
+      8 hungry ghosts
+      66 insubstantial wisps
+      28 phantoms
+      31 shadows
+    140 creatures vanquished.
+
+    All 'P'
+      2 oklob plants (D:25)
+      A plant (Hive:2)
+    3 creatures vanquished.
+
+    All 'Q'
+      A queen bee (Hive:2)
+    1 creature vanquished.
+
+    All 'r'
+      31 orange rats
+      60 green rats
+      67 grey rats
+      16 quokkas
+      36 rats
+    210 creatures vanquished.
+
+    All 's'
+      2 wolf spiders
+      A trapdoor spider (D:11)
+      A redback (D:24)
+      12 scorpions
+      5 giant centipedes
+      8 giant mites
+    29 creatures vanquished.
+
+    All 'S'
+      7 grey snakes
+      A grey snake (shapeshifter) (D:18)
+      19 black snakes
+      5 yellow snakes
+      42 brown snakes
+      8 lava snakes
+      48 snakes
+      2 small snakes
+      A small snake (shapeshifter) (Vault:8)
+    133 creatures vanquished.
+
+    All 't'
+      A minotaur (shapeshifter) (Vault:7)
+    1 creature vanquished.
+
+    All 'T'
+      Snorg (Lair:3)
+      31 deep trolls
+      6 iron trolls
+      An iron troll (shapeshifter) (Hell)
+      10 rock trolls
+      18 trolls
+    67 creatures vanquished.
+
+    All 'u'
+      3 very ugly things
+      90 ugly things
+    93 creatures vanquished.
+
+    All 'U'
+      A polar bear (Lair:9)
+      A grizzly bear (Lair:6)
+    2 creatures vanquished.
+
+    All 'V'
+      3 vampire knights (Crypt:5)
+      8 vampires
+    11 creatures vanquished.
+
+    All 'w'
+      4 spiny worms
+      32 swamp worms
+      2 lava worms (D:23)
+      3 worms
+      48 killer bee larvae
+    89 creatures vanquished.
+
+    All 'W'
+      A shadow wraith (Vault:2)
+      2 spectral hydras (Swamp:5)
+      15 spectral warriors
+      24 wraiths
+      15 freezing wraiths
+      14 wights
+      2 spectral swamp drakes (Swamp:5)
+    73 creatures vanquished.
+
+    All 'x'
+      2 unseen horrors
+      4 small abominations
+    6 creatures vanquished.
+
+    All 'X'
+      22 Orb Guardians (Zot:5)
+      6 tentacled monstrosities
+      2 large large abominations
+    30 creatures vanquished.
+
+    All 'y'
+      5 red wasps
+      A moth of wrath (shapeshifter) (D:22)
+      9 moths of wrath
+      20 giant blowflies
+      7 yellow wasps
+      A yellow wasp (shapeshifter) (Vault:8)
+      16 giant mosquitos
+    59 creatures vanquished.
+
+    All 'Y'
+      2 death yaks (shapeshifter)
+      7 death yaks
+      37 yaks
+      15 sheep
+    61 creatures vanquished.
+
+    All 'z'
+      A curse toe (Zot:4)
+      A curse skull (Crypt:5)
+      A grey snake skeleton (Tar:2)
+      107 skeletal warriors
+      2 flaming corpses (Crypt:5)
+      A pale draconian zombie (Crypt:5)
+      A white draconian zombie (Crypt:5)
+      2 purple draconian zombies (Tar:7)
+      A red draconian zombie (Zot:1)
+      A mottled draconian zombie (Tar:7)
+      2 yellow draconian zombies
+      2 red wasp zombies
+      5 draconian skeletons
+      3 elf skeletons
+      A spiny frog skeleton (Tar:7)
+      4 blink frog skeletons
+      A hog skeleton (Crypt:4)
+      25 ugly thing skeletons
+      A redback zombie (Tar:7)
+      2 blink frog zombies
+      3 merfolk zombies
+      A wyvern skeleton (Vault:6)
+      A draconian zombie (Crypt:5)
+      A spiny worm simulacrum (Tar:5)
+      2 giant blowfly zombies
+      A yellow snake zombie (Tar:7)
+      2 ugly thing zombies
+      A giant goldfish zombie (Crypt:2)
+      A wolf skeleton (Crypt:5)
+      A war dog skeleton (Crypt:4)
+      2 swamp worm zombies (Swamp:5)
+      A queen bee zombie (Crypt:5)
+      A warg skeleton (Tar:7)
+      10 human zombies
+      2 wolf zombies
+      A giant frog zombie (Tar:4)
+      A yellow wasp zombie (Tar:7)
+      3 soldier ant zombies
+      4 brown snake zombies
+      4 human skeletons
+      A big kobold skeleton (D:19)
+      A warg zombie (Tar:7)
+      2 giant lizard skeletons
+      A killer bee zombie (D:6)
+      16 elf zombies
+      3 brain worm zombies
+      2 giant lizard zombies
+      6 big kobold zombies
+      A giant ant zombie (Tar:4)
+      3 big fish zombies
+      12 flying skulls
+      6 hound simulacra (Lair:2)
+      A giant iguana skeleton (D:21)
+      A snake skeleton (Crypt:4)
+      3 snake zombies
+      A giant centipede zombie (Tar:4)
+      4 scorpion zombies
+      A sheep zombie (Tar:7)
+      A giant iguana zombie (Tar:6)
+      A gnoll skeleton (Tar:7)
+      3 sheep simulacra (Lair:2)
+      6 gnoll zombies
+      3 jackal skeletons
+      A small snake skeleton (Crypt:4)
+      A giant cockroach zombie (Tar:7)
+      2 goblin skeletons (Tar:7)
+      3 goblin zombies
+      2 grey rat zombies (Tar:7)
+      2 hobgoblin skeletons (Tar:7)
+      4 hobgoblin zombies
+      A kobold skeleton (Crypt:5)
+      5 kobold zombies
+      2 orc skeletons
+      11 orc zombies
+      2 quokka zombies
+      A rat simulacrum (Lair:2)
+      A rat skeleton (Tar:7)
+      A rat zombie (Tar:7)
+    325 creatures vanquished.
+
+    All 'Z'
+      A quicksilver dragon zombie (Crypt:1)
+      A titan skeleton (Crypt:1)
+      A storm dragon skeleton (Crypt:1)
+      A golden dragon skeleton (Abyss)
+      9 shadow dragon skeletons
+      A storm dragon zombie (Crypt:5)
+      9 stone giant skeletons
+      3 fire giant skeletons
+      4 frost giant skeletons
+      6 shadow dragon zombies
+      An iron dragon zombie (Crypt:2)
+      A fire giant zombie (D:22)
+      2 stone giant zombies
+      5 frost giant zombies
+      A death yak skeleton (Crypt:2)
+      2 iron troll skeletons
+      A minotaur skeleton (Crypt:5)
+      An elephant slug zombie (Crypt:1)
+      A golden dragon simulacrum (Zot:4)
+      2 iron troll zombies
+      A harpy zombie (Crypt:1)
+      2 griffon skeletons
+      6 hydra zombies
+      A giant brown frog skeleton (Crypt:4)
+      A hill giant skeleton (D:23)
+      3 ice dragon zombies
+      4 dragon zombies
+      5 deep troll skeletons
+      2 giant brown frog zombies
+      A rock troll skeleton (Vault:5)
+      2 hill giant zombies
+      A giant snail zombie (Vault:3)
+      2 deep troll zombies
+      2 rock troll zombies
+      An ice dragon simulacrum (D:20)
+      A yaktaur skeleton (Vault:7)
+      2 swamp dragon zombies (Swamp:5)
+      A komodo dragon skeleton (Crypt:3)
+      2 cyclops skeletons
+      2 bear skeletons
+      A grizzly bear skeleton (Crypt:1)
+      A komodo dragon zombie (D:18)
+      3 cyclops zombies
+      4 yaktaur zombies
+      A rock troll simulacrum (D:19)
+      A centaur skeleton (D:15)
+      A bear zombie (Tar:6)
+      2 boulder beetle zombies
+      2 boring beetle zombies
+      A two-headed ogre zombie (D:18)
+      A mottled dragon skeleton (D:16)
+      A bear simulacrum (Lair:2)
+      A mottled dragon zombie (Crypt:5)
+      An ogre zombie (Crypt:1)
+      2 swamp drake skeletons
+      A naga zombie (Crypt:4)
+      5 swamp drake zombies
+      A giant beetle zombie (Crypt:2)
+    125 creatures vanquished.
+  4026 creatures vanquished.
+
+  Monster Nature
+    Uniques
+      the royal jelly (Slime:6)
+      Ereshkigal (Tar:7)
+      Boris (D:25)
+      Margery (Vault:7)
+      Geryon (D:27)
+      Xtahua (Vault:4)
+      Frederick (Snake:5)
+      Rupert (Elf:7)
+      Frances (Vault:4)
+      Wayne (Swamp:5)
+      Francis (D:22)
+      Snorg (Lair:3)
+      Jozef (Elf:4)
+      Erica (D:15)
+      Josephine (D:11)
+      Azrael (D:15)
+      Harold (D:16)
+      Joseph (D:11)
+      Blork the orc (D:6)
+      Terence (D:4)
+    20 creatures vanquished.
+
+    Natural Monsters
+      2 Killer Klowns (Zot:5)
+      3 golden dragons
+      24 acid blobs
+      6 titans (Vault:8)
+      22 Orb Guardians (Zot:5)
+      2 deep elf blademasters (Elf:7)
+      A quicksilver dragon (Vault:8)
+      A sphinx (shapeshifter) (Hell)
+      13 shadow dragons
+      3 sphinxes
+      An orc warlord (Orc:1)
+      6 storm dragons
+      2 draconian monks (Zot:1)
+      A draconian knight (Zot:3)
+      10 frost giants
+      3 draconian scorchers
+      11 fire giants
+      41 stone giants
+      A fire giant (shapeshifter) (D:25)
+      A draconian zealot (Zot:1)
+      7 azure jellies
+      3 pale draconians
+      A draconian shifter (Zot:1)
+      2 draconian annihilators
+      2 stone giants (shapeshifter)
+      11 deep elf annihilators (Elf:7)
+      2 deep elf master archers (Elf:7)
+      2 black draconians
+      2 red draconians
+      4 deep elf sorcerers (Elf:7)
+      5 mottled draconians
+      6 deep elf death magi (Elf:7)
+      A white draconian (Zot:5)
+      4 yellow draconians
+      6 greater nagas (Snake:5)
+      3 green draconians
+      4 great orbs of eyes
+      24 vault guards (Vault:7)
+      A minotaur (shapeshifter) (Vault:7)
+      5 dragons
+      47 yaktaur captains
+      17 hydras
+      7 ogre-magi
+      A hydra (shapeshifter) (D:13)
+      7 death yaks
+      2 death yaks (shapeshifter)
+      3 ice dragons (Zot:1)
+      4 deep elf demonologists (Elf:7)
+      7 grey snakes
+      A grey snake (shapeshifter) (D:18)
+      3 deep elf high priests
+      An orc high priest (Vault:4)
+      5 griffons
+      12 hill giants
+      15 centaur warriors
+      31 deep trolls
+      2 elephant slugs
+      6 iron trolls
+      An iron troll (shapeshifter) (Hell)
+      14 giant amoebae
+      A giant amoeba (shapeshifter) (Vault:7)
+      30 deep elf knights
+      2 giant orange brains
+      15 hell knights
+      2 unseen horrors
+      11 naga warriors
+      A wizard (D:19)
+      A swamp dragon (Swamp:3)
+      5 red wasps
+      19 orc knights
+      3 orc sorcerers
+      7 shining eyes
+      12 necromancers
+      4 spiny worms
+      A shining eye (shapeshifter) (Vault:8)
+      A guardian naga (Elf:2)
+      A moth of wrath (shapeshifter) (D:22)
+      2 wolf spiders
+      9 moths of wrath
+      A lindwurm (Lair:8)
+      19 black snakes
+      A trapdoor spider (D:11)
+      26 giant brown frogs
+      A slime creature (shapeshifter) (Vault:8)
+      153 slime creatures
+      A yaktaur (shapeshifter) (D:16)
+      10 rock trolls
+      An eye of devastation (Slime:4)
+      82 yaktaurs
+      3 very ugly things
+      8 cyclopes
+      25 naga magi
+      A giant snail (shapeshifter) (Vault:7)
+      18 trolls
+      9 giant snails
+      3 ettins
+      A redback (D:24)
+      90 ugly things
+      12 two-headed ogres
+      A queen bee (Hive:2)
+      A komodo dragon (Lair:9)
+      A polar bear (Lair:9)
+      14 blink frogs
+      A grizzly bear (Lair:6)
+      10 giant goldfish
+      9 spiny frogs
+      6 brown oozes
+      5 hippogriffs
+      10 giant slugs
+      37 yaks
+      20 giant blowflies
+      16 deep elf conjurers
+      A hippogriff (shapeshifter) (Vault:4)
+      2 firedrakes
+      15 deep elf summoners
+      5 manticores
+      5 yellow snakes
+      32 swamp worms
+      45 deep elf fighters
+      2 lava worms (D:23)
+      4 soldier ants
+      22 deep elf priests
+      2 wyverns
+      34 ogres
+      7 ice beasts
+      18 big kobolds
+      7 gila monsters
+      7 yellow wasps
+      A boring beetle (shapeshifter) (Vault:8)
+      5 boring beetles
+      13 giant lizards
+      A gila monster (shapeshifter) (Vault:4)
+      6 wargs
+      8 war dogs
+      A yellow wasp (shapeshifter) (Vault:8)
+      A mottled dragon (D:18)
+      22 giant frogs
+      64 nagas
+      7 swamp drakes
+      25 centaurs
+      52 orc warriors
+      42 brown snakes
+      35 deep elf magi
+      6 boulder beetles
+      4 eyes of draining
+      A lava fish (Hell)
+      11 jellyfish
+      113 killer bees
+      26 big fish
+      A pulsating lump (shapeshifter) (Vault:8)
+      2 draconians (shapeshifter) (Hell)
+      15 hounds
+      2 giant beetles
+      28 orc priests
+      41 orc wizards
+      58 deep elf soldiers
+      18 giant ants
+      31 orange rats
+      15 sheep
+      12 scorpions
+      6 giant iguanas
+      19 electrical eels
+      8 lava snakes
+      A boggart (D:8)
+      24 jellies
+      7 gnolls
+      2 humans (shapeshifter)
+      48 snakes
+      5 giant centipedes
+      8 giant mites
+      3 worms
+      60 green rats
+      5 oozes
+      9 giant eyeballs
+      2 butterflies
+      6 giant cockroaches
+      13 giant geckos
+      16 giant mosquitos
+      67 grey rats
+      20 hobgoblins
+      16 jackals
+      53 kobolds
+      An orc (shapeshifter) (Vault:8)
+      200 orcs
+      A giant bat (shapeshifter) (Hell)
+      94 giant bats
+      9 giant newts
+      31 goblins
+      48 killer bee larvae
+      A kobold (shapeshifter) (Vault:8)
+      16 quokkas
+      36 rats
+      2 small snakes
+      A small snake (shapeshifter) (Vault:8)
+    2871 creatures vanquished.
+
+    Non-Living Monsters
+      2 orbs of fire (Zot:5)
+      An electric golem (Zot:5)
+      4 iron golems (Crypt:5)
+      52 dancing weapons
+      3 crystal golems (Crypt:5)
+      30 mimics
+      2 fire elementals (D:15)
+      A wood golem (D:15)
+      66 insubstantial wisps
+    161 creatures vanquished.
+
+    Undead Monsters
+      2 ancient liches (Zot:5)
+      A curse toe (Zot:4)
+      A curse skull (Crypt:5)
+      4 liches
+      12 skeletal dragons
+      A quicksilver dragon zombie (Crypt:1)
+      3 vampire knights (Crypt:5)
+      A titan skeleton (Crypt:1)
+      A storm dragon skeleton (Crypt:1)
+      A death cob (Zot:5)
+      4 death oozes
+      A golden dragon skeleton (Abyss)
+      A grey snake skeleton (Tar:2)
+      9 shadow dragon skeletons
+      A storm dragon zombie (Crypt:5)
+      9 stone giant skeletons
+      3 fire giant skeletons
+      4 frost giant skeletons
+      6 shadow dragon zombies
+      107 skeletal warriors
+      An iron dragon zombie (Crypt:2)
+      A shadow wraith (Vault:2)
+      A fire giant zombie (D:22)
+      5 flayed ghosts
+      2 stone giant zombies
+      5 frost giant zombies
+      A death yak skeleton (Crypt:2)
+      2 flaming corpses (Crypt:5)
+      2 iron troll skeletons
+      2 spectral hydras (Swamp:5)
+      The ghost of nate879 the Cleaver, an experienced MiGl of Okawaru (D:8)
+      A minotaur skeleton (Crypt:5)
+      A pale draconian zombie (Crypt:5)
+      A white draconian zombie (Crypt:5)
+      An elephant slug zombie (Crypt:1)
+      2 purple draconian zombies (Tar:7)
+      A red draconian zombie (Zot:1)
+      15 spectral warriors
+      A mottled draconian zombie (Tar:7)
+      2 yellow draconian zombies
+      A golden dragon simulacrum (Zot:4)
+      2 iron troll zombies
+      A harpy zombie (Crypt:1)
+      2 griffon skeletons
+      6 hydra zombies
+      A giant brown frog skeleton (Crypt:4)
+      The ghost of Lazarenth the Reanimator, an experienced DDNe of Makhleb (D:6)
+      4 guardian mummies (Crypt:2)
+      A hill giant skeleton (D:23)
+      2 red wasp zombies
+      3 ice dragon zombies
+      4 dragon zombies
+      5 draconian skeletons
+      5 deep troll skeletons
+      2 giant brown frog zombies
+      3 elf skeletons
+      A rock troll skeleton (Vault:5)
+      A spiny frog skeleton (Tar:7)
+      2 hill giant zombies
+      4 blink frog skeletons
+      8 vampires
+      A giant snail zombie (Vault:3)
+      8 hungry ghosts
+      2 deep troll zombies
+      2 rock troll zombies
+      An ice dragon simulacrum (D:20)
+      A hog skeleton (Crypt:4)
+      25 ugly thing skeletons
+      A redback zombie (Tar:7)
+      A yaktaur skeleton (Vault:7)
+      2 swamp dragon zombies (Swamp:5)
+      2 blink frog zombies
+      3 merfolk zombies
+      A wyvern skeleton (Vault:6)
+      A draconian zombie (Crypt:5)
+      A komodo dragon skeleton (Crypt:3)
+      24 wraiths
+      A spiny worm simulacrum (Tar:5)
+      2 giant blowfly zombies
+      2 cyclops skeletons
+      A yellow snake zombie (Tar:7)
+      30 necrophages
+      15 freezing wraiths
+      2 bear skeletons
+      2 ugly thing zombies
+      A grizzly bear skeleton (Crypt:1)
+      A komodo dragon zombie (D:18)
+      28 phantoms
+      3 cyclops zombies
+      4 yaktaur zombies
+      12 ghouls
+      A giant goldfish zombie (Crypt:2)
+      A wolf skeleton (Crypt:5)
+      A rock troll simulacrum (D:19)
+      A war dog skeleton (Crypt:4)
+      2 swamp worm zombies (Swamp:5)
+      A centaur skeleton (D:15)
+      A queen bee zombie (Crypt:5)
+      A warg skeleton (Tar:7)
+      10 human zombies
+      A bear zombie (Tar:6)
+      2 boulder beetle zombies
+      2 wolf zombies
+      A giant frog zombie (Tar:4)
+      A yellow wasp zombie (Tar:7)
+      2 boring beetle zombies
+      3 soldier ant zombies
+      4 brown snake zombies
+      4 human skeletons
+      A two-headed ogre zombie (D:18)
+      A big kobold skeleton (D:19)
+      A mottled dragon skeleton (D:16)
+      A warg zombie (Tar:7)
+      2 giant lizard skeletons
+      A killer bee zombie (D:6)
+      A bear simulacrum (Lair:2)
+      16 elf zombies
+      A mottled dragon zombie (Crypt:5)
+      3 brain worm zombies
+      2 giant lizard zombies
+      An ogre zombie (Crypt:1)
+      14 wights
+      2 swamp drake skeletons
+      6 big kobold zombies
+      2 spectral swamp drakes (Swamp:5)
+      31 shadows
+      A naga zombie (Crypt:4)
+      5 swamp drake zombies
+      A giant ant zombie (Tar:4)
+      3 big fish zombies
+      12 flying skulls
+      6 hound simulacra (Lair:2)
+      A giant beetle zombie (Crypt:2)
+      A giant iguana skeleton (D:21)
+      A snake skeleton (Crypt:4)
+      4 mummies
+      3 snake zombies
+      A giant centipede zombie (Tar:4)
+      4 scorpion zombies
+      A sheep zombie (Tar:7)
+      A giant iguana zombie (Tar:6)
+      A gnoll skeleton (Tar:7)
+      3 sheep simulacra (Lair:2)
+      6 gnoll zombies
+      3 jackal skeletons
+      A small snake skeleton (Crypt:4)
+      A giant cockroach zombie (Tar:7)
+      2 goblin skeletons (Tar:7)
+      3 goblin zombies
+      2 grey rat zombies (Tar:7)
+      2 hobgoblin skeletons (Tar:7)
+      4 hobgoblin zombies
+      A kobold skeleton (Crypt:5)
+      5 kobold zombies
+      2 orc skeletons
+      11 orc zombies
+      2 quokka zombies
+      A rat simulacrum (Lair:2)
+      A rat skeleton (Tar:7)
+      A rat zombie (Tar:7)
+    681 creatures vanquished.
+
+    Demonic Monsters
+      A Balrug (D:4)
+      18 Shadow Fiends
+      4 Executioners
+      6 tentacled monstrosities
+      2 Green Deaths (Zot:5)
+      2 Blue Deaths
+      2 Cacodemons
+      5 ice devils
+      2 large large abominations
+      7 soul eaters
+      6 hellions
+      15 reapers
+      7 orange demons
+      5 hellwings
+      6 smoke demons
+      4 tormentors
+      An iron devil (D:19)
+      4 blue devils
+      4 shadow demons
+      3 neqoxecs
+      2 ynoxinuls
+      28 hell hounds
+      2 hairy devils
+      3 red devils
+      7 beasts
+      6 rotting devils
+      4 small abominations
+      25 imps
+      3 quasits
+      7 manes
+      14 midges
+      17 shadow imps
+      12 lemures
+      12 white imps
+      29 ufetubi
+    275 creatures vanquished.
+
+    Plants
+      2 oklob plants (D:25)
+      6 wandering mushrooms
+      5 giant spores
+      2 fungi
+      A plant (Hive:2)
+    16 creatures vanquished.
+  4026 creatures vanquished.
+
+  Ascending Order
+    the royal jelly (Slime:6)
+    Ereshkigal (Tar:7)
+    Boris (D:25)
+    A curse toe (Zot:4)
+    Margery (Vault:7)
+    Geryon (D:27)
+    An electric golem (Zot:5)
+    Xtahua (Vault:4)
+    Frederick (Snake:5)
+    A curse skull (Crypt:5)
+    A quicksilver dragon (Vault:8)
+    A sphinx (shapeshifter) (Hell)
+    Rupert (Elf:7)
+    An orc warlord (Orc:1)
+    Frances (Vault:4)
+    A Daeva (Abyss)
+    A Balrug (D:4)
+    Wayne (Swamp:5)
+    Francis (D:22)
+    A draconian knight (Zot:3)
+    A fire giant (shapeshifter) (D:25)
+    A draconian zealot (Zot:1)
+    An Angel (Abyss)
+    A draconian shifter (Zot:1)
+    Snorg (Lair:3)
+    Jozef (Elf:4)
+    A white draconian (Zot:5)
+    A quicksilver dragon zombie (Crypt:1)
+    A titan skeleton (Crypt:1)
+    A minotaur (shapeshifter) (Vault:7)
+    A storm dragon skeleton (Crypt:1)
+    A death cob (Zot:5)
+    Erica (D:15)
+    Josephine (D:11)
+    Azrael (D:15)
+    Harold (D:16)
+    A hydra (shapeshifter) (D:13)
+    A golden dragon skeleton (Abyss)
+    A grey snake skeleton (Tar:2)
+    A storm dragon zombie (Crypt:5)
+    A grey snake (shapeshifter) (D:18)
+    An orc high priest (Vault:4)
+    An iron troll (shapeshifter) (Hell)
+    A giant amoeba (shapeshifter) (Vault:7)
+    Joseph (D:11)
+    An iron dragon zombie (Crypt:2)
+    A shadow wraith (Vault:2)
+    A fire giant zombie (D:22)
+    A wizard (D:19)
+    A swamp dragon (Swamp:3)
+    A death yak skeleton (Crypt:2)
+    The ghost of nate879 the Cleaver, an experienced MiGl of Okawaru (D:8)
+    A minotaur skeleton (Crypt:5)
+    A pale draconian zombie (Crypt:5)
+    A shining eye (shapeshifter) (Vault:8)
+    A guardian naga (Elf:2)
+    A moth of wrath (shapeshifter) (D:22)
+    A white draconian zombie (Crypt:5)
+    An elephant slug zombie (Crypt:1)
+    A red draconian zombie (Zot:1)
+    A lindwurm (Lair:8)
+    A mottled draconian zombie (Tar:7)
+    A golden dragon simulacrum (Zot:4)
+    A trapdoor spider (D:11)
+    A harpy zombie (Crypt:1)
+    A slime creature (shapeshifter) (Vault:8)
+    A yaktaur (shapeshifter) (D:16)
+    An eye of devastation (Slime:4)
+    A giant brown frog skeleton (Crypt:4)
+    The ghost of Lazarenth the Reanimator, an experienced DDNe of Makhleb (D:6)
+    A hill giant skeleton (D:23)
+    A giant snail (shapeshifter) (Vault:7)
+    A redback (D:24)
+    An iron devil (D:19)
+    A queen bee (Hive:2)
+    A rock troll skeleton (Vault:5)
+    A komodo dragon (Lair:9)
+    A polar bear (Lair:9)
+    A spiny frog skeleton (Tar:7)
+    A grizzly bear (Lair:6)
+    A giant snail zombie (Vault:3)
+    A hippogriff (shapeshifter) (Vault:4)
+    An ice dragon simulacrum (D:20)
+    A hog skeleton (Crypt:4)
+    A wood golem (D:15)
+    A redback zombie (Tar:7)
+    A yaktaur skeleton (Vault:7)
+    A wyvern skeleton (Vault:6)
+    A draconian zombie (Crypt:5)
+    A komodo dragon skeleton (Crypt:3)
+    A spiny worm simulacrum (Tar:5)
+    A yellow snake zombie (Tar:7)
+    A grizzly bear skeleton (Crypt:1)
+    A komodo dragon zombie (D:18)
+    A boring beetle (shapeshifter) (Vault:8)
+    A gila monster (shapeshifter) (Vault:4)
+    A yellow wasp (shapeshifter) (Vault:8)
+    A mottled dragon (D:18)
+    A wolf skeleton (Crypt:5)
+    A giant goldfish zombie (Crypt:2)
+    A war dog skeleton (Crypt:4)
+    A rock troll simulacrum (D:19)
+    A centaur skeleton (D:15)
+    A queen bee zombie (Crypt:5)
+    A warg skeleton (Tar:7)
+    A bear zombie (Tar:6)
+    Blork the orc (D:6)
+    A yellow wasp zombie (Tar:7)
+    A giant frog zombie (Tar:4)
+    A lava fish (Hell)
+    A pulsating lump (shapeshifter) (Vault:8)
+    A two-headed ogre zombie (D:18)
+    A big kobold skeleton (D:19)
+    A mottled dragon skeleton (D:16)
+    A warg zombie (Tar:7)
+    A killer bee zombie (D:6)
+    A bear simulacrum (Lair:2)
+    A mottled dragon zombie (Crypt:5)
+    An ogre zombie (Crypt:1)
+    A naga zombie (Crypt:4)
+    A boggart (D:8)
+    A giant ant zombie (Tar:4)
+    A giant beetle zombie (Crypt:2)
+    A giant iguana skeleton (D:21)
+    A snake skeleton (Crypt:4)
+    A sheep zombie (Tar:7)
+    A giant centipede zombie (Tar:4)
+    A giant iguana zombie (Tar:6)
+    Terence (D:4)
+    A gnoll skeleton (Tar:7)
+    A small snake skeleton (Crypt:4)
+    An orc (shapeshifter) (Vault:8)
+    A small snake (shapeshifter) (Vault:8)
+    A giant bat (shapeshifter) (Hell)
+    A kobold skeleton (Crypt:5)
+    A rat simulacrum (Lair:2)
+    A rat skeleton (Tar:7)
+    A kobold (shapeshifter) (Vault:8)
+    A rat zombie (Tar:7)
+    A giant cockroach zombie (Tar:7)
+    A plant (Hive:2)
+    2 ancient liches (Zot:5)
+    2 orbs of fire (Zot:5)
+    2 Killer Klowns (Zot:5)
+    2 deep elf blademasters (Elf:7)
+    2 draconian monks (Zot:1)
+    2 draconian annihilators
+    2 stone giants (shapeshifter)
+    2 Green Deaths (Zot:5)
+    2 deep elf master archers (Elf:7)
+    2 Blue Deaths
+    2 black draconians
+    2 red draconians
+    2 Cacodemons
+    2 death yaks (shapeshifter)
+    2 elephant slugs
+    2 giant orange brains
+    2 large large abominations
+    2 stone giant zombies
+    2 unseen horrors
+    2 flaming corpses (Crypt:5)
+    2 iron troll skeletons
+    2 spectral hydras (Swamp:5)
+    2 oklob plants (D:25)
+    2 wolf spiders
+    2 purple draconian zombies (Tar:7)
+    2 yellow draconian zombies
+    2 iron troll zombies
+    2 griffon skeletons
+    2 red wasp zombies
+    2 giant brown frog zombies
+    2 hill giant zombies
+    2 fire elementals (D:15)
+    2 deep troll zombies
+    2 rock troll zombies
+    2 firedrakes
+    2 ynoxinuls
+    2 swamp dragon zombies (Swamp:5)
+    2 blink frog zombies
+    2 lava worms (D:23)
+    2 giant blowfly zombies
+    2 cyclops skeletons
+    2 hairy devils
+    2 wyverns
+    2 ugly thing zombies
+    2 bear skeletons
+    2 swamp worm zombies (Swamp:5)
+    2 boulder beetle zombies
+    2 wolf zombies
+    2 boring beetle zombies
+    2 draconians (shapeshifter) (Hell)
+    2 giant lizard skeletons
+    2 giant beetles
+    2 giant lizard zombies
+    2 swamp drake skeletons
+    2 spectral swamp drakes (Swamp:5)
+    2 humans (shapeshifter)
+    2 butterflies
+    2 orc skeletons
+    2 goblin skeletons (Tar:7)
+    2 small snakes
+    2 quokka zombies
+    2 hobgoblin skeletons (Tar:7)
+    2 grey rat zombies (Tar:7)
+    2 fungi
+    3 golden dragons
+    3 sphinxes
+    3 draconian scorchers
+    3 pale draconians
+    3 green draconians
+    3 vampire knights (Crypt:5)
+    3 ice dragons (Zot:1)
+    3 deep elf high priests
+    3 fire giant skeletons
+    3 orc sorcerers
+    3 crystal golems (Crypt:5)
+    3 very ugly things
+    3 ice dragon zombies
+    3 ettins
+    3 elf skeletons
+    3 neqoxecs
+    3 merfolk zombies
+    3 red devils
+    3 cyclops zombies
+    3 soldier ant zombies
+    3 quasits
+    3 brain worm zombies
+    3 big fish zombies
+    3 worms
+    3 snake zombies
+    3 sheep simulacra (Lair:2)
+    3 jackal skeletons
+    3 goblin zombies
+    4 liches
+    4 Executioners
+    4 deep elf sorcerers (Elf:7)
+    4 yellow draconians
+    4 great orbs of eyes
+    4 death oozes
+    4 deep elf demonologists (Elf:7)
+    4 iron golems (Crypt:5)
+    4 frost giant skeletons
+    4 spiny worms
+    4 guardian mummies (Crypt:2)
+    4 tormentors
+    4 dragon zombies
+    4 blue devils
+    4 blink frog skeletons
+    4 shadow demons
+    4 soldier ants
+    4 yaktaur zombies
+    4 small abominations
+    4 eyes of draining
+    4 brown snake zombies
+    4 human skeletons
+    4 mummies
+    4 scorpion zombies
+    4 hobgoblin zombies
+    5 mottled draconians
+    5 dragons
+    5 griffons
+    5 ice devils
+    5 flayed ghosts
+    5 frost giant zombies
+    5 red wasps
+    5 hellwings
+    5 draconian skeletons
+    5 deep troll skeletons
+    5 hippogriffs
+    5 manticores
+    5 yellow snakes
+    5 boring beetles
+    5 swamp drake zombies
+    5 giant centipedes
+    5 oozes
+    5 kobold zombies
+    5 giant spores
+    6 titans (Vault:8)
+    6 storm dragons
+    6 tentacled monstrosities
+    6 deep elf death magi (Elf:7)
+    6 greater nagas (Snake:5)
+    6 shadow dragon zombies
+    6 iron trolls
+    6 hellions
+    6 hydra zombies
+    6 smoke demons
+    6 wandering mushrooms
+    6 brown oozes
+    6 rotting devils
+    6 wargs
+    6 boulder beetles
+    6 big kobold zombies
+    6 giant iguanas
+    6 hound simulacra (Lair:2)
+    6 gnoll zombies
+    6 giant cockroaches
+    7 azure jellies
+    7 ogre-magi
+    7 death yaks
+    7 grey snakes
+    7 soul eaters
+    7 shining eyes
+    7 orange demons
+    7 beasts
+    7 ice beasts
+    7 gila monsters
+    7 yellow wasps
+    7 swamp drakes
+    7 gnolls
+    7 manes
+    8 cyclopes
+    8 vampires
+    8 hungry ghosts
+    8 war dogs
+    8 lava snakes
+    8 giant mites
+    9 shadow dragon skeletons
+    9 stone giant skeletons
+    9 moths of wrath
+    9 giant snails
+    9 spiny frogs
+    9 giant eyeballs
+    9 giant newts
+    10 frost giants
+    10 rock trolls
+    10 giant goldfish
+    10 giant slugs
+    10 human zombies
+    11 fire giants
+    11 deep elf annihilators (Elf:7)
+    11 naga warriors
+    11 jellyfish
+    11 orc zombies
+    12 skeletal dragons
+    12 hill giants
+    12 necromancers
+    12 two-headed ogres
+    12 ghouls
+    12 scorpions
+    12 flying skulls
+    12 white imps
+    12 lemures
+    13 shadow dragons
+    13 giant lizards
+    13 giant geckos
+    14 giant amoebae
+    14 blink frogs
+    14 wights
+    14 midges
+    15 centaur warriors
+    15 hell knights
+    15 spectral warriors
+    15 reapers
+    15 deep elf summoners
+    15 freezing wraiths
+    15 hounds
+    15 sheep
+    16 deep elf conjurers
+    16 elf zombies
+    16 jackals
+    16 giant mosquitos
+    16 quokkas
+    17 hydras
+    17 shadow imps
+    18 Shadow Fiends
+    18 trolls
+    18 big kobolds
+    18 giant ants
+    19 orc knights
+    19 black snakes
+    19 electrical eels
+    20 giant blowflies
+    20 hobgoblins
+    22 Orb Guardians (Zot:5)
+    22 deep elf priests
+    22 giant frogs
+    24 acid blobs
+    24 vault guards (Vault:7)
+    24 wraiths
+    24 jellies
+    25 naga magi
+    25 ugly thing skeletons
+    25 centaurs
+    25 imps
+    26 giant brown frogs
+    26 big fish
+    28 hell hounds
+    28 phantoms
+    28 orc priests
+    29 ufetubi
+    30 deep elf knights
+    30 mimics
+    30 necrophages
+    31 deep trolls
+    31 orange rats
+    31 shadows
+    31 goblins
+    32 swamp worms
+    34 ogres
+    35 deep elf magi
+    36 rats
+    37 yaks
+    41 stone giants
+    41 orc wizards
+    42 brown snakes
+    45 deep elf fighters
+    47 yaktaur captains
+    48 snakes
+    48 killer bee larvae
+    52 dancing weapons
+    52 orc warriors
+    53 kobolds
+    58 deep elf soldiers
+    60 green rats
+    64 nagas
+    66 insubstantial wisps
+    67 grey rats
+    82 yaktaurs
+    90 ugly things
+    94 giant bats
+    107 skeletal warriors
+    113 killer bees
+    153 slime creatures
+    200 orcs
+  4026 creatures vanquished.
+
+  The 3-digit Club
+    107 skeletal warriors
+    113 killer bees
+    153 slime creatures
+    200 orcs
+  573 creatures vanquished.
+
+----------------------------------------
+
+Vanquished Creatures (collateral kills)
+  Monster Symbol
+    All 'B'
+      A giant beetle (D:11)
+    1 creature vanquished.
+
+    All 'C'
+      A cyclops (D:11)
+    1 creature vanquished.
+
+    All 'z'
+      A giant frog zombie (D:11)
+      A snake skeleton (D:11)
+    2 creatures vanquished.
+
+    All 'Z'
+      A giant beetle zombie (D:11)
+    1 creature vanquished.
+  5 creatures vanquished.
+
+  Monster Nature
+    Natural Monsters
+      A cyclops (D:11)
+      A giant beetle (D:11)
+    2 creatures vanquished.
+
+    Undead Monsters
+      A giant frog zombie (D:11)
+      A snake skeleton (D:11)
+      A giant beetle zombie (D:11)
+    3 creatures vanquished.
+  5 creatures vanquished.
+
+  Ascending Order
+    A cyclops (D:11)
+    A giant frog zombie (D:11)
+    A giant beetle (D:11)
+    A snake skeleton (D:11)
+    A giant beetle zombie (D:11)
+  5 creatures vanquished.
+
+----------------------------------------
+
+Vanquished Creatures (others)
+  Monster Symbol
+    All '5'
+      A midge (Zot:5)
+      A white imp (Orc:3)
+      6 ufetubi
+    8 creatures vanquished.
+
+    All 'b'
+      2 giant bats
+    2 creatures vanquished.
+
+    All 'c'
+      A yaktaur (Vault:7)
+    1 creature vanquished.
+
+    All 'D'
+      A golden dragon (Zot:5)
+      A hydra (Swamp:5)
+    2 creatures vanquished.
+
+    All 'e'
+      A deep elf knight (Elf:7)
+      A deep elf conjurer (Elf:7)
+      A deep elf fighter (Elf:7)
+      2 deep elf magi
+      3 deep elf soldiers
+    8 creatures vanquished.
+
+    All 'g'
+      2 hobgoblins
+    2 creatures vanquished.
+
+    All 'G'
+      A giant spore (D:14)
+    1 creature vanquished.
+
+    All 'h'
+      A hound (Lair:3)
+      A jackal (Lair:4)
+    2 creatures vanquished.
+
+    All 'J'
+      A giant amoeba (Slime:2)
+      A slime creature (Slime:5)
+    2 creatures vanquished.
+
+    All 'k'
+      2 killer bees (Hive:2)
+    2 creatures vanquished.
+
+    All 'K'
+      14 kobolds
+    14 creatures vanquished.
+
+    All 'l'
+      A swamp drake (Swamp:5)
+      A giant gecko (Lair:4)
+    2 creatures vanquished.
+
+    All 'N'
+      A naga warrior (Snake:1)
+      A naga (Lair:4)
+    2 creatures vanquished.
+
+    All 'o'
+      An orc warrior (Vault:7)
+      An orc priest (D:7)
+      An orc wizard (D:25)
+      11 orcs
+    14 creatures vanquished.
+
+    All 'O'
+      An ogre (D:18)
+    1 creature vanquished.
+
+    All 'r'
+      An orange rat (Tar:4)
+      2 grey rats
+      A quokka (Lair:2)
+      2 rats
+    6 creatures vanquished.
+
+    All 's'
+      A giant centipede (D:14)
+    1 creature vanquished.
+
+    All 'S'
+      A snake (Snake:5)
+    1 creature vanquished.
+
+    All 'T'
+      An iron troll (D:27)
+    1 creature vanquished.
+
+    All 'u'
+      An ugly thing (D:22)
+    1 creature vanquished.
+
+    All 'x'
+      A small abomination (D:11)
+    1 creature vanquished.
+
+    All 'Y'
+      2 sheep (D:19)
+    2 creatures vanquished.
+
+    All 'z'
+      An ugly thing skeleton (Vault:7)
+      An ugly thing simulacrum (D:25)
+      A giant ant zombie (Tar:7)
+      2 hobgoblin zombies
+    5 creatures vanquished.
+  81 creatures vanquished.
+
+  Monster Nature
+    Natural Monsters
+      A golden dragon (Zot:5)
+      A hydra (Swamp:5)
+      An iron troll (D:27)
+      A deep elf knight (Elf:7)
+      A giant amoeba (Slime:2)
+      A naga warrior (Snake:1)
+      A slime creature (Slime:5)
+      A yaktaur (Vault:7)
+      An ugly thing (D:22)
+      A deep elf conjurer (Elf:7)
+      A deep elf fighter (Elf:7)
+      An ogre (D:18)
+      A naga (Lair:4)
+      2 deep elf magi
+      An orc warrior (Vault:7)
+      A swamp drake (Swamp:5)
+      2 killer bees (Hive:2)
+      A hound (Lair:3)
+      An orc priest (D:7)
+      3 deep elf soldiers
+      An orc wizard (D:25)
+      2 sheep (D:19)
+      A giant centipede (D:14)
+      An orange rat (Tar:4)
+      A snake (Snake:5)
+      2 giant bats
+      A giant gecko (Lair:4)
+      2 grey rats
+      2 hobgoblins
+      A jackal (Lair:4)
+      11 orcs
+      14 kobolds
+      A quokka (Lair:2)
+      2 rats
+    66 creatures vanquished.
+
+    Undead Monsters
+      An ugly thing skeleton (Vault:7)
+      An ugly thing simulacrum (D:25)
+      A giant ant zombie (Tar:7)
+      2 hobgoblin zombies
+    5 creatures vanquished.
+
+    Demonic Monsters
+      A small abomination (D:11)
+      A midge (Zot:5)
+      A white imp (Orc:3)
+      6 ufetubi
+    9 creatures vanquished.
+
+    Plants
+      A giant spore (D:14)
+    1 creature vanquished.
+  81 creatures vanquished.
+
+  Ascending Order
+    A golden dragon (Zot:5)
+    A hydra (Swamp:5)
+    An iron troll (D:27)
+    A deep elf knight (Elf:7)
+    A giant amoeba (Slime:2)
+    A naga warrior (Snake:1)
+    A slime creature (Slime:5)
+    A yaktaur (Vault:7)
+    An ugly thing (D:22)
+    A deep elf conjurer (Elf:7)
+    A small abomination (D:11)
+    A deep elf fighter (Elf:7)
+    An ugly thing skeleton (Vault:7)
+    An ogre (D:18)
+    A naga (Lair:4)
+    An orc warrior (Vault:7)
+    A swamp drake (Swamp:5)
+    An ugly thing simulacrum (D:25)
+    A hound (Lair:3)
+    An orc priest (D:7)
+    An orc wizard (D:25)
+    A giant ant zombie (Tar:7)
+    An orange rat (Tar:4)
+    A giant centipede (D:14)
+    A midge (Zot:5)
+    A snake (Snake:5)
+    A white imp (Orc:3)
+    A giant gecko (Lair:4)
+    A jackal (Lair:4)
+    A giant spore (D:14)
+    A quokka (Lair:2)
+    2 deep elf magi
+    2 killer bees (Hive:2)
+    2 sheep (D:19)
+    2 giant bats
+    2 hobgoblins
+    2 grey rats
+    2 hobgoblin zombies
+    2 rats
+    3 deep elf soldiers
+    6 ufetubi
+    11 orcs
+    14 kobolds
+  81 creatures vanquished.
+
+----------------------------------------
+
+Grand Total: 4112 creatures vanquished
+
+Notes
+Turn   | Place   | Note
+--------------------------------------------------------------
+     0 | D:1     | 78291, the Hill Orc Fighter, began the quest for the Orb.
+     0 | D:1     | Reached XP level 1. HP: 16/16 MP: 0/0
+   458 | D:1     | Reached XP level 2. HP: 23/23 MP: 1/1
+  1262 | D:2     | Reached XP level 3. HP: 23/29 MP: 1/1
+  2163 | D:3     | Reached skill 4 in Fighting
+  2163 | D:3     | Reached XP level 4. HP: 35/39 MP: 2/2
+  3033 | D:4     | Reached XP level 5. HP: 40/46 MP: 3/3
+  3313 | D:4     | Noticed Terence
+  3331 | D:4     | Reached skill 5 in Axes
+  3333 | D:4     | Defeated Terence
+  3816 | D:4     | Reached XP level 6. HP: 34/53 MP: 3/3
+  4188 | D:4     | Reached skill 6 in Axes
+  4694 | D:5     | Entered Level 5 of the Dungeon
+  5282 | Temple  | Entered the Ecumenical Temple
+  5368 | D:5     | Reached XP level 7. HP: 57/63 MP: 4/4
+  5894 | D:5     | Reached skill 7 in Axes
+  6268 | D:6     | Noticed Blork the orc
+  6295 | D:6     | Defeated Blork the orc
+  6573 | D:6     | Noticed Lazarenth's ghost
+  6911 | D:7     | Reached XP level 8. HP: 25/70 MP: 5/5
+  6961 | D:7     | Reached skill 8 in Axes
+  7744 | D:7     | Found a sand-covered staircase.
+  7763 | minitom | Entered a tomb.
+  9842 | D:7     | Reached XP level 9. HP: 12/77 MP: 5/5
+  9943 | D:7     | Reached skill 9 in Axes
+ 10597 | D:8     | Noticed nate879's ghost
+ 10633 | D:8     | A jelly changed into a boggart
+ 10638 | D:8     | Defeated a boggart
+ 12535 | D:8     | Reached skill 10 in Axes
+ 13462 | D:9     | Reached XP level 10. HP: 85/87 MP: 6/6
+ 13921 | D:9     | Reached skill 11 in Axes
+ 15512 | Orc:1   | Entered Level 1 of the Orcish Mines
+ 15956 | D:9     | Reached skill 12 in Axes
+ 16962 | D:10    | Entered Level 10 of the Dungeon
+ 17392 | D:10    | Got a shimmering large shield
+ 17401 | D:10    | Identified the +2 large shield of Divine Intervention (You found it on level 10 of the Dungeon)
+ 17659 | D:11    | I really need a god
+ 18125 | D:11    | Noticed Josephine
+ 18157 | D:11    | Reached XP level 11. HP: 77/96 MP: 7/7
+ 18616 | D:11    | Noticed a snake skeleton
+ 18623 | D:11    | Defeated a snake skeleton
+ 18632 | D:11    | Reached XP level 10. HP: 69/91 MP: 6/6
+ 18635 | D:11    | Reached XP level 11. HP: 67/96 MP: 7/7
+ 18636 | D:11    | Reached XP level 10. HP: 64/91 MP: 6/6
+ 18639 | D:11    | Noticed Joseph
+ 18677 | D:11    | Defeated Joseph
+ 18677 | D:11    | Reached XP level 11. HP: 60/96 MP: 7/7
+ 18683 | D:11    | Reached skill 13 in Axes
+ 19308 | D:12    | Got a golden long sword
+ 20070 | D:12    | Reached skill 14 in Axes
+ 21121 | D:11    | Defeated Josephine
+ 21410 | D:13    | Reached XP level 12. HP: 101/110 MP: 7/7
+ 21981 | Lair:1  | Entered Level 1 of the Lair of Beasts
+ 22935 | Lair:2  | Bought a brightly glowing shield for 370 gold pieces
+ 22945 | Lair:2  | Identified the +3 shield of Ivacirad (You bought it in a shop on level 2 of the Lair of Beasts)
+ 25021 | Lair:3  | Reached skill 15 in Axes
+ 25777 | Lair:4  | Reached XP level 13. HP: 72/119 MP: 8/8
+ 29093 | Lair:9  | Bought a wand of cold (12) for 387 gold pieces
+ 29854 | Lair:9  | Reached XP level 14. HP: 126/131 MP: 12/12
+ 30637 | Lair:10 | Entered Level 10 of the Lair of Beasts
+ 31737 | D:13    | A queen ant changed into a storm dragon
+ 31751 | D:13    | A storm dragon shaped shifter changed into a giant snail
+ 31757 | D:13    | A giant snail shaped shifter changed into a death yak
+ 32930 | D:6     | Noticed a big kobold
+ 32930 | D:6     | Noticed a big kobold
+ 32930 | D:6     | Noticed a big kobold
+ 32931 | D:6     | Noticed a big kobold
+ 32931 | D:6     | Noticed a big kobold
+ 32931 | D:6     | Noticed a big kobold
+ 32932 | D:6     | Noticed a big kobold
+ 32932 | D:6     | Noticed a big kobold
+ 32933 | D:6     | Noticed a big kobold
+ 32934 | D:6     | Noticed a big kobold
+ 32934 | D:6     | Noticed a big kobold
+ 32935 | D:6     | Defeated a big kobold
+ 32940 | D:6     | Defeated a big kobold
+ 32942 | D:6     | Defeated a big kobold
+ 32950 | D:6     | Defeated a big kobold
+ 32954 | D:6     | Defeated a big kobold
+ 32960 | D:6     | Defeated a big kobold
+ 32973 | D:6     | Defeated a big kobold
+ 32977 | D:6     | Defeated a big kobold
+ 32985 | D:6     | Defeated a big kobold
+ 32990 | D:6     | Defeated a big kobold
+ 32993 | D:6     | Reached skill 16 in Axes
+ 32993 | D:6     | Defeated a big kobold
+ 33811 | D:6     | Defeated Lazarenth's ghost
+ 33942 | D:8     | Defeated nate879's ghost
+ 34851 | D:14    | Bought a potion of speed for 35 gold pieces
+ 34897 | D:14    | Reached XP level 15. HP: 117/145 MP: 12/12
+ 35088 | D:14    | Got a slimy war axe
+ 35090 | D:14    | Identified the war axe "Stiw" {rElec rC+ Str-4 Dex+3} (You found it on level 14 of the Dungeon)
+ 35131 | D:15    | Entered Level 15 of the Dungeon
+ 35338 | D:15    | Noticed Azrael
+ 35362 | D:15    | Defeated Azrael
+ 36172 | D:15    | Noticed Erica
+ 36231 | D:15    | Defeated Erica
+ 37179 | D:16    | Noticed Harold
+ 37188 | D:16    | Defeated Harold
+ 37487 | D:16    | Reached XP level 16. HP: 133/152 MP: 13/14
+ 39332 | Snake:1 | Entered Level 1 of the Snake Pit
+ 39478 | Snake:1 | Noticed Snorg
+ 40113 | Lair:3  | Defeated Snorg
+ 43967 | D:17    | Reached skill 17 in Axes
+ 44599 | D:17    | Reached XP level 17. HP: 161/164 MP: 15/15
+ 44751 | D:18    | Reached XP level 16. HP: 156/157 MP: 14/14
+ 44753 | D:18    | Reached XP level 17. HP: 143/164 MP: 15/15
+ 44807 | D:18    | Bought a runed dwarven broad axe for 201 gold pieces
+ 46102 | D:19    | Bought a wand of teleportation (8) for 318 gold pieces
+ 47478 | Vault:1 | Entered Level 1 of the Vaults
+ 48574 | Vault:1 | Reached XP level 18. HP: 174/176 MP: 15/15
+ 50246 | Vault:4 | Bought a potion of strong poison for 1 gold piece
+ 50246 | Vault:4 | Bought a potion of degeneration for 1 gold piece
+ 50246 | Vault:4 | Bought a potion of slowing for 1 gold piece
+ 50252 | Vault:4 | Bought a potion of invisibility for 99 gold pieces
+ 50503 | Vault:4 | Noticed Xtahua
+ 50528 | Vault:4 | Defeated Xtahua
+ 53376 | Vault:4 | Reached XP level 19. HP: 152/182 MP: 16/16
+ 53462 | Vault:4 | Reached skill 18 in Axes
+ 53896 | Vault:4 | Noticed Frances
+ 54260 | Vault:4 | Bought an ichor-stained broad axe for 385 gold pieces
+ 54266 | Vault:4 | Bought a pair of glowing boots for 51 gold pieces
+ 54273 | Vault:4 | Identified the broad axe "Straenen" {elec, rN+ Stlth--} (You bought it in a shop on level 4 of the Vaults)
+ 54485 | Vault:4 | Defeated Frances
+ 57265 | Crypt:1 | Entered Level 1 of the Crypt
+ 57842 | Crypt:1 | Reached XP level 20. HP: 170/196 MP: 17/18
+ 58687 | Crypt:2 | Got a wavering lead ring
+ 59786 | Crypt:3 | Identified the ring "Kapnigh" (You found it on level 2 of the Crypt)
+ 60598 | Crypt:5 | Entered Level 5 of the Crypt
+ 62174 | Crypt:5 | Gained mutation: You have a fast metabolism.
+ 63487 | Crypt:5 | Reached skill 19 in Axes
+ 63962 | Crypt:5 | Got a rare book
+ 63969 | Crypt:5 | Identified the Guide on Infatuation (You found it on level 5 of the Crypt)
+ 64583 | Lair:1  | Gained mutation: Your mind is acute (Int +1).
+ 65057 | D:20    | Entered Level 20 of the Dungeon
+ 65674 | D:20    | Reached XP level 21. HP: 203/208 MP: 18/18
+ 67424 | D:22    | Noticed Francis
+ 67443 | D:22    | Defeated Francis
+ 68224 | D:23    | Reached XP level 22. HP: 215/215 MP: 18/18
+ 72017 | Orc:2   | Reached skill 20 in Shields
+ 72210 | Orc:4   | Entered Level 4 of the Orcish Mines
+ 72317 | Orc:4   | Found a flickering gateway to a bazaar.
+ 72328 | bazaar  | Entered a bazaar.
+ 72347 | bazaar  | Bought a potion of heal wounds for 27 gold pieces
+ 72347 | bazaar  | Bought a potion of cure mutation for 135 gold pieces
+ 72347 | bazaar  | Bought a potion of heal wounds for 27 gold pieces
+ 72379 | bazaar  | Bought a potion of speed for 37 gold pieces
+ 72379 | bazaar  | Bought a potion of heal wounds for 45 gold pieces
+ 72379 | bazaar  | Bought a potion of speed for 37 gold pieces
+ 73835 | Snake:5 | Entered Level 5 of the Snake Pit
+ 74828 | Snake:5 | Noticed Frederick
+ 74845 | Snake:5 | Defeated Frederick
+ 76062 | Snake:5 | Got a serpentine rune of Zot
+ 76569 | Snake:4 | Pineapple: how come you've reassigned dark grey as dark blue? it looks strange...
+ 76569 | Snake:4 | dark grey doesn't show up very well for me
+ 76587 | Snake:4 | Reached XP level 23. HP: 212/226 MP: 19/19
+ 77163 | Elf:1   | Entered Level 1 of the Elven Halls
+ 79821 | Elf:4   | Noticed Jozef
+ 79844 | Elf:4   | Defeated Jozef
+ 81070 | Elf:5   | Bought a runed dwarven helmet for 90 gold pieces
+ 81122 | Elf:6   | Reached skill 21 in Shields
+ 82637 | D:23    | Bought an uncursed amulet of warding for 420 gold pieces
+ 83515 | Blade   | Entered the Hall of Blades
+ 84262 | Blade   | Reached XP level 24. HP: 162/234 MP: 19/19
+ 86438 | Vault:7 | Noticed Margery
+ 86468 | Vault:7 | Defeated Margery
+ 88167 | Vault:7 | Reached skill 22 in Shields
+ 88718 | Vault:8 | Entered Level 8 of the Vaults
+ 88810 | Vault:7 | Reached XP level 25. HP: 246/246 MP: 20/20
+ 88988 | Vault:8 | A manticore changed into a pulsating lump
+ 88990 | Vault:8 | A pulsating lump shaped shifter changed into a great orb of eyes
+ 89800 | Vault:8 | An ice dragon shaped shifter changed into a pulsating lump
+ 89802 | Vault:8 | Defeated a pulsating lump shaped shifter
+ 90811 | Vault:8 | Got a pair of ancient gloves
+ 90870 | Vault:8 | Identified the cursed -5 pair of gloves of Sin (You found it on level 8 of the Vaults)
+ 90871 | Vault:8 | awesome
+ 91071 | Vault:8 | Got a steaming diamond amulet
+ 91118 | Vault:8 | Identified the amulet "Clunn" (You found it on level 8 of the Vaults)
+ 91123 | Vault:8 | Got a steaming pewter ring
+ 91124 | Vault:8 | Identified the ring of Xom's Sleight of Hands (You acquired it on level 8 of the Vaults)
+ 91299 | Vault:8 | Got a silver rune of Zot
+ 91302 | Vault:8 | Got a fine platinum amulet
+ 92443 | Lair:1  | Identified the amulet of Smyastrop (You found it on level 8 of the Vaults)
+ 93531 | Vault:8 | Reached skill 23 in Shields
+ 93538 | Vault:8 | Reached XP level 26. HP: 239/258 MP: 20/20
+ 94570 | Vault:8 | Got a steaming graven amulet
+ 96161 | Vault:8 | what is there a titan for each level of the vaults here
+ 96440 | Vault:8 | An eye of devastation changed into a shining eye
+ 96447 | Vault:8 | Gained mutation: You digest meat inefficiently.
+ 96448 | Vault:8 | Defeated a shining eye shaped shifter
+ 96461 | Vault:8 | ow
+ 96660 | Vault:8 | Got a smoking glass ring
+ 96839 | Vault:8 | Identified the ring "Durer" (You found it on level 8 of the Vaults)
+ 96966 | Vault:8 | Identified the amulet of Tweanguinu (You acquired it on level 8 of the Vaults)
+ 97646 | Swamp:1 | Entered Level 1 of the Swamp
+ 97684 | Swamp:1 | Found a gateway to a bazaar.
+ 97701 | bazaar  | Entered a bazaar.
+ 97772 | bazaar  | Bought a potion of speed for 22 gold pieces
+ 97772 | bazaar  | Bought a potion of speed for 22 gold pieces
+ 97772 | bazaar  | Bought 2 potions of heal wounds for 54 gold pieces
+ 97772 | bazaar  | Bought a potion of heal wounds for 27 gold pieces
+ 97772 | bazaar  | Bought a potion of heal wounds for 27 gold pieces
+ 97786 | bazaar  | Bought 2 potions of heal wounds for 54 gold pieces
+ 97824 | bazaar  | Bought a +0 gold dragon armour for 1444 gold pieces
+100211 | Swamp:3 | Reached skill 24 in Shields
+101246 | Swamp:4 | Reached XP level 27. HP: 255/270 MP: 20/20
+101303 | Swamp:4 | Bought a scroll of enchant armour for 96 gold pieces
+101303 | Swamp:4 | Bought a scroll of blinking for 60 gold pieces
+101303 | Swamp:4 | Bought a scroll of blinking for 60 gold pieces
+102291 | Slime:1 | Entered Level 1 of the Pits of Slime
+102845 | Swamp:5 | Entered Level 5 of the Swamp
+102856 | Swamp:5 | Noticed Wayne
+102870 | Swamp:5 | Defeated Wayne
+103733 | Swamp:5 | Got a decaying rune of Zot
+105551 | D:25    | Entered Level 25 of the Dungeon
+105551 | D:25    | Noticed Boris
+105633 | D:25    | Defeated Boris
+106978 | D:26    | Reached skill 25 in Shields
+107865 | D:27    | Entered Level 27 of the Dungeon
+109092 | Hell    | Entered the Vestibule of Hell
+109092 | Hell    | Noticed Geryon
+109135 | D:27    | Defeated Geryon
+110429 | Lair:1  | Lost mutation: You digest meat inefficiently.
+110429 | Lair:1  | Lost mutation: Your mind is acute (Int +1).
+110429 | Lair:1  | Lost mutation: You have a fast metabolism.
+110958 | Slime:1 | Reached skill 26 in Shields
+112984 | Slime:6 | Entered Level 6 of the Pits of Slime
+113561 | Slime:6 | Noticed the royal jelly
+113840 | Slime:6 | Defeated the royal jelly
+113850 | Slime:6 | Reached skill 27 in Shields
+113996 | Slime:6 | Got a slimy rune of Zot
+114211 | Slime:6 | Got a sparkling lapis lazuli ring
+114736 | Lair:1  | Identified the ring of Tension (You found it on level 6 of the Pits of Slime)
+114771 | Hive:1  | Entered Level 1 of the Hive
+115101 | Hive:2  | Entered Level 2 of the Hive
+116379 | Elf:5   | Bought a blackened jade ring for 150 gold pieces
+116488 | Elf:7   | Entered Level 7 of the Elven Halls
+116528 | Elf:7   | Noticed Rupert
+116543 | Elf:7   | Defeated Rupert
+116693 | Elf:7   | Noticed a deep elf blademaster
+116700 | Elf:7   | Defeated a deep elf blademaster
+116725 | Elf:7   | Gained mutation: Space occasionally distorts in your vicinity.
+116726 | Elf:7   | Gained mutation: You can teleport at will.
+116727 | Elf:7   | Noticed a deep elf master archer
+116727 | Elf:7   | Noticed a deep elf master archer
+117732 | Elf:7   | Defeated a deep elf master archer
+118167 | Elf:7   | Noticed a deep elf blademaster
+118169 | Elf:7   | Defeated a deep elf master archer
+118248 | Elf:7   | Defeated a deep elf blademaster
+118541 | Elf:7   | Got a brightly glowing bardiche
+118594 | Elf:7   | Got a glittering iron ring
+118608 | Elf:7   | Got a glittering ivory ring
+118630 | Elf:7   | Got a slimy copper ring
+119102 | Lair:1  | Identified the ring "Fuypny Blups" (You found it on level 7 of the Elven Halls)
+119129 | Lair:1  | Identified the cursed ring of Peoch (You found it on level 7 of the Elven Halls)
+119131 | Lair:1  | Identified the ring of Surprise (You found it on level 7 of the Elven Halls)
+119147 | Lair:1  | Identified the bardiche "Sieroeh" {flame, Dex+3} (You took it off a deep elf death mage on level 7 of the Elven Halls)
+119901 | Tar:1   | Entered Level 1 of Tartarus
+120553 | Tar:4   | Cast into the Abyss (the effects of Hell)
+120553 | Abyss   | Entered The Abyss
+121076 | Tar:4   | You pass through the gate.
+122936 | Tar:7   | Entered Level 7 of Tartarus
+123164 | Tar:7   | oh yay bows
+123371 | Tar:7   | Cast into the Abyss (the effects of Hell)
+123425 | Tar:7   | You pass through the gate.
+123656 | Tar:7   | Got a sparkling jade ring
+123664 | Tar:7   | Got a yellowed book
+124037 | Tar:7   | Noticed Ereshkigal
+124070 | Tar:7   | Defeated Ereshkigal
+124121 | Tar:7   | Got a bone rune of Zot
+124127 | Tar:7   | Got a heavily runed jade amulet
+124594 | Lair:1  | Identified the ring "Vylul" (You found it on level 7 of Tartarus)
+124597 | Lair:1  | Identified the amulet of Immorality (You found it on level 7 of Tartarus)
+124911 | Swamp:4 | Bought a scroll of identify for 40 gold pieces
+124911 | Swamp:4 | Bought a scroll of identify for 40 gold pieces
+124911 | Swamp:4 | Bought a scroll of identify for 40 gold pieces
+125691 | Zot:1   | Entered Level 1 of the Realm of Zot
+128036 | Zot:5   | Entered Level 5 of the Realm of Zot
+129384 | Zot:5   | Gained mutation: You are somewhat resistant to further mutation.
+129589 | Zot:5   | Got a pair of twisted gloves
+129941 | Zot:5   | Got the Orb of Zot
+130490 | D:15    | Noticed Liq Fysa the pandemonium lord
+131118 | D:$     | Escaped with the Orb!
+             
+
