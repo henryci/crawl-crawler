@@ -107,6 +107,12 @@ export function extractHeader(content: string): HeaderData {
   // Extract branch visit summary
   extractBranchSummary(content, result);
 
+  // When endDate is missing but startDate is present, the game ended on the same
+  // calendar day it started (DCSS omits the date when it would match startDate).
+  if (!result.endDate && result.startDate) {
+    result.endDate = result.startDate;
+  }
+
   return result;
 }
 
@@ -154,7 +160,7 @@ function extractGameSeed(lines: string[], result: HeaderData): void {
  * Format: "12163156 Charly the Archmage (level 27, 258/258 HPs)"
  */
 function extractScoreAndPlayer(lines: string[], result: HeaderData): void {
-  for (let i = 0; i < Math.min(20, lines.length); i++) {
+  for (let i = 0; i < Math.min(40, lines.length); i++) {
     const line = lines[i];
     if (!line) continue;
 
@@ -225,7 +231,7 @@ function extractOldFormatPlayerAndLevel(lines: string[], result: HeaderData): vo
  * - "Was a Demigod Earth Elementalist." (older format)
  */
 function extractDatesAndBackground(lines: string[], result: HeaderData): void {
-  for (let i = 0; i < Math.min(30, lines.length); i++) {
+  for (let i = 0; i < Math.min(40, lines.length); i++) {
     const line = lines[i];
     if (!line) continue;
 
@@ -277,7 +283,7 @@ function extractDatesAndBackground(lines: string[], result: HeaderData): void {
  * If neither is found, isWin remains null.
  */
 function extractWinStatus(lines: string[], result: HeaderData): void {
-  for (let i = 0; i < Math.min(30, lines.length); i++) {
+  for (let i = 0; i < Math.min(40, lines.length); i++) {
     const line = lines[i];
     if (!line) continue;
 
@@ -287,22 +293,48 @@ function extractWinStatus(lines: string[], result: HeaderData): void {
       return;
     }
 
-    // Also check for older win format: "escaped!" at end of line
-    if (/escaped!?\s*$/i.test(line)) {
+    // Also check for older win format: "escaped." or "escaped!" at end of line
+    if (/escaped[.!]?\s*$/i.test(line)) {
       result.isWin = true;
       return;
     }
   }
 
   // If we found score/player info but no escape message, it's a death
-  // (The score line is always present in a valid morgue)
   if (result.score !== null) {
     result.isWin = false;
+  }
+
+  // Fallback for very old format (v0.1-v0.2) where score is absent:
+  // check for "You escaped." anywhere in the file header area
+  if (result.isWin === null) {
+    for (let i = 0; i < Math.min(40, lines.length); i++) {
+      const line = lines[i];
+      if (!line) continue;
+      if (/^You escaped[.!]?\s*$/i.test(line)) {
+        result.isWin = true;
+        return;
+      }
+      // Common death indicators in old formats
+      if (/^(?:Slain by|Killed by|Mangled by|Annihilated by|Blown up by)/i.test(line.trim())) {
+        result.isWin = false;
+        return;
+      }
+      // "You are on level X" / "You were on level X" means the player died in the dungeon
+      if (/^You (?:are|were) on level\s+\d+/i.test(line.trim())) {
+        result.isWin = false;
+        return;
+      }
+    }
   }
 }
 
 /**
  * Extract game duration and total turns.
+ *
+ * Handles two formats:
+ * - Modern: "The game lasted 10:20:02 (133072 turns)." (including multi-day variants)
+ * - Old (v0.1-v0.2): "Play time  :   19:17:38" and "Turns      :     155150"
  */
 function extractDuration(content: string, result: HeaderData): void {
   const match = PATTERNS.gameDuration.exec(content);
@@ -310,6 +342,24 @@ function extractDuration(content: string, result: HeaderData): void {
     result.gameDuration = match[1] ?? null;
     result.gameDurationSeconds = match[1] ? durationToSeconds(match[1]) : null;
     result.totalTurns = parseIntSafe(match[2]);
+    return;
+  }
+
+  // Fallback for old format (v0.1-v0.2)
+  const playTimeMatch = /^Play time\s*:\s*(.+)/m.exec(content);
+  if (playTimeMatch) {
+    const raw = playTimeMatch[1]?.trim();
+    if (raw) {
+      const durationOnly = raw.split(/\s{2,}/)[0]?.trim();
+      if (durationOnly) {
+        result.gameDuration = durationOnly;
+        result.gameDurationSeconds = durationToSeconds(durationOnly);
+      }
+    }
+  }
+  const turnsMatch = /^Turns\s{2,}:\s*(\d+)/m.exec(content);
+  if (turnsMatch) {
+    result.totalTurns = parseIntSafe(turnsMatch[1]);
   }
 }
 

@@ -4,6 +4,7 @@
  *
  * Parses all morgue files in a directory and reports:
  * - Version range (lowest and highest game versions)
+ * - Missing required fields (score, playerName, title, race, etc.)
  * - Missing critical sections (runes, equipment, gods, skills, branches)
  * - Parsing errors
  * - Total parsing time
@@ -17,7 +18,38 @@ import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-pars
 const DEFAULT_MORGUE_DIR = "../streak-downloader/outputs";
 const CRITICAL_SECTIONS = ["equipment", "godsWorshipped", "endingSkills", "branches"] as const;
 
+/** All nullable fields on MorgueData that should have at least one non-null value across a corpus. */
+const ALL_NULLABLE_FIELDS: (keyof MorgueData)[] = [
+  "version", "isWebtiles", "gameSeed", "score", "playerName", "title",
+  "race", "background", "characterLevel", "startDate", "endDate",
+  "gameDurationSeconds", "totalTurns", "runesPossible", "runesList",
+  "gemsList", "branchesVisitedCount", "levelsSeenCount", "isWin",
+  "endingStats", "equipment", "endingSkills", "skillsByXl", "skillsByXlSource",
+  "endingSpells", "godsWorshipped", "branches", "xpProgression", "actions",
+  "timeByBranch", "topLevelsByTime",
+];
+const REQUIRED_FIELDS = [
+  "score",
+  "playerName",
+  "title",
+  "race",
+  "background",
+  "characterLevel",
+  "startDate",
+  "endDate",
+  "gameDurationSeconds",
+  "totalTurns",
+  "levelsSeenCount",
+  "isWin",
+] as const;
+
 type CriticalSection = (typeof CRITICAL_SECTIONS)[number];
+type RequiredField = (typeof REQUIRED_FIELDS)[number];
+
+interface MissingFieldInfo {
+  file: string;
+  version: string | null;
+}
 
 interface MissingSectionInfo {
   file: string;
@@ -41,8 +73,11 @@ interface DiagnosticResult {
   versionHighest: string | null;
   versionsFound: Map<string, number>;
   missingSections: Map<CriticalSection, MissingSectionInfo[]>;
+  missingFields: Map<RequiredField, MissingFieldInfo[]>;
   parseErrors: ParseErrorInfo[];
   noRunesFiles: { file: string; version: string | null; characterLevel: number | null }[];
+  /** Fields that had at least one non-null value across all parsed files. */
+  fieldsEverNonNull: Set<keyof MorgueData>;
   parsingTimeMs: number;
 }
 
@@ -124,14 +159,18 @@ async function runDiagnostics(morgueDir: string, verbose: boolean): Promise<Diag
     versionHighest: null,
     versionsFound: new Map(),
     missingSections: new Map(),
+    missingFields: new Map(),
     parseErrors: [],
     noRunesFiles: [],
+    fieldsEverNonNull: new Set(),
     parsingTimeMs: 0,
   };
 
-  // Initialize missing sections map
   for (const section of CRITICAL_SECTIONS) {
     result.missingSections.set(section, []);
+  }
+  for (const field of REQUIRED_FIELDS) {
+    result.missingFields.set(field, []);
   }
 
   const morgueFiles = getMorgueFiles(morgueDir);
@@ -199,6 +238,23 @@ async function runDiagnostics(morgueDir: string, verbose: boolean): Promise<Diag
         }
       }
 
+      // Check for missing required fields
+      for (const field of REQUIRED_FIELDS) {
+        if (data[field] === null || data[field] === undefined) {
+          result.missingFields.get(field)!.push({
+            file: fileName,
+            version: data.version,
+          });
+        }
+      }
+
+      // Track which fields have been seen with non-null values
+      for (const field of ALL_NULLABLE_FIELDS) {
+        if (!result.fieldsEverNonNull.has(field) && data[field] !== null && data[field] !== undefined) {
+          result.fieldsEverNonNull.add(field);
+        }
+      }
+
       // Check for games with no runes (might indicate a parsing issue or very early death)
       if (!data.runesList || data.runesList.length === 0) {
         result.noRunesFiles.push({
@@ -253,6 +309,63 @@ function printResults(result: DiagnosticResult): void {
   const sortedVersions = [...result.versionsFound.entries()].sort((a, b) => compareVersions(a[0], b[0]));
   for (const [version, count] of sortedVersions) {
     console.log(`  ${version.padEnd(8)} : ${count} file(s)`);
+  }
+
+  // Always-null field detection (broken extractor alarm)
+  const alwaysNullFields = ALL_NULLABLE_FIELDS.filter((f) => !result.fieldsEverNonNull.has(f));
+  if (alwaysNullFields.length > 0) {
+    console.log("\n🚨 ALWAYS-NULL FIELDS (potential broken extractors)");
+    console.log("-".repeat(40));
+    console.log(`The following fields were null in ALL ${result.totalFiles} files:`);
+    for (const field of alwaysNullFields) {
+      console.log(`  ❌ ${field}`);
+    }
+  } else {
+    console.log("\n✅ No always-null fields detected — all extractors produced output.");
+  }
+
+  // Missing required fields
+  console.log("\n📋 MISSING REQUIRED FIELDS");
+  console.log("-".repeat(40));
+
+  const fieldsWithIssues: { field: RequiredField; count: number }[] = [];
+  for (const field of REQUIRED_FIELDS) {
+    const files = result.missingFields.get(field) || [];
+    const status = files.length === 0 ? "✅" : "❌";
+    console.log(`  ${status} ${field}: ${files.length} file(s) missing`);
+    if (files.length > 0) {
+      fieldsWithIssues.push({ field, count: files.length });
+    }
+  }
+
+  if (fieldsWithIssues.length > 0) {
+    console.log("\nDetails for fields with missing values:");
+    for (const { field } of fieldsWithIssues) {
+      const files = result.missingFields.get(field)!;
+      console.log(`\n  ${field} (${files.length} file(s)):`);
+
+      if (files.length <= 10) {
+        for (const info of files) {
+          console.log(`    - ${info.file} (v${info.version || "unknown"})`);
+        }
+      } else {
+        const byVersion = new Map<string, MissingFieldInfo[]>();
+        for (const info of files) {
+          const v = info.version?.match(/^(\d+\.\d+)/)?.[1] || "unknown";
+          if (!byVersion.has(v)) byVersion.set(v, []);
+          byVersion.get(v)!.push(info);
+        }
+        for (const [version, fileList] of [...byVersion.entries()].sort((a, b) => compareVersions(a[0], b[0]))) {
+          console.log(`    ${version}: ${fileList.length} file(s)`);
+          for (const info of fileList.slice(0, 3)) {
+            console.log(`      - ${info.file}`);
+          }
+          if (fileList.length > 3) {
+            console.log(`      ... and ${fileList.length - 3} more`);
+          }
+        }
+      }
+    }
   }
 
   // Missing sections

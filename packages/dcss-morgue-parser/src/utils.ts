@@ -47,8 +47,10 @@ export const PATTERNS = {
 
   /**
    * Game duration: "The game lasted 10:20:02 (133072 turns)."
+   * Also handles multi-day: "1day13:58:37", "1day 12:40:25", "1 day 03:29:14"
+   * Also handles server prefix: "Dgl's game lasted ..."
    */
-  gameDuration: /The game lasted\s+([\d:]+)\s+\((\d+)\s+turns?\)/,
+  gameDuration: /game lasted\s+((?:\d+\s*days?\s*)?\d[\d:]+)\s+\((\d+)\s+turns?\)/,
 
   // Stats patterns - newer format (0.23+)
   statsHealth: /Health:\s*(-?\d+)\/(\d+)/,
@@ -79,8 +81,9 @@ export const PATTERNS = {
 
   /**
    * Branch visits summary: "You visited 17 branches of the dungeon, and saw 87 of its levels."
+   * Handles both singular "branch" and plural "branches".
    */
-  branchesVisited: /You visited\s+(\d+)\s+branches?.+?saw\s+(\d+)\s+of its levels/,
+  branchesVisited: /You visited\s+(\d+)\s+branch(?:es)?.+?saw\s+(\d+)\s+of its levels/,
 
   /**
    * Notes section line: "  5822 | Temple   | Became a worshipper of..."
@@ -138,8 +141,19 @@ export function durationToSeconds(durationStr: string): number | null {
     return null;
   }
 
-  const parts = durationStr.split(':');
   try {
+    let days = 0;
+    let timeStr = durationStr.trim();
+
+    // Handle day prefix: "1day13:58:37", "1day 12:40:25", "1 day 03:29:14"
+    // Also handles old "Play time" format: "3, 06:06:42"
+    const dayMatch = /^(\d+)\s*(?:days?\s*|,\s*)(.+)$/.exec(timeStr);
+    if (dayMatch && dayMatch[1] && dayMatch[2]) {
+      days = parseInt(dayMatch[1], 10);
+      timeStr = dayMatch[2].trim();
+    }
+
+    const parts = timeStr.split(':');
     if (parts.length === 3) {
       const [hours, minutes, seconds] = parts.map(Number);
       if (
@@ -152,13 +166,13 @@ export function durationToSeconds(durationStr: string): number | null {
       ) {
         return null;
       }
-      return hours * 3600 + minutes * 60 + seconds;
+      return days * 86400 + hours * 3600 + minutes * 60 + seconds;
     } else if (parts.length === 2) {
       const [minutes, seconds] = parts.map(Number);
       if (minutes === undefined || seconds === undefined || isNaN(minutes) || isNaN(seconds)) {
         return null;
       }
-      return minutes * 60 + seconds;
+      return days * 86400 + minutes * 60 + seconds;
     }
     return null;
   } catch {
