@@ -157,9 +157,10 @@ export async function GET(request: NextRequest) {
     
     const result = await query<Record<string, unknown>>(sql, [...params, limit, offset]);
     
-    // Get total count of games and total count of groups for pagination
+    // Get totals for pagination and percentage calculations
     const countSql = `
-      SELECT COUNT(*) as total
+      SELECT COUNT(*) as total_games,
+             SUM(CASE WHEN g.is_win THEN 1 ELSE 0 END) as total_wins
       FROM games g
       ${Array.from(requiredJoins).join('\n      ')}
       ${where}
@@ -176,16 +177,18 @@ export async function GET(request: NextRequest) {
     `;
     
     const [countResult, groupCountResult] = await Promise.all([
-      query<{ total: string }>(countSql, params),
+      query<{ total_games: string; total_wins: string }>(countSql, params),
       query<{ total: string }>(groupCountSql, params),
     ]);
     
-    const totalGames = parseInt(countResult.rows[0]?.total ?? '0', 10);
+    const totalGames = parseInt(countResult.rows[0]?.total_games ?? '0', 10);
+    const totalWins = parseInt(countResult.rows[0]?.total_wins ?? '0', 10);
     const totalGroups = parseInt(groupCountResult.rows[0]?.total ?? '0', 10);
     
     return NextResponse.json({
       results: result.rows,
       totalGames,
+      totalWins,
       totalGroups,
       groupBy,
       metrics,

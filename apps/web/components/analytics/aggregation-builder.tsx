@@ -45,19 +45,27 @@ import {
   type MetricKey,
 } from "@/lib/analytics-types";
 
-// Get dimension options for the UI
-const DIMENSION_OPTIONS = (Object.keys(DIMENSIONS) as DimensionKey[]).map((key) => ({
+// Dimension options split into logical rows for the UI
+const allDimOptions = (Object.keys(DIMENSIONS) as DimensionKey[]).map((key) => ({
   value: key,
   label: DIMENSIONS[key].label,
   icon: DIMENSIONS[key].icon,
 }));
+const DIMENSION_ROWS = [
+  allDimOptions.slice(0, 5),  // Species, Background, Combo, God, Version
+  allDimOptions.slice(5),     // Outcome, Rune Count, Character Level, WebTiles, Draconian Color
+];
 
-// Get metric options for the UI (only aggregation metrics)
-const METRIC_OPTIONS = AGGREGATION_METRICS.map((key) => ({
+// Metric options split into logical rows for the UI
+const allMetricOptions = AGGREGATION_METRICS.map((key) => ({
   value: key,
   label: METRICS[key].label,
   description: METRICS[key].description,
 }));
+const METRIC_ROWS = [
+  allMetricOptions.slice(0, 5),  // Game Count, Win Count, Win Rate %, Avg Score, Max Score
+  allMetricOptions.slice(5),     // Avg Turns, Median Turns, Avg Gems, Median Gems, Avg Runes, Avg XL
+];
 
 interface AggregationResult {
   [key: string]: unknown;
@@ -66,6 +74,7 @@ interface AggregationResult {
 interface AggregationResponse {
   results: AggregationResult[];
   totalGames: number;
+  totalWins: number;
   totalGroups: number;
   groupBy: string[];
   metrics: string[];
@@ -90,6 +99,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   // Results state
   const [results, setResults] = useState<AggregationResult[]>([]);
   const [totalGames, setTotalGames] = useState<number>(0);
+  const [totalWins, setTotalWins] = useState<number>(0);
   const [totalGroups, setTotalGroups] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +140,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
       
       setResults(data.results);
       setTotalGames(data.totalGames);
+      setTotalWins(data.totalWins);
       setTotalGroups(data.totalGroups);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -210,24 +221,39 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   }, [selectedDimensions, selectedMetrics]);
 
   // Format cell value for display
+  // Note: pg returns aggregates (COUNT, SUM, ROUND, etc.) as strings,
+  // so we parse to number for any numeric-looking value.
   const formatValue = (key: string, value: unknown): string => {
     if (value === null || value === undefined) return "—";
     
-    // Boolean formatting for is_win
+    // Boolean formatting
     if (key === "is_win") {
-      return value === true ? "Win" : "Death";
+      return value === true || value === "true" ? "Win" : "Death";
+    }
+    if (key === "is_webtiles") {
+      if (value === true || value === "true") return "WebTiles";
+      if (value === false || value === "false") return "Console";
+      return "Unknown";
     }
     
-    // Number formatting
-    if (typeof value === "number") {
-      if (key === "win_rate") return `${value}%`;
-      if (key.includes("score") || key === "count" || key === "wins" || key === "avg_turns") {
-        return Math.round(value).toLocaleString();
+    const num = typeof value === "number" ? value : Number(value);
+    if (!isNaN(num)) {
+      if (key === "win_rate") return `${num}%`;
+      if (key === "count" && totalGames > 0) {
+        const pct = (num / totalGames * 100).toFixed(1);
+        return `${Math.round(num).toLocaleString()} (${pct}%)`;
       }
-      if (key === "avg_runes" || key === "avg_xl") {
-        return value.toFixed(1);
+      if (key === "wins" && totalWins > 0) {
+        const pct = (num / totalWins * 100).toFixed(1);
+        return `${Math.round(num).toLocaleString()} (${pct}%)`;
       }
-      return value.toLocaleString();
+      if (key.includes("score") || key === "avg_turns" || key === "median_turns") {
+        return Math.round(num).toLocaleString();
+      }
+      if (key === "avg_runes" || key === "avg_xl" || key === "avg_gems" || key === "median_gems") {
+        return num.toFixed(1);
+      }
+      return num.toLocaleString();
     }
     
     return String(value);
@@ -254,28 +280,32 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
               <span className="text-sm font-medium">Group By</span>
               <span className="text-xs text-muted-foreground">(max {MAX_DIMENSIONS})</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {DIMENSION_OPTIONS.map((dim) => {
-                const isSelected = selectedDimensions.includes(dim.value);
-                const isDisabled = !isSelected && selectedDimensions.length >= MAX_DIMENSIONS;
-                return (
-                  <Button
-                    key={dim.value}
-                    variant={isSelected ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => toggleDimension(dim.value)}
-                    disabled={isDisabled}
-                    className={cn(
-                      "h-8 text-xs gap-1.5",
-                      isSelected && "bg-mana/20 border-mana/30 text-mana hover:bg-mana/30",
-                      isDisabled && "opacity-50"
-                    )}
-                  >
-                    <span>{dim.icon}</span>
-                    {dim.label}
-                  </Button>
-                );
-              })}
+            <div className="space-y-1.5">
+              {DIMENSION_ROWS.map((row, rowIdx) => (
+                <div key={rowIdx} className="flex flex-wrap gap-1.5">
+                  {row.map((dim) => {
+                    const isSelected = selectedDimensions.includes(dim.value);
+                    const isDisabled = !isSelected && selectedDimensions.length >= MAX_DIMENSIONS;
+                    return (
+                      <Button
+                        key={dim.value}
+                        variant={isSelected ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => toggleDimension(dim.value)}
+                        disabled={isDisabled}
+                        className={cn(
+                          "h-7 text-xs gap-1.5",
+                          isSelected && "bg-mana/20 border-mana/30 text-mana hover:bg-mana/30",
+                          isDisabled && "opacity-50"
+                        )}
+                      >
+                        <span>{dim.icon}</span>
+                        {dim.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -286,29 +316,33 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
               <span className="text-sm font-medium">Metrics</span>
               <span className="text-xs text-muted-foreground">(max {MAX_METRICS})</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {METRIC_OPTIONS.map((metric) => {
-                const isSelected = selectedMetrics.includes(metric.value);
-                const isDisabled = !isSelected && selectedMetrics.length >= MAX_METRICS;
-                const isOnlyOne = isSelected && selectedMetrics.length === 1;
-                return (
-                  <Button
-                    key={metric.value}
-                    variant={isSelected ? "secondary" : "outline"}
-                    size="sm"
-                    onClick={() => toggleMetric(metric.value)}
-                    disabled={isDisabled || isOnlyOne}
-                    className={cn(
-                      "h-8 text-xs",
-                      isSelected && "bg-gold/20 border-gold/30 text-gold hover:bg-gold/30",
-                      isDisabled && "opacity-50"
-                    )}
-                    title={metric.description}
-                  >
-                    {metric.label}
-                  </Button>
-                );
-              })}
+            <div className="space-y-1.5">
+              {METRIC_ROWS.map((row, rowIdx) => (
+                <div key={rowIdx} className="flex flex-wrap gap-1.5">
+                  {row.map((metric) => {
+                    const isSelected = selectedMetrics.includes(metric.value);
+                    const isDisabled = !isSelected && selectedMetrics.length >= MAX_METRICS;
+                    const isOnlyOne = isSelected && selectedMetrics.length === 1;
+                    return (
+                      <Button
+                        key={metric.value}
+                        variant={isSelected ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => toggleMetric(metric.value)}
+                        disabled={isDisabled || isOnlyOne}
+                        className={cn(
+                          "h-7 text-xs",
+                          isSelected && "bg-gold/20 border-gold/30 text-gold hover:bg-gold/30",
+                          isDisabled && "opacity-50"
+                        )}
+                        title={metric.description}
+                      >
+                        {metric.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </div>
 
@@ -508,7 +542,7 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
                         </TableCell>
                         {columnHeaders.map((header) => {
                           const value = row[header.key];
-                          const numValue = typeof value === "number" ? value : 0;
+                          const numValue = Number(value) || 0;
                           return (
                             <TableCell
                               key={header.key}
@@ -573,7 +607,12 @@ function AggregationChart({
   const getLabel = (row: AggregationResult) => {
     return dimensions.map(d => {
       const val = row[d];
-      if (d === "is_win") return val ? "Win" : "Death";
+      if (d === "is_win") return val === true || val === "true" ? "Win" : "Death";
+      if (d === "is_webtiles") {
+        if (val === true || val === "true") return "WebTiles";
+        if (val === false || val === "false") return "Console";
+        return "Unknown";
+      }
       return String(val ?? "—");
     }).join(" / ");
   };

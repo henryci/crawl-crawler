@@ -90,6 +90,22 @@ export const DIMENSIONS = {
     alias: "character_level",
     join: null,
   },
+  is_webtiles: {
+    value: "is_webtiles",
+    label: "WebTiles",
+    icon: "🌐",
+    sql: "g.is_webtiles",
+    alias: "is_webtiles",
+    join: null,
+  },
+  draconian_color: {
+    value: "draconian_color",
+    label: "Draconian Color",
+    icon: "🐲",
+    sql: "g.draconian_color",
+    alias: "draconian_color",
+    join: null,
+  },
 } as const;
 
 export type DimensionKey = keyof typeof DIMENSIONS;
@@ -215,6 +231,27 @@ export const METRICS = {
     sql: "SUM(g.runes_count)",
     alias: "total_runes",
   },
+  median_turns: {
+    value: "median_turns",
+    label: "Median Turns",
+    description: "Median game length in turns",
+    sql: "ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY g.total_turns))",
+    alias: "median_turns",
+  },
+  avg_gems: {
+    value: "avg_gems",
+    label: "Avg Gems",
+    description: "Average gems collected",
+    sql: "ROUND(AVG(g.gems_count), 2)",
+    alias: "avg_gems",
+  },
+  median_gems: {
+    value: "median_gems",
+    label: "Median Gems",
+    description: "Median gems collected",
+    sql: "ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY g.gems_count))",
+    alias: "median_gems",
+  },
 } as const;
 
 export type MetricKey = keyof typeof METRICS;
@@ -234,6 +271,9 @@ export const AGGREGATION_METRICS: MetricKey[] = [
   "avg_score",
   "max_score",
   "avg_turns",
+  "median_turns",
+  "avg_gems",
+  "median_gems",
   "avg_runes",
   "avg_xl",
 ];
