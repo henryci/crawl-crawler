@@ -33,6 +33,12 @@ export function extractBranches(content: string): Record<string, BranchInfo> | n
   // Extract entry turns from Notes
   extractEntryTurns(content, branches);
 
+  // The player always starts on D:1 at turn 0, but the Notes section won't
+  // have an "Entered" event for it, so hardcode the entry turn.
+  if (branches['Dungeon']) {
+    branches['Dungeon'].firstEntryTurn = 0;
+  }
+
   return Object.keys(branches).length > 0 ? branches : null;
 }
 
