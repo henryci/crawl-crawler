@@ -627,7 +627,7 @@ function OverviewTab({ data }: { data: MorgueData }) {
           <CardHeader className="pb-0">
             <CardTitle className="text-base flex items-center gap-2">
               <Trophy className="w-4 h-4 text-gold" />
-              Runes ({runesCollected}/{data.runesPossible ?? 15})
+              Runes ({runesCollected}/15)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -731,8 +731,13 @@ function EquipmentSection({ data }: { data: MorgueData }) {
     { name: "Gloves", value: equipment.gloves, icon: Hand },
     { name: "Boots", value: equipment.boots, icon: Footprints },
     { name: "Amulet", value: equipment.amulet, icon: Gem },
-    { name: "Ring L", value: equipment.ringLeft, icon: Gem },
-    { name: "Ring R", value: equipment.ringRight, icon: Gem },
+    ...equipment.rings.map((ring, i) => ({
+      name: equipment.rings.length === 2
+        ? (i === 0 ? "Ring L" : "Ring R")
+        : `Ring ${i + 1}`,
+      value: ring,
+      icon: Gem,
+    })),
   ];
 
   // Filter to only show equipped items
@@ -2166,9 +2171,9 @@ function DungeonTab({ data }: { data: MorgueData }) {
     );
   }
 
-  // Sort branches by deepest level descending
+  // Sort branches by levels seen descending
   const sortedBranches = Object.entries(branches).sort(
-    ([, a], [, b]) => (b.deepest ?? 0) - (a.deepest ?? 0)
+    ([, a], [, b]) => (b.levelsSeen ?? 0) - (a.levelsSeen ?? 0)
   );
 
   return (
@@ -2196,7 +2201,7 @@ function DungeonTab({ data }: { data: MorgueData }) {
               >
                 <span className="text-foreground text-sm truncate">{branch}</span>
                 <span className="font-mono text-xs text-muted-foreground ml-2 shrink-0">
-                  {info.levelsSeen ?? info.deepest ?? "?"}
+                  {info.levelsSeen ?? "?"}
                 </span>
               </div>
             ))}
@@ -2222,33 +2227,7 @@ function DungeonTab({ data }: { data: MorgueData }) {
         </Card>
       )}
 
-      {/* Top Levels by Time */}
-      {data.topLevelsByTime && data.topLevelsByTime.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Clock className="w-4 h-4 text-mana" />
-              Most Time Spent (Top 10)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {data.topLevelsByTime.slice(0, 10).map((level, i) => (
-                <div
-                  key={level.level}
-                  className="flex items-center gap-4 p-2 rounded bg-secondary/50"
-                >
-                  <span className="font-mono text-muted-foreground w-6">{i + 1}.</span>
-                  <span className="flex-1 font-medium text-foreground">{level.level}</span>
-                  <span className="font-mono text-sm text-mana">
-                    {level.time.toLocaleString()} deca
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    
     </div>
   );
 }

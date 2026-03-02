@@ -189,7 +189,6 @@ interface CsvWriters {
   gameSpells: ReturnType<typeof createWriteStream>;
   gameBranches: ReturnType<typeof createWriteStream>;
   gameXpProgression: ReturnType<typeof createWriteStream>;
-  gameBranchTime: ReturnType<typeof createWriteStream>;
   gameActions: ReturnType<typeof createWriteStream>;
   gameEquipment: ReturnType<typeof createWriteStream>;
   parsedMorgueJson: ReturnType<typeof createWriteStream>;
@@ -215,7 +214,6 @@ function createWriters(outputDir: string): CsvWriters {
     gameSpells: createWriteStream(join(outputDir, 'game_spells.csv')),
     gameBranches: createWriteStream(join(outputDir, 'game_branches.csv')),
     gameXpProgression: createWriteStream(join(outputDir, 'game_xp_progression.csv')),
-    gameBranchTime: createWriteStream(join(outputDir, 'game_branch_time.csv')),
     gameActions: createWriteStream(join(outputDir, 'game_actions.csv')),
     gameEquipment: createWriteStream(join(outputDir, 'game_equipment.csv')),
     parsedMorgueJson: createWriteStream(join(outputDir, 'parsed_morgue_json.csv')),
@@ -236,7 +234,7 @@ function writeHeaders(writers: CsvWriters): void {
   writers.gameVersions.write('id,version,major,minor,is_trunk\n');
   
   // Main table
-  writers.games.write('id,morgue_filename,player_name,score,version_id,race_id,background_id,character_level,title,is_win,end_date,start_date,game_duration_seconds,total_turns,runes_count,gems_count,god_id,piety,hp_max,mp_max,ac,ev,sh,str,int,dex,gold,branches_visited,levels_seen,is_webtiles,game_seed,parser_version,morgue_hash,source_url\n');
+  writers.games.write('id,morgue_filename,player_name,score,version_id,race_id,background_id,character_level,title,is_win,end_date,start_date,game_duration_seconds,total_turns,runes_count,gems_count,god_id,piety,hp_max,mp_max,ac,ev,sh,str,int,dex,gold,branches_visited,levels_seen,is_webtiles,game_seed,parser_version,morgue_hash,source_url,draconian_color\n');
   
   // Detail tables
   writers.gameRunes.write('game_id,rune_id\n');
@@ -244,9 +242,8 @@ function writeHeaders(writers: CsvWriters): void {
   writers.gameSkills.write('game_id,skill_id,level\n');
   writers.gameSkillProgression.write('game_id,skill_id,xl,skill_level\n');
   writers.gameSpells.write('game_id,spell_id,slot,failure_percent\n');
-  writers.gameBranches.write('game_id,branch_id,levels_seen,levels_total,deepest,first_entry_turn\n');
+  writers.gameBranches.write('game_id,branch_id,levels_seen,levels_total,first_entry_turn\n');
   writers.gameXpProgression.write('game_id,xl,turn,location\n');
-  writers.gameBranchTime.write('game_id,branch_id,elapsed,non_travel,inter_level_travel,resting,autoexplore,levels\n');
   writers.gameActions.write('game_id,category,action_name,total_count,counts_by_xl\n');
   writers.gameEquipment.write('game_id,slot,item_text\n');
   writers.parsedMorgueJson.write('morgue_hash,parsed_json\n');
@@ -490,6 +487,8 @@ function processMorgue(state: GeneratorState, data: MorgueData, filename: string
   const godId = data.endingStats?.god ? getOrCreateGod(state, data.endingStats.god) : null;
   const versionId = data.version ? getOrCreateVersion(state, data.version) : null;
   
+  const draconianColor = (data.speciesData?.color as string | undefined) ?? null;
+
   // Write main game record
   state.writers.games.write(csvRow(
     gameId,
@@ -526,6 +525,7 @@ function processMorgue(state: GeneratorState, data: MorgueData, filename: string
     data.parserVersion,
     data.morgueHash,
     data.sourceUrl,
+    draconianColor,
   ));
   
   // Write runes
@@ -618,7 +618,6 @@ function processMorgue(state: GeneratorState, data: MorgueData, filename: string
         branchId,
         info.levelsSeen,
         info.levelsTotal,
-        info.deepest,
         info.firstEntryTurn
       ));
     }
@@ -631,25 +630,6 @@ function processMorgue(state: GeneratorState, data: MorgueData, filename: string
       if (!isNaN(xl)) {
         state.writers.gameXpProgression.write(csvRow(gameId, xl, info.turn, info.location));
       }
-    }
-  }
-  
-  // Write branch time
-  if (data.timeByBranch) {
-    for (const [branchName, stats] of Object.entries(data.timeByBranch)) {
-      if (branchName === 'Total') continue;
-      const branchId = getOrCreateBranch(state, branchName);
-      // Round decimal values to integers (schema uses INTEGER columns)
-      state.writers.gameBranchTime.write(csvRow(
-        gameId,
-        branchId,
-        stats.elapsed != null ? Math.round(stats.elapsed) : null,
-        stats.nonTravel != null ? Math.round(stats.nonTravel) : null,
-        stats.interLevelTravel != null ? Math.round(stats.interLevelTravel) : null,
-        stats.resting != null ? Math.round(stats.resting) : null,
-        stats.autoexplore != null ? Math.round(stats.autoexplore) : null,
-        stats.levels != null ? Math.round(stats.levels) : null
-      ));
     }
   }
   
@@ -674,12 +654,15 @@ function processMorgue(state: GeneratorState, data: MorgueData, filename: string
   
   // Write equipment
   if (data.equipment) {
-    const slots = ['weapon', 'bodyArmour', 'shield', 'helmet', 'cloak', 'gloves', 'boots', 'amulet', 'ringLeft', 'ringRight'];
-    for (const slot of slots) {
-      const item = data.equipment[slot as keyof typeof data.equipment];
+    const scalarSlots = ['weapon', 'bodyArmour', 'shield', 'helmet', 'cloak', 'gloves', 'boots', 'amulet'] as const;
+    for (const slot of scalarSlots) {
+      const item = data.equipment[slot];
       if (item) {
         state.writers.gameEquipment.write(csvRow(gameId, slot, item));
       }
+    }
+    for (let i = 0; i < data.equipment.rings.length; i++) {
+      state.writers.gameEquipment.write(csvRow(gameId, `ring_${i}`, data.equipment.rings[i]));
     }
   }
   
@@ -846,7 +829,7 @@ function generateLoadScript(outputDir: string): string {
 
 -- Clear existing data (comment out this section if you want to append)
 TRUNCATE 
-  game_equipment, game_actions, game_branch_time, game_xp_progression,
+  game_equipment, game_actions, game_xp_progression,
   game_branches, game_spells, game_skill_progression, game_skills,
   game_gods, game_runes, games, parsed_morgue_json,
   spell_school_mapping, game_versions, runes, branches, spell_schools,
@@ -866,7 +849,7 @@ CASCADE;
 \\copy game_versions(id, version, major, minor, is_trunk) FROM '${absPath}/game_versions.csv' WITH (FORMAT csv, HEADER true);
 
 -- Load main games table
-\\copy games(id, morgue_filename, player_name, score, version_id, race_id, background_id, character_level, title, is_win, end_date, start_date, game_duration_seconds, total_turns, runes_count, gems_count, god_id, piety, hp_max, mp_max, ac, ev, sh, str, int, dex, gold, branches_visited, levels_seen, is_webtiles, game_seed, parser_version, morgue_hash, source_url) FROM '${absPath}/games.csv' WITH (FORMAT csv, HEADER true);
+\\copy games(id, morgue_filename, player_name, score, version_id, race_id, background_id, character_level, title, is_win, end_date, start_date, game_duration_seconds, total_turns, runes_count, gems_count, god_id, piety, hp_max, mp_max, ac, ev, sh, str, int, dex, gold, branches_visited, levels_seen, is_webtiles, game_seed, parser_version, morgue_hash, source_url, draconian_color) FROM '${absPath}/games.csv' WITH (FORMAT csv, HEADER true);
 
 -- Load detail tables
 \\copy game_runes(game_id, rune_id) FROM '${absPath}/game_runes.csv' WITH (FORMAT csv, HEADER true);
@@ -874,9 +857,8 @@ CASCADE;
 \\copy game_skills(game_id, skill_id, level) FROM '${absPath}/game_skills.csv' WITH (FORMAT csv, HEADER true);
 \\copy game_skill_progression(game_id, skill_id, xl, skill_level) FROM '${absPath}/game_skill_progression.csv' WITH (FORMAT csv, HEADER true);
 \\copy game_spells(game_id, spell_id, slot, failure_percent) FROM '${absPath}/game_spells.csv' WITH (FORMAT csv, HEADER true);
-\\copy game_branches(game_id, branch_id, levels_seen, levels_total, deepest, first_entry_turn) FROM '${absPath}/game_branches.csv' WITH (FORMAT csv, HEADER true);
+\\copy game_branches(game_id, branch_id, levels_seen, levels_total, first_entry_turn) FROM '${absPath}/game_branches.csv' WITH (FORMAT csv, HEADER true);
 \\copy game_xp_progression(game_id, xl, turn, location) FROM '${absPath}/game_xp_progression.csv' WITH (FORMAT csv, HEADER true);
-\\copy game_branch_time(game_id, branch_id, elapsed, non_travel, inter_level_travel, resting, autoexplore, levels) FROM '${absPath}/game_branch_time.csv' WITH (FORMAT csv, HEADER true);
 \\copy game_actions(game_id, category, action_name, total_count, counts_by_xl) FROM '${absPath}/game_actions.csv' WITH (FORMAT csv, HEADER true);
 \\copy game_equipment(game_id, slot, item_text) FROM '${absPath}/game_equipment.csv' WITH (FORMAT csv, HEADER true);
 \\copy parsed_morgue_json(morgue_hash, parsed_json) FROM '${absPath}/parsed_morgue_json.csv' WITH (FORMAT csv, HEADER true);

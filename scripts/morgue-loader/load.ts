@@ -479,6 +479,8 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
 
     // Insert main game record
     // ON CONFLICT DO NOTHING handles race conditions and ensures idempotency
+    const draconianColor = (data.speciesData?.color as string | undefined) ?? null;
+
     const gameResult = await client.query<{ id: number }>(`
       INSERT INTO games (
         morgue_filename, player_name, score, version_id,
@@ -487,7 +489,7 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
         runes_count, gems_count, god_id, piety,
         hp_max, mp_max, ac, ev, sh, str, int, dex, gold,
         branches_visited, levels_seen, is_webtiles, game_seed, parser_version,
-        morgue_hash, source_url
+        morgue_hash, source_url, draconian_color
       ) VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
@@ -495,7 +497,7 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
         $14, $15, $16, $17,
         $18, $19, $20, $21, $22, $23, $24, $25, $26,
         $27, $28, $29, $30, $31,
-        $32, $33
+        $32, $33, $34
       )
       ON CONFLICT (morgue_filename) DO NOTHING
       RETURNING id
@@ -533,6 +535,7 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
       data.parserVersion,
       data.morgueHash,
       data.sourceUrl,
+      draconianColor,
     ]);
 
     // If ON CONFLICT triggered, no row is returned - this is a duplicate
@@ -619,9 +622,9 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
       for (const [branchName, info] of Object.entries(data.branches)) {
         const branchId = await getOrCreateBranch(pool, branchName);
         await client.query(`
-          INSERT INTO game_branches (game_id, branch_id, levels_seen, levels_total, deepest, first_entry_turn)
-          VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING
-        `, [gameId, branchId, info.levelsSeen, info.levelsTotal, info.deepest, info.firstEntryTurn]);
+          INSERT INTO game_branches (game_id, branch_id, levels_seen, levels_total, first_entry_turn)
+          VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING
+        `, [gameId, branchId, info.levelsSeen, info.levelsTotal, info.firstEntryTurn]);
       }
     }
 
@@ -635,18 +638,6 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
             [gameId, xl, info.turn, info.location]
           );
         }
-      }
-    }
-
-    // Insert branch time
-    if (data.timeByBranch) {
-      for (const [branchName, stats] of Object.entries(data.timeByBranch)) {
-        if (branchName === 'Total') continue; // Skip total row
-        const branchId = await getOrCreateBranch(pool, branchName);
-        await client.query(`
-          INSERT INTO game_branch_time (game_id, branch_id, elapsed, non_travel, inter_level_travel, resting, autoexplore, levels)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING
-        `, [gameId, branchId, stats.elapsed, stats.nonTravel, stats.interLevelTravel, stats.resting, stats.autoexplore, stats.levels]);
       }
     }
 
@@ -669,15 +660,21 @@ async function loadMorgue(pool: Pool, data: MorgueData, filename: string): Promi
 
     // Insert equipment
     if (data.equipment) {
-      const slots = ['weapon', 'bodyArmour', 'shield', 'helmet', 'cloak', 'gloves', 'boots', 'amulet', 'ringLeft', 'ringRight'];
-      for (const slot of slots) {
-        const item = data.equipment[slot as keyof typeof data.equipment];
+      const scalarSlots = ['weapon', 'bodyArmour', 'shield', 'helmet', 'cloak', 'gloves', 'boots', 'amulet'] as const;
+      for (const slot of scalarSlots) {
+        const item = data.equipment[slot];
         if (item) {
           await client.query(
             'INSERT INTO game_equipment (game_id, slot, item_text) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
             [gameId, slot, item]
           );
         }
+      }
+      for (let i = 0; i < data.equipment.rings.length; i++) {
+        await client.query(
+          'INSERT INTO game_equipment (game_id, slot, item_text) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+          [gameId, `ring_${i}`, data.equipment.rings[i]]
+        );
       }
     }
 
