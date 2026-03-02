@@ -702,15 +702,15 @@ function AnalyticsContent() {
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
                     <TabsTrigger
-                      value="deep-dive"
+                      value="breakdown"
                       className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Deep Dive
+                      Breakdown
                     </TabsTrigger>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>{analyticsTabTooltips.deepDive}</TooltipContent>
+                <TooltipContent>{analyticsTabTooltips.breakdown}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -775,7 +775,7 @@ function AnalyticsContent() {
           <GamesTable queryString={queryString} totalCount={totalCount} />
         </TabsContent>
 
-        <TabsContent value="deep-dive">
+        <TabsContent value="breakdown">
           <AggregationBuilder queryString={queryString} />
         </TabsContent>
 

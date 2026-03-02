@@ -21,7 +21,7 @@ export const navTooltips = {
 
 export const analyticsTabTooltips = {
   games: "Browse individual games matching your filters",
-  deepDive: "Aggregate the data looking for patterns",
+  breakdown: "Break down the data by dimensions and compare metrics",
   trends: "See changes over time (work in progress)",
   skills: "Skill training patterns",
   spells: "See which spells are most commonly used",

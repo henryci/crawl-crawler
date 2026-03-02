@@ -23,7 +23,7 @@ export interface DimensionConfig {
 
 /**
  * All available dimensions for grouping/tracking.
- * These are used in Deep Dive, Trends, and other analytics features.
+ * These are used in Breakdown, Trends, and other analytics features.
  */
 export const DIMENSIONS = {
   species: {
