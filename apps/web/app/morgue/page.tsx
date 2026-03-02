@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageWrapper } from "@/components/page-wrapper";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
 
 type LoadingState = "idle" | "loading" | "success" | "error";
@@ -2155,6 +2156,129 @@ function XpProgressionChart({ xpProgression }: { xpProgression: Record<string, {
 }
 
 /**
+ * Derive the character's XL at a given turn from xpProgression data.
+ * Returns the highest XL whose turn is <= the target turn.
+ */
+function getXlAtTurn(xpProgression: Record<string, { turn: number | null; location: string }> | null, targetTurn: number): number | null {
+  if (!xpProgression) return null;
+  let bestXl: number | null = null;
+  for (const [xlStr, info] of Object.entries(xpProgression)) {
+    if (info.turn !== null && info.turn <= targetTurn) {
+      const xl = parseInt(xlStr, 10);
+      if (!isNaN(xl) && (bestXl === null || xl > bestXl)) {
+        bestXl = xl;
+      }
+    }
+  }
+  return bestXl;
+}
+
+/**
+ * Branch progression table showing the order branches were entered.
+ * Uses a two-column layout on wider screens to save vertical space.
+ */
+function BranchProgressionTable({ data }: { data: MorgueData }) {
+  const branches = data.branches;
+  if (!branches) return null;
+
+  const tracked = Object.entries(branches)
+    .filter(([, info]) => info.firstEntryTurn !== null)
+    .sort(([, a], [, b]) => a.firstEntryTurn! - b.firstEntryTurn!);
+
+  const untracked = Object.entries(branches)
+    .filter(([, info]) => info.firstEntryTurn === null && (info.levelsSeen ?? 0) > 0);
+
+  if (tracked.length === 0 && untracked.length === 0) return null;
+
+  const allRows = [
+    ...tracked.map(([branch, info], idx) => ({
+      branch,
+      info,
+      order: idx + 1,
+      xl: getXlAtTurn(data.xpProgression, info.firstEntryTurn!),
+    })),
+    ...untracked.map(([branch, info]) => ({
+      branch,
+      info,
+      order: null as number | null,
+      xl: null as number | null,
+    })),
+  ];
+
+  const mid = Math.ceil(allRows.length / 2);
+  const leftCol = allRows.slice(0, mid);
+  const rightCol = allRows.slice(mid);
+
+  const renderColumn = (rows: typeof allRows) => (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-border hover:bg-transparent">
+          <TableHead className="text-muted-foreground py-1 px-1.5 w-6 text-xs">#</TableHead>
+          <TableHead className="text-muted-foreground py-1 px-1.5 text-xs">Branch</TableHead>
+          <TableHead className="text-muted-foreground py-1 px-1.5 text-right text-xs">Turn</TableHead>
+          <TableHead className="text-muted-foreground py-1 px-1.5 text-right text-xs">XL</TableHead>
+          <TableHead className="text-muted-foreground py-1 px-1.5 text-right text-xs">Floors</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map(({ branch, info, order, xl }) => (
+          <TableRow key={branch} className="border-border">
+            <TableCell className="font-mono text-xs text-muted-foreground py-0.5 px-1.5">
+              {order ?? "—"}
+            </TableCell>
+            <TableCell className="py-0.5 px-1.5">
+              <div className="flex items-center gap-1.5">
+                <div
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: getBranchColor(branch) }}
+                />
+                <span className="text-foreground text-xs">{branch}</span>
+              </div>
+            </TableCell>
+            <TableCell className="font-mono text-xs text-right text-muted-foreground py-0.5 px-1.5">
+              {info.firstEntryTurn !== null ? info.firstEntryTurn.toLocaleString() : "—"}
+            </TableCell>
+            <TableCell className="font-mono text-xs text-right py-0.5 px-1.5">
+              {xl !== null ? xl : "—"}
+            </TableCell>
+            <TableCell className="font-mono text-xs text-right text-muted-foreground py-0.5 px-1.5">
+              {info.levelsSeen !== null && info.levelsTotal !== null
+                ? `${info.levelsSeen}/${info.levelsTotal}`
+                : info.levelsSeen ?? "?"}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Footprints className="w-4 h-4 text-health" />
+          Branch Progression ({Object.keys(branches).length})
+          {data.levelsSeenCount !== null && (
+            <span className="text-xs font-normal text-muted-foreground font-mono ml-1">
+              — {data.levelsSeenCount} levels seen
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription className="font-mono">
+          Order of branch exploration by first entry turn
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6">
+          {renderColumn(leftCol)}
+          {rightCol.length > 0 && renderColumn(rightCol)}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
  * Dungeon tab showing branches visited.
  */
 function DungeonTab({ data }: { data: MorgueData }) {
@@ -2171,43 +2295,10 @@ function DungeonTab({ data }: { data: MorgueData }) {
     );
   }
 
-  // Sort branches by levels seen descending
-  const sortedBranches = Object.entries(branches).sort(
-    ([, a], [, b]) => (b.levelsSeen ?? 0) - (a.levelsSeen ?? 0)
-  );
-
   return (
     <div className="space-y-6">
-      {/* Branch Overview */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Map className="w-4 h-4 text-health" />
-            Branches Explored ({data.branchesVisitedCount ?? Object.keys(branches).length})
-            {data.levelsSeenCount !== null && (
-              <span className="text-xs font-normal text-muted-foreground font-mono ml-1">
-                — {data.levelsSeenCount} levels seen
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-            {sortedBranches.map(([branch, info]) => (
-              <div
-                key={branch}
-                className="flex items-center justify-between py-1 px-2 rounded-sm bg-secondary/30 border-l-2"
-                style={{ borderLeftColor: getBranchColor(branch) }}
-              >
-                <span className="text-foreground text-sm truncate">{branch}</span>
-                <span className="font-mono text-xs text-muted-foreground ml-2 shrink-0">
-                  {info.levelsSeen ?? "?"}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Branch Progression */}
+      <BranchProgressionTable data={data} />
 
       {/* XP Progression */}
       {data.xpProgression && Object.keys(data.xpProgression).length > 0 && (
