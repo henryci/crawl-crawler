@@ -158,11 +158,7 @@ function extractSkillsTable(content: string): SkillsData | null {
   const lines = content.slice(rowsStart).split('\n');
 
   for (const line of lines) {
-    // Stop at blank line or non-table content
-    if (!line.trim()) {
-      continue;
-    }
-    if (!line.includes('|')) {
+    if (!line.trim() || !line.includes('|')) {
       break;
     }
 

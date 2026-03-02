@@ -35,7 +35,7 @@ if (result.success) {
   console.log(`${result.data.playerName} the ${result.data.title}`);
   console.log(`Score: ${result.data.score}`);
   console.log(`Race: ${result.data.race} ${result.data.background}`);
-  console.log(`Runes: ${result.data.runesCollected}/${result.data.runesPossible}`);
+  console.log(`Runes: ${result.data.runesList?.length ?? 0}`);
   console.log(`Hash: ${result.data.morgueHash}`);
   console.log(`Source: ${result.data.sourceUrl}`);
 }
@@ -132,7 +132,6 @@ interface MorgueData {
   gameDurationSeconds: number | null;
   totalTurns: number | null;
   runesCollected: number | null;
-  runesPossible: number | null;
   runesList: string[] | null;
   gemsCollected: number | null;     // 0.32+
   gemsList: string[] | null;        // 0.32+
@@ -149,8 +148,6 @@ interface MorgueData {
   branches: Record<string, BranchInfo> | null;
   xpProgression: Record<string, XpProgression> | null;
   actions: Actions | null;
-  timeByBranch: Record<string, BranchTimeStats> | null;
-  topLevelsByTime: TopLevelTime[] | null;
 }
 ```
 
@@ -186,8 +183,7 @@ interface Equipment {
   gloves: string | null;
   boots: string | null;
   amulet: string | null;
-  ringLeft: string | null;
-  ringRight: string | null;
+  rings: string[];
 }
 ```
 

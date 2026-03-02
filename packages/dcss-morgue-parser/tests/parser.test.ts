@@ -60,6 +60,7 @@ describe('parseMorgue', () => {
       expect(data.race).toBe('Gargoyle');
       expect(data.background).toBe('Berserker');
       expect(data.characterLevel).toBe(27);
+      expect(data.speciesData).toBeNull();
     });
 
     it('extracts score', () => {
@@ -77,7 +78,6 @@ describe('parseMorgue', () => {
     });
 
     it('extracts runes', () => {
-      expect(data.runesPossible).toBe(15);
       expect(data.runesList).toHaveLength(15);
       expect(data.runesList).toContain('serpentine');
       expect(data.runesList).toContain('barnacled');
@@ -116,8 +116,8 @@ describe('parseMorgue', () => {
       expect(data.equipment?.gloves).toContain('gloves');
       expect(data.equipment?.boots).toContain('boots');
       expect(data.equipment?.amulet).toContain('amulet');
-      expect(data.equipment?.ringLeft).toContain('ring');
-      expect(data.equipment?.ringRight).toContain('ring');
+      expect(data.equipment?.rings.length).toBeGreaterThanOrEqual(2);
+      expect(data.equipment?.rings.every(r => r.toLowerCase().includes('ring'))).toBe(true);
     });
 
     it('extracts skills', () => {
@@ -132,9 +132,13 @@ describe('parseMorgue', () => {
     it('extracts skill progression by XL', () => {
       expect(data.skillsByXl).not.toBeNull();
       expect(data.skillsByXl?.['Axes']).toBeDefined();
-      // Axes should have progression data
       const axesProgression = data.skillsByXl?.['Axes'];
       expect(axesProgression).toBeDefined();
+    });
+
+    it('does not include non-skill rows like Action in skillsByXl', () => {
+      expect(data.skillsByXl?.['Action']).toBeUndefined();
+      expect(data.endingSkills?.['Action']).toBeUndefined();
     });
 
     it('extracts spells', () => {
@@ -373,7 +377,6 @@ describe('parseMorgue', () => {
     it('extracts runes without duplicates from message history', () => {
       // This morgue has runes mentioned in both Inventory and Message History
       // The parser should only extract from Inventory to avoid duplicates
-      expect(data.runesPossible).toBe(15);
       expect(data.runesList).toHaveLength(15);
       // Verify no duplicates
       const uniqueRunes = [...new Set(data.runesList)];
@@ -743,6 +746,62 @@ describe('parseMorgue', () => {
     it('extracts spells', () => {
       expect(data.endingSpells).not.toBeNull();
       expect(data.endingSpells?.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Draconian color extraction', () => {
+    it('extracts color and normalizes race for Grey Draconian', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.33-a0 (webtiles) character file.',
+        '',
+        'Game seed: 1234567890',
+        '',
+        '112183330 Sapher the Conqueror (level 27, 302/302 HPs)',
+        '             Began as a Grey Draconian Earth Elementalist on Feb 5, 2025.',
+        '             Escaped with the Orb',
+        '             ... and 15 runes on Feb 9, 2025!',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Draconian');
+      expect(data.background).toBe('Earth Elementalist');
+      expect(data.speciesData).toEqual({ color: 'Grey' });
+    });
+
+    it('extracts color for other Draconian variants', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.33-a0 (webtiles) character file.',
+        '',
+        '500 TestPlayer the Slayer (level 10, 80/80 HPs)',
+        '             Began as a Red Draconian Fighter on Jan 1, 2025.',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Draconian');
+      expect(data.background).toBe('Fighter');
+      expect(data.speciesData).toEqual({ color: 'Red' });
+    });
+
+    it('returns null speciesData for non-Draconian species', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.33-a0 (webtiles) character file.',
+        '',
+        '500 TestPlayer the Slayer (level 10, 80/80 HPs)',
+        '             Began as a Minotaur Berserker on Jan 1, 2025.',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Minotaur');
+      expect(data.speciesData).toBeNull();
+    });
+
+    it('returns null speciesData for Demonspawn (for now)', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.33-a0 (webtiles) character file.',
+        '',
+        '500 TestPlayer the Slayer (level 10, 80/80 HPs)',
+        '             Began as a Demonspawn Fighter on Jan 1, 2025.',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Demonspawn');
+      expect(data.speciesData).toBeNull();
     });
   });
 });

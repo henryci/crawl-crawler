@@ -28,7 +28,6 @@ export interface HeaderData {
   gameDurationSeconds: number | null;
   totalTurns: number | null;
   runesCollected: number | null;
-  runesPossible: number | null;
   runesList: string[] | null;
   gemsCollected: number | null;
   gemsList: string[] | null;
@@ -69,7 +68,6 @@ export function extractHeader(content: string): HeaderData {
     gameDurationSeconds: null,
     totalTurns: null,
     runesCollected: null,
-    runesPossible: null,
     runesList: null,
     gemsCollected: null,
     gemsList: null,
@@ -377,7 +375,6 @@ function extractRunes(content: string, result: HeaderData): void {
   const match = PATTERNS.runes.exec(content);
   if (match) {
     result.runesCollected = parseIntSafe(match[1]);
-    result.runesPossible = parseIntSafe(match[2]);
 
     // Find the full runes text (may continue on next lines)
     const runesStart = content.indexOf('}:');
@@ -452,7 +449,6 @@ function extractRunes(content: string, result: HeaderData): void {
   const olderMatch = /and\s+(\d+)\s+runes?\s*\(of\s+(\d+)\s+types?\)/i.exec(content);
   if (olderMatch) {
     result.runesCollected = parseIntSafe(olderMatch[1]);
-    result.runesPossible = parseIntSafe(olderMatch[2]);
     // Runes list will be extracted from Inventory section in older format
     // Look for "rune of Zot" items in inventory
     extractRunesFromInventory(content, result);

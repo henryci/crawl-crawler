@@ -20,8 +20,8 @@ import {
   extractNotes,
   buildSkillsByXlFromNotes,
   extractActions,
-  extractTimeTables,
 } from './extractors/index.js';
+import { DRACONIAN_COLORS } from 'dcss-game-data';
 
 /**
  * Library version.
@@ -96,12 +96,12 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     title: null,
     race: null,
     background: null,
+    speciesData: null,
     characterLevel: null,
     startDate: null,
     endDate: null,
     gameDurationSeconds: null,
     totalTurns: null,
-    runesPossible: null,
     runesList: null,
     gemsList: null,
     branchesVisitedCount: null,
@@ -119,8 +119,6 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     branches: null,
     xpProgression: null,
     actions: null,
-    timeByBranch: null,
-    topLevelsByTime: null,
   };
 
   // Extract header information (version, score, player info, dates, runes, gems)
@@ -134,12 +132,16 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     result.title = header.title;
     result.race = header.race;
     result.background = header.background;
+    if (result.race && DRACONIAN_COLORS.some(dc => dc === result.race)) {
+      const color = result.race.replace(' Draconian', '');
+      result.race = 'Draconian';
+      result.speciesData = { color };
+    }
     result.characterLevel = header.characterLevel;
     result.startDate = header.startDate;
     result.endDate = header.endDate;
     result.gameDurationSeconds = header.gameDurationSeconds;
     result.totalTurns = header.totalTurns;
-    result.runesPossible = header.runesPossible;
     result.runesList = header.runesList;
     result.gemsList = header.gemsList;
     result.branchesVisitedCount = header.branchesVisitedCount;
@@ -229,16 +231,6 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     result.parseErrors.push(`actions: ${message}`);
-  }
-
-  // Extract time tables
-  try {
-    const timeTables = extractTimeTables(content);
-    result.timeByBranch = timeTables.timeByBranch;
-    result.topLevelsByTime = timeTables.topLevelsByTime;
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    result.parseErrors.push(`time_tables: ${message}`);
   }
 
   return {

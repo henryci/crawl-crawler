@@ -23,8 +23,6 @@ export type {
   XpProgression,
   Actions,
   ActionCounts,
-  BranchTimeStats,
-  TopLevelTime,
   SkillProgression,
   SkillsByXlSource,
 } from './types.js';

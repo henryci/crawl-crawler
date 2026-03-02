@@ -14,8 +14,7 @@
  * - gloves: Gloves, gauntlets
  * - boots: Boots, barding
  * - amulet: Amulet (worn)
- * - ringLeft: Ring on left hand
- * - ringRight: Ring on right hand
+ * - rings: All worn rings (variable count)
  */
 
 import type { Equipment } from '../types.js';
@@ -40,8 +39,7 @@ export function extractEquipment(content: string): Equipment | null {
     gloves: null,
     boots: null,
     amulet: null,
-    ringLeft: null,
-    ringRight: null,
+    rings: [],
   };
 
   // Find the inventory section
@@ -62,10 +60,8 @@ export function extractEquipment(content: string): Equipment | null {
     // Check for item markers
     if (trimmedLine.includes('(weapon)')) {
       result.weapon = cleanItemName(trimmedLine);
-    } else if (trimmedLine.includes('(left hand)')) {
-      result.ringLeft = cleanItemName(trimmedLine);
-    } else if (trimmedLine.includes('(right hand)')) {
-      result.ringRight = cleanItemName(trimmedLine);
+    } else if (trimmedLine.includes('(left hand)') || trimmedLine.includes('(right hand)')) {
+      result.rings.push(cleanItemName(trimmedLine));
     } else if (trimmedLine.includes('(worn)')) {
       assignWornItem(trimmedLine, result);
     } else if (trimmedLine.includes('(around neck)')) {
@@ -147,42 +143,46 @@ const BODY_ARMOUR_TYPES = [
 const SHIELD_TYPES = ['buckler', 'kite shield', 'tower shield', 'orb', "warlock's mirror", 'shield'];
 
 /**
+ * Strip the affix description (e.g., `{rF+ Will+ Ring++}`) from an item line.
+ * Affix descriptions can contain keywords like "Ring" that would confuse slot detection.
+ */
+function stripAffixDescription(line: string): string {
+  return line.replace(/\{[^}]*\}/g, '');
+}
+
+/**
  * Assign a worn item to the appropriate equipment slot.
  *
- * Determines the slot based on item type keywords.
+ * Determines the slot based on item type keywords in the base item name,
+ * ignoring the affix description in curly braces.
  */
 function assignWornItem(line: string, result: Equipment): void {
-  const lineLower = line.toLowerCase();
+  const baseLower = stripAffixDescription(line).toLowerCase();
   const cleaned = cleanItemName(line);
 
-  // Check item type
-  if (BODY_ARMOUR_TYPES.some((t) => lineLower.includes(t))) {
+  if (BODY_ARMOUR_TYPES.some((t) => baseLower.includes(t))) {
     result.bodyArmour = cleaned;
-  } else if (SHIELD_TYPES.some((t) => lineLower.includes(t))) {
+  } else if (SHIELD_TYPES.some((t) => baseLower.includes(t))) {
     result.shield = cleaned;
   } else if (
-    lineLower.includes('helmet') ||
-    lineLower.includes('hat') ||
-    lineLower.includes('cap') ||
-    lineLower.includes('horn') ||
-    lineLower.includes('mask')
+    baseLower.includes('helmet') ||
+    baseLower.includes('hat') ||
+    baseLower.includes('cap') ||
+    baseLower.includes('crown') ||
+    baseLower.includes('horn') ||
+    baseLower.includes('mask')
   ) {
     result.helmet = cleaned;
-  } else if (lineLower.includes('cloak') || lineLower.includes('scarf')) {
+  } else if (baseLower.includes('cloak') || baseLower.includes('scarf')) {
     result.cloak = cleaned;
-  } else if (lineLower.includes('gloves') || lineLower.includes('gauntlets')) {
+  } else if (baseLower.includes('gloves') || baseLower.includes('gauntlets')) {
     result.gloves = cleaned;
-  } else if (lineLower.includes('boots') || lineLower.includes('barding')) {
+  } else if (baseLower.includes('boots') || baseLower.includes('barding')) {
     result.boots = cleaned;
-  } else if (lineLower.includes('amulet')) {
+  } else if (baseLower.includes('amulet')) {
     result.amulet = cleaned;
-  } else if (lineLower.includes('ring')) {
-    // Generic ring - assign to first empty ring slot
-    if (!result.ringLeft) {
-      result.ringLeft = cleaned;
-    } else if (!result.ringRight) {
-      result.ringRight = cleaned;
-    }
+  } else if (baseLower.includes('ring')) {
+    result.rings.push(cleaned);
   }
 }
 

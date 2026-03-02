@@ -57,10 +57,8 @@ export interface Equipment {
   boots: string | null;
   /** Amulet */
   amulet: string | null;
-  /** Ring on left hand */
-  ringLeft: string | null;
-  /** Ring on right hand */
-  ringRight: string | null;
+  /** Worn rings (variable count: 2 default, more with Ring++ or Octopode) */
+  rings: string[];
 }
 
 /**
@@ -101,8 +99,6 @@ export interface BranchInfo {
   levelsSeen: number | null;
   /** Total levels in this branch */
   levelsTotal: number | null;
-  /** Deepest level reached */
-  deepest: number | null;
   /** Turn when first entered (null if not tracked) */
   firstEntryTurn: number | null;
 }
@@ -127,36 +123,6 @@ export type ActionCounts = Record<string, number>;
  * Actions organized by category and action name.
  */
 export type Actions = Record<string, Record<string, ActionCounts>>;
-
-/**
- * Time statistics for a branch.
- */
-export interface BranchTimeStats {
-  /** Total elapsed time (in decaauts or percentage) */
-  elapsed: number | null;
-  /** Non-travel time */
-  nonTravel: number | null;
-  /** Inter-level travel time */
-  interLevelTravel: number | null;
-  /** Resting time */
-  resting: number | null;
-  /** Autoexplore time */
-  autoexplore: number | null;
-  /** Number of levels */
-  levels: number | null;
-  /** Mean time per level */
-  meanPerLevel: number | null;
-}
-
-/**
- * Top level by time entry.
- */
-export interface TopLevelTime {
-  /** Level identifier (e.g., "D:13", "Elf:3") */
-  level: string;
-  /** Time spent (in decaauts) */
-  time: number;
-}
 
 /**
  * Skill progression by XL.
@@ -197,10 +163,12 @@ export interface MorgueData {
   playerName: string | null;
   /** Character title (e.g., "Archmage", "Sniper") */
   title: string | null;
-  /** Race (e.g., "Gargoyle", "Deep Elf") */
+  /** Race (e.g., "Gargoyle", "Deep Elf", "Draconian") */
   race: string | null;
   /** Background (e.g., "Berserker", "Fire Elementalist") */
   background: string | null;
+  /** Species-specific data (e.g., Draconian color, future: Demonspawn mutations) */
+  speciesData: Record<string, unknown> | null;
   /** Character level (XL) */
   characterLevel: number | null;
   /** Game start date */
@@ -211,8 +179,6 @@ export interface MorgueData {
   gameDurationSeconds: number | null;
   /** Total turns played */
   totalTurns: number | null;
-  /** Total possible runes */
-  runesPossible: number | null;
   /** List of rune names collected */
   runesList: string[] | null;
   /** List of gem names collected (0.32+) */
@@ -245,10 +211,6 @@ export interface MorgueData {
   xpProgression: Record<string, XpProgression> | null;
   /** Action statistics */
   actions: Actions | null;
-  /** Time statistics by branch */
-  timeByBranch: Record<string, BranchTimeStats> | null;
-  /** Top levels by time spent */
-  topLevelsByTime: TopLevelTime[] | null;
 }
 
 /**

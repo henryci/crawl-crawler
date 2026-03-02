@@ -89,7 +89,6 @@ function extractFromOverview(content: string, branches: Record<string, BranchInf
       branches[canonicalName] = {
         levelsSeen: null,
         levelsTotal: null,
-        deepest: null,
         firstEntryTurn: null,
       };
     }
@@ -98,7 +97,6 @@ function extractFromOverview(content: string, branches: Record<string, BranchInf
     if (branch) {
       branch.levelsSeen = levelsSeen;
       branch.levelsTotal = levelsTotal;
-      branch.deepest = levelsSeen; // Assume deepest = seen
     }
   }
 }
@@ -141,7 +139,6 @@ function extractEntryTurns(content: string, branches: Record<string, BranchInfo>
         branches[canonicalName] = {
           levelsSeen: null,
           levelsTotal: null,
-          deepest: null,
           firstEntryTurn: null,
         };
       }
@@ -152,18 +149,6 @@ function extractEntryTurns(content: string, branches: Record<string, BranchInfo>
       // Only record first entry
       if (branch.firstEntryTurn === null) {
         branch.firstEntryTurn = turn;
-      }
-
-      // Update deepest level
-      if (location.includes(':')) {
-        const levelStr = location.split(':')[1];
-        const level = parseIntSafe(levelStr);
-        if (level !== null) {
-          const currentDeepest = branch.deepest;
-          if (currentDeepest === null || level > currentDeepest) {
-            branch.deepest = level;
-          }
-        }
       }
     }
   }
