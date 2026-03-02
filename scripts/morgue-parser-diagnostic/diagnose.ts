@@ -75,6 +75,7 @@ interface DiagnosticResult {
   missingFields: Map<RequiredField, MissingFieldInfo[]>;
   parseErrors: ParseErrorInfo[];
   noRunesFiles: { file: string; version: string | null; characterLevel: number | null }[];
+  winsWithoutRunes: { file: string; version: string | null; characterLevel: number | null }[];
   /** Fields that had at least one non-null value across all parsed files. */
   fieldsEverNonNull: Set<keyof MorgueData>;
   parsingTimeMs: number;
@@ -161,6 +162,7 @@ async function runDiagnostics(morgueDir: string, verbose: boolean): Promise<Diag
     missingFields: new Map(),
     parseErrors: [],
     noRunesFiles: [],
+    winsWithoutRunes: [],
     fieldsEverNonNull: new Set(),
     parsingTimeMs: 0,
   };
@@ -257,6 +259,15 @@ async function runDiagnostics(morgueDir: string, verbose: boolean): Promise<Diag
       // Check for games with no runes (might indicate a parsing issue or very early death)
       if (!data.runesList || data.runesList.length === 0) {
         result.noRunesFiles.push({
+          file: fileName,
+          version: data.version,
+          characterLevel: data.characterLevel,
+        });
+      }
+
+      // Wins without runes is always a bug — you need at least 3 runes to win
+      if (data.isWin && (!data.runesList || data.runesList.length === 0)) {
+        result.winsWithoutRunes.push({
           file: fileName,
           version: data.version,
           characterLevel: data.characterLevel,
@@ -401,6 +412,22 @@ function printResults(result: DiagnosticResult): void {
         }
       }
     }
+  }
+
+  // Wins without runes — always a parsing error
+  if (result.winsWithoutRunes.length > 0) {
+    console.log("\n🚨 WINS WITHOUT RUNES (parsing error — need at least 3 runes to win)");
+    console.log("-".repeat(40));
+    console.log(`Total: ${result.winsWithoutRunes.length} file(s)`);
+    for (const f of result.winsWithoutRunes.slice(0, 20)) {
+      const levelStr = f.characterLevel !== null ? `, XL ${f.characterLevel}` : "";
+      console.log(`  ❌ ${f.file} (v${f.version || "unknown"}${levelStr})`);
+    }
+    if (result.winsWithoutRunes.length > 20) {
+      console.log(`  ... and ${result.winsWithoutRunes.length - 20} more`);
+    }
+  } else {
+    console.log("\n✅ No wins without runes — all winning games have rune data.");
   }
 
   // No runes (might be legitimate or might indicate parsing issues)

@@ -285,15 +285,15 @@ function extractWinStatus(lines: string[], result: HeaderData): void {
     const line = lines[i];
     if (!line) continue;
 
-    // Check for win condition - "Escaped with the Orb" appears in header
+    // Definitive win: "Escaped with the Orb" in the header summary
     if (/Escaped with the Orb/i.test(line)) {
       result.isWin = true;
       return;
     }
 
-    // Also check for older win format: "escaped." or "escaped!" at end of line
-    if (/escaped[.!]?\s*$/i.test(line)) {
-      result.isWin = true;
+    // Non-win escape: player left the dungeon without the Orb (v0.14+)
+    if (/Got out of the dungeon alive/i.test(line)) {
+      result.isWin = false;
       return;
     }
   }
@@ -303,8 +303,8 @@ function extractWinStatus(lines: string[], result: HeaderData): void {
     result.isWin = false;
   }
 
-  // Fallback for very old format (v0.1-v0.2) where score is absent:
-  // check for "You escaped." anywhere in the file header area
+  // Fallback for very old format (v0.1-v0.2) where score is absent and
+  // there's no "Escaped with the Orb" line — "You escaped." is the win indicator
   if (result.isWin === null) {
     for (let i = 0; i < Math.min(40, lines.length); i++) {
       const line = lines[i];
@@ -313,12 +313,10 @@ function extractWinStatus(lines: string[], result: HeaderData): void {
         result.isWin = true;
         return;
       }
-      // Common death indicators in old formats
       if (/^(?:Slain by|Killed by|Mangled by|Annihilated by|Blown up by)/i.test(line.trim())) {
         result.isWin = false;
         return;
       }
-      // "You are on level X" / "You were on level X" means the player died in the dungeon
       if (/^You (?:are|were) on level\s+\d+/i.test(line.trim())) {
         result.isWin = false;
         return;
@@ -376,14 +374,8 @@ function extractRunes(content: string, result: HeaderData): void {
   if (match) {
     result.runesCollected = parseIntSafe(match[1]);
 
-    // Find the full runes text (may continue on next lines)
-    const runesStart = content.indexOf('}:');
-    if (runesStart === -1) {
-      return;
-    }
-
-    // Get lines starting from the runes line
-    const lines = content.slice(runesStart).split('\n');
+    // Get lines starting from the runes line (use match index, not a fixed prefix)
+    const lines = content.slice(match.index).split('\n');
     const runesLines: string[] = [];
 
     if (lines[0]) {
@@ -460,6 +452,17 @@ function extractRunes(content: string, result: HeaderData): void {
   if (simpleMatch && !result.runesCollected) {
     result.runesCollected = parseIntSafe(simpleMatch[1]);
     extractRunesFromInventory(content, result);
+    return;
+  }
+
+  // Fallback: v0.2.x files have no rune summary line —
+  // runes only appear as inventory items ("A - an iron rune of Zot")
+  extractRunesFromInventory(content, result);
+
+  // Final fallback: v0.5-v0.8 files may not list runes in inventory either —
+  // extract from Notes entries ("Got a serpentine rune of Zot")
+  if (!result.runesList) {
+    extractRunesFromNotes(content, result);
   }
 }
 
@@ -470,14 +473,17 @@ function extractRunes(content: string, result: HeaderData): void {
  * mentioned elsewhere (e.g., Message History, Notes).
  */
 function extractRunesFromInventory(content: string, result: HeaderData): void {
-  // Find the Inventory section
+  if (result.runesList) {
+    return;
+  }
+
   const inventorySection = findInventorySection(content);
   if (!inventorySection) {
     return;
   }
 
-  // Look for "X rune of Zot" items in the inventory
-  const runePattern = /[a-zA-Z] - (?:an? )?(\w+) rune of Zot/g;
+  // Matches "a - an iron rune of Zot" and "D - 2 demonic runes of Zot"
+  const runePattern = /[a-zA-Z] - (?:(?:an?|\d+) )?(\w+) runes? of Zot/g;
   const runes: string[] = [];
 
   let runeMatch;
@@ -489,6 +495,34 @@ function extractRunesFromInventory(content: string, result: HeaderData): void {
 
   if (runes.length > 0) {
     result.runesList = runes;
+    if (!result.runesCollected) {
+      result.runesCollected = runes.length;
+    }
+  }
+}
+
+/**
+ * Extract rune names from Notes entries (for v0.5-v0.8 morgue formats
+ * where runes don't appear in the inventory or rune summary line).
+ *
+ * Matches "Got a serpentine rune of Zot" / "Got an abyssal rune of Zot".
+ */
+function extractRunesFromNotes(content: string, result: HeaderData): void {
+  const runePattern = /Got (?:a|an) (\w+) rune of Zot/g;
+  const runes: string[] = [];
+
+  let match;
+  while ((match = runePattern.exec(content)) !== null) {
+    if (match[1] && !runes.includes(match[1])) {
+      runes.push(match[1]);
+    }
+  }
+
+  if (runes.length > 0) {
+    result.runesList = runes;
+    if (!result.runesCollected) {
+      result.runesCollected = runes.length;
+    }
   }
 }
 

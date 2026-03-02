@@ -71,8 +71,9 @@ export const PATTERNS = {
 
   /**
    * Runes line: "}: 15/15 runes: decaying, serpentine, slimy, ..."
+   * The prefix character varies by version (}, ∞, or other Unicode glyphs).
    */
-  runes: /\}:\s*(\d+)\/(\d+)\s+runes?:\s*(.+)/,
+  runes: /^.{1,4}:\s*(\d+)\/(\d+)\s+runes?:\s*(.+)/m,
 
   /**
    * Gems line: "$: 3/3 gems: glittering amethyst, ..."
