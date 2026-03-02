@@ -21,12 +21,11 @@ const CRITICAL_SECTIONS = ["equipment", "godsWorshipped", "endingSkills", "branc
 /** All nullable fields on MorgueData that should have at least one non-null value across a corpus. */
 const ALL_NULLABLE_FIELDS: (keyof MorgueData)[] = [
   "version", "isWebtiles", "gameSeed", "score", "playerName", "title",
-  "race", "background", "characterLevel", "startDate", "endDate",
-  "gameDurationSeconds", "totalTurns", "runesPossible", "runesList",
+  "race", "background", "speciesData", "characterLevel", "startDate", "endDate",
+  "gameDurationSeconds", "totalTurns", "runesList",
   "gemsList", "branchesVisitedCount", "levelsSeenCount", "isWin",
   "endingStats", "equipment", "endingSkills", "skillsByXl", "skillsByXlSource",
   "endingSpells", "godsWorshipped", "branches", "xpProgression", "actions",
-  "timeByBranch", "topLevelsByTime",
 ];
 const REQUIRED_FIELDS = [
   "score",

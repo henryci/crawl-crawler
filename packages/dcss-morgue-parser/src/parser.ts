@@ -26,7 +26,7 @@ import { DRACONIAN_COLORS } from 'dcss-game-data';
 /**
  * Library version.
  */
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 
 /**
  * Compute SHA-256 hash of a string.
