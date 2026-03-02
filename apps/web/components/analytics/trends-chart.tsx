@@ -32,7 +32,6 @@ import {
   DIMENSIONS,
   METRICS,
   TRACK_DIMENSIONS,
-  OVER_DIMENSIONS,
   TREND_METRICS,
   type DimensionKey,
   type MetricKey,
@@ -40,12 +39,6 @@ import {
 
 // Build options from shared config
 const TRACK_OPTIONS = TRACK_DIMENSIONS.map((key) => ({
-  value: key,
-  label: DIMENSIONS[key].label,
-  icon: DIMENSIONS[key].icon,
-}));
-
-const OVER_OPTIONS = OVER_DIMENSIONS.map((key) => ({
   value: key,
   label: DIMENSIONS[key].label,
   icon: DIMENSIONS[key].icon,
@@ -139,7 +132,7 @@ const MARKER_TYPES = Object.keys(MARKERS) as (keyof typeof MARKERS)[];
 
 export function TrendsChart({ queryString }: TrendsChartProps) {
   const [track, setTrack] = useState<DimensionKey>("species");
-  const [over, setOver] = useState<DimensionKey>("version");
+  const over: DimensionKey = "version";
   const [metric, setMetric] = useState<MetricKey>("count");
   const [topN, setTopN] = useState(5);
 
@@ -302,24 +295,7 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">over</span>
-              <Select value={over} onValueChange={(v) => setOver(v as DimensionKey)}>
-                <SelectTrigger className="h-8 w-[160px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {OVER_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                      <span className="mr-2">{opt.icon}</span>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">by</span>
+              <span className="text-sm text-muted-foreground">over <span className="text-foreground font-medium">{DIMENSIONS[over].icon} {DIMENSIONS[over].label}</span> by</span>
               <Select value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
                 <SelectTrigger className="h-8 w-[130px] text-xs">
                   <SelectValue />
