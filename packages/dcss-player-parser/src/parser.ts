@@ -310,9 +310,17 @@ function parseRecentGames(doc: Document): RecentGame[] {
 }
 
 /**
- * Parse highscore entries from a div
+ * Parse highscore entries from a div.
+ * Section type determines how the character code maps to species/background:
+ * - Combo: 4-char code split into 2-char species + 2-char background (e.g. "MeEE")
+ * - Species: 2-char species code only (e.g. "Me")
+ * - Class: 2-char background code only (e.g. "EE")
  */
-function parseHighscoreSection(doc: Document, title: string): Highscore[] {
+function parseHighscoreSection(
+  doc: Document,
+  title: string,
+  type: 'combo' | 'species' | 'class',
+): Highscore[] {
   const highscores: Highscore[] = [];
 
   const headers = Array.from(doc.querySelectorAll('h3'));
@@ -338,7 +346,18 @@ function parseHighscoreSection(doc: Document, title: string): Highscore[] {
     const text = link.textContent || '';
     const isWin = text.includes('*');
     const character = text.replace('*', '').trim();
-    const { species, background } = parseCharacter(character);
+
+    let species: string;
+    let background: string;
+    if (type === 'class') {
+      species = '';
+      background = character;
+    } else if (type === 'species') {
+      species = character;
+      background = '';
+    } else {
+      ({ species, background } = parseCharacter(character));
+    }
 
     // Get the score from the following text node
     const nextText = link.nextSibling?.textContent || '';
@@ -546,9 +565,9 @@ export function parsePlayerPage(html: string): PlayerData {
   const wins = parseWins(doc);
   const streaks = parseStreaks(doc);
   const recentGames = parseRecentGames(doc);
-  const comboHighscores = parseHighscoreSection(doc, 'Combo Highscores');
-  const speciesHighscores = parseHighscoreSection(doc, 'Species Highscores');
-  const classHighscores = parseHighscoreSection(doc, 'Class Highscores');
+  const comboHighscores = parseHighscoreSection(doc, 'Combo Highscores', 'combo');
+  const speciesHighscores = parseHighscoreSection(doc, 'Species Highscores', 'species');
+  const classHighscores = parseHighscoreSection(doc, 'Class Highscores', 'class');
   const { comboStats, speciesStats, backgroundStats } = parseStatTables(doc);
   const lastUpdated = parseLastUpdated(doc);
 
