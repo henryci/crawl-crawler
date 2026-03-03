@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import Image from "next/image"
 
 const navigation = [
-  { name: "Streak Analytics", href: "/analytics", primary: true, tooltipKey: "analytics" as const },
+  { name: "Streak Analytics", href: "/analytics", tooltipKey: "analytics" as const },
   { name: "Combo Records", href: "/records", tooltipKey: "records" as const },
   { name: "Player Summary", href: "/player", tooltipKey: "playerSummary" as const },
   { name: "Morgue Summary", href: "/morgue", tooltipKey: "morgueViewer" as const },
@@ -52,13 +52,9 @@ export function Header() {
                     href={item.href}
                     className={cn(
                       "px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                      item.primary
-                        ? pathname === item.href || pathname?.startsWith(item.href + "/")
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-primary/10 text-primary hover:bg-primary/20"
-                        : pathname === item.href
-                          ? "bg-secondary text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                      pathname === item.href || pathname?.startsWith(item.href + "/")
+                        ? "bg-secondary text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                     )}
                   >
                     {item.name}
@@ -86,13 +82,9 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     "block px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    item.primary
-                      ? pathname === item.href || pathname?.startsWith(item.href + "/")
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-primary/10 text-primary"
-                      : pathname === item.href
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                    pathname === item.href || pathname?.startsWith(item.href + "/")
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                   )}
                 >
                   {item.name}
