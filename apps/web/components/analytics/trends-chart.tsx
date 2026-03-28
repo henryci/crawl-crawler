@@ -328,12 +328,6 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
         </CardContent>
       </Card>
 
-      {/* Work in progress banner */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-mana/10 border border-mana/30 rounded-lg text-sm text-muted-foreground">
-        <AlertCircle className="w-4 h-4 text-mana flex-shrink-0" />
-        <span>I am still figuring out how to make this feature usable. It contains good data but it is difficult to visualize.</span>
-      </div>
-
       {/* Error */}
       {error && (
         <Card className="bg-card border-border">

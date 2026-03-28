@@ -17,6 +17,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Target,
+  Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +45,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { PageWrapper } from "@/components/page-wrapper";
 import { analyticsTabTooltips } from "@/lib/tooltips";
 import { PageHeader } from "@/components/page-header";
+import { PageGuide } from "@/components/page-guide";
 import { SortIcon } from "@/components/sort-icon";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
@@ -212,6 +216,41 @@ function filtersEqual(a: Filters, b: Filters): boolean {
   );
 }
 
+const analyticsGuide = (
+  <PageGuide
+    title="Streak Analytics"
+    description="Browse and filter game data from tracked DCSS win streaks."
+    icon={BarChart3}
+    variant="mana"
+    sections={[
+      {
+        icon: BookOpen,
+        title: "What is this?",
+        content:
+          "This dashboard contains data from every game in tracked win streaks of 2 or more consecutive wins. My hope is that focusing on streaks makes these games more consistent and educational.",
+      },
+      {
+        icon: Target,
+        title: "How to use it",
+        content:
+          "Use the filter panel to narrow results by species, background, god, or game version. Switch between tabs to view insights about those results.",
+      },
+      {
+        icon: Lightbulb,
+        title: "Tips",
+        content:
+          "The Aggregation tab lets you group and pivot data by multiple dimensions — try grouping by species + god to find popular pairings. The Trends tab reveals how the meta shifts across versions. Skills shows training patterns as a heatmap. Combine filters to drill into specific strategies.",
+      },
+      {
+        icon: AlertTriangle,
+        title: "Keep in mind",
+        content:
+          "The parser is less reliable on older versions. Similarly, older versions didn't have as much information. So be skeptical of old version data.",
+      },
+    ]}
+  />
+);
+
 export default function AnalyticsPage() {
   return (
     <Suspense fallback={<AnalyticsLoading />}>
@@ -228,6 +267,7 @@ function AnalyticsLoading() {
         subtitle="Loading..."
         icon={BarChart3}
         variant="mana"
+        action={analyticsGuide}
       />
       <Card className="bg-card border-border">
         <CardContent className="py-12 text-center">
@@ -442,6 +482,7 @@ function AnalyticsContent() {
           subtitle="This site's main attraction"
           icon={BarChart3}
           variant="mana"
+          action={analyticsGuide}
         />
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
@@ -461,6 +502,7 @@ function AnalyticsContent() {
         subtitle="This site's main attraction"
         icon={BarChart3}
         variant="mana"
+        action={analyticsGuide}
       />
 
       {/* Filters Section */}
@@ -780,6 +822,10 @@ function AnalyticsContent() {
         </TabsContent>
 
         <TabsContent value="trends">
+          <div className="flex items-center gap-3 px-4 py-3 mb-4 bg-mana/10 border border-mana/30 rounded-lg text-sm text-muted-foreground">
+            <AlertCircle className="w-4 h-4 text-mana flex-shrink-0" />
+            <span>I am still figuring out how to make this feature usable. It contains good data but it is difficult to visualize.</span>
+          </div>
           <TrendsChart queryString={queryString} />
         </TabsContent>
 

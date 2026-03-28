@@ -15,12 +15,17 @@ import {
   Clock,
   User,
   Link,
+  BookOpen,
+  Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageWrapper } from "@/components/page-wrapper";
+import { PageHeader } from "@/components/page-header";
+import { PageGuide } from "@/components/page-guide";
 import {
   OverallStatsSection,
   HighscoresSection,
@@ -50,6 +55,41 @@ function buildUrl(input: string): string {
 // We'll use dynamic import for the parser to ensure it only runs client-side
 let parsePlayerPage: ((html: string) => PlayerData) | null = null;
 
+const playerGuide = (
+  <PageGuide
+    title="Player Summary"
+    description="Look up any DCSS player's stats from their public scoring page."
+    icon={Search}
+    variant="health"
+    sections={[
+      {
+        icon: BookOpen,
+        title: "What is this?",
+        content:
+          "An interactive view of a given player. Probably inferior in every way to <a href=`https://dcss-stats.com/`>DCSS Stats</a>",
+      },
+      {
+        icon: Target,
+        title: "How to use it",
+        content:
+          'Enter a CAO username (e.g. "henryci") or paste a full player scoring page URL.',
+      },
+      {
+        icon: Lightbulb,
+        title: "Tips",
+        content:
+          "This was organized to highlight the things I'm focusing on. Your mileage may vary.",
+      },
+      {
+        icon: AlertTriangle,
+        title: "Keep in mind",
+        content:
+          "Currently defaults to CAO for username lookups.",
+      },
+    ]}
+  />
+);
+
 export default function PlayerSummaryPage() {
   return (
     <Suspense fallback={<PlayerSummaryLoading />}>
@@ -61,6 +101,13 @@ export default function PlayerSummaryPage() {
 function PlayerSummaryLoading() {
   return (
     <PageWrapper>
+      <PageHeader
+        title="Player Summary"
+        subtitle="Look up any player's stats and history"
+        icon={Search}
+        variant="health"
+        action={playerGuide}
+      />
       <Card className="bg-card border-border">
         <CardContent className="py-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
@@ -161,6 +208,14 @@ function PlayerSummaryContent() {
 
   return (
     <PageWrapper>
+      <PageHeader
+        title="Player Summary"
+        subtitle="Look up any player's stats and history"
+        icon={Search}
+        variant="health"
+        action={playerGuide}
+      />
+
       {/* URL Input - Collapsible */}
       <div className="mb-6">
         {searchExpanded ? (

@@ -27,12 +27,17 @@ import {
   Wind,
   Footprints,
   Hand,
+  Target,
+  Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageWrapper } from "@/components/page-wrapper";
+import { PageHeader } from "@/components/page-header";
+import { PageGuide } from "@/components/page-guide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
@@ -93,6 +98,41 @@ function getRuneColorClasses(runeName: string): string {
   return "text-special border-special/30 bg-special/10";
 }
 
+const morgueGuide = (
+  <PageGuide
+    title="Morgue Viewer"
+    description="Parse and visualize any DCSS morgue file."
+    icon={FileText}
+    variant="mana"
+    sections={[
+      {
+        icon: BookOpen,
+        title: "What is this?",
+        content:
+          "A parser and viewer for DCSS morgue files. Paste a URL and get a breakdown of the character, their skills, equipment, spells, branch progression, etc.",
+      },
+      {
+        icon: Target,
+        title: "How to use it",
+        content:
+          'Paste the URL of a morgue .txt file from any supported DCSS server (CAO, CXC, etc.) and click "Parse Morgue".',
+      },
+      {
+        icon: Lightbulb,
+        title: "Tips",
+        content:
+          "The Skills tab is neat. You can break down specific action groups, so you can see which spells you leaned on and when.",
+      },
+      {
+        icon: AlertTriangle,
+        title: "Keep in mind",
+        content:
+          "Very old morgue files (pre-0.28) may not parse fully, as the format has changed across versions. This page is most impacted by version to version morgue format changes.",
+      },
+    ]}
+  />
+);
+
 export default function MorgueViewerPage() {
   return (
     <Suspense fallback={<MorgueViewerLoading />}>
@@ -104,6 +144,13 @@ export default function MorgueViewerPage() {
 function MorgueViewerLoading() {
   return (
     <PageWrapper>
+      <PageHeader
+        title="Morgue Viewer"
+        subtitle="Parse and explore DCSS post-game summaries"
+        icon={FileText}
+        variant="mana"
+        action={morgueGuide}
+      />
       <Card className="bg-card border-border">
         <CardContent className="py-12 text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
@@ -269,6 +316,14 @@ function MorgueViewerContent() {
     <PageWrapper>
       {/* Full-page loading overlay */}
       {loadingState === "loading" && <LoadingOverlay url={url} />}
+
+      <PageHeader
+        title="Morgue Viewer"
+        subtitle="Parse and explore DCSS post-game summaries"
+        icon={FileText}
+        variant="mana"
+        action={morgueGuide}
+      />
 
       {/* URL Input Section - Collapsible */}
       <div className="mb-6">

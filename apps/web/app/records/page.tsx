@@ -9,6 +9,10 @@ import {
   Ghost,
   Calendar,
   X,
+  BookOpen,
+  Target,
+  Lightbulb,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
+import { PageGuide } from "@/components/page-guide";
 import { SortIcon } from "@/components/sort-icon";
 import { useSortable } from "@/hooks/use-sortable";
 import type {
@@ -87,6 +92,41 @@ function getAgeClass(days: number): string {
   return "text-muted-foreground";
 }
 
+const recordsGuide = (
+  <PageGuide
+    title="Combo Records"
+    description="High scores for every species + background combination in DCSS."
+    icon={Trophy}
+    variant="gold"
+    sections={[
+      {
+        icon: BookOpen,
+        title: "What is this?",
+        content:
+          "A dynamic view of the CAO Combo High scores.",
+      },
+      {
+        icon: Target,
+        title: "How to use it",
+        content:
+          'Use the filters and column sorting to find relevant records. Click into them to view details about those games.',
+      },
+      {
+        icon: Lightbulb,
+        title: "Tips",
+        content:
+          "Ghost icons mark combos involving removed species or backgrounds that can no longer be beaten. Very old records (7+ years) are highlighted in purple; recently set records are plain text.",
+      },
+      {
+        icon: AlertTriangle,
+        title: "Keep in mind",
+        content:
+          "Today this is only updated when Henry runs the update script. So temper your expectations to avoid dissapointment.",
+      },
+    ]}
+  />
+);
+
 export default function RecordsPage() {
   const [data, setData] = useState<ComboRecordsWithAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +156,7 @@ export default function RecordsPage() {
           subtitle="Analyzing top combo scores..."
           icon={Trophy}
           variant="gold"
+          action={recordsGuide}
         />
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
@@ -135,6 +176,7 @@ export default function RecordsPage() {
           subtitle="Top combo score analytics"
           icon={Trophy}
           variant="gold"
+          action={recordsGuide}
         />
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
@@ -154,6 +196,7 @@ export default function RecordsPage() {
         subtitle={`${data.totalRecords.toLocaleString()} combo high scores`}
         icon={Trophy}
         variant="gold"
+        action={recordsGuide}
       />
 
       {/* Last Updated Banner */}
