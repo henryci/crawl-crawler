@@ -65,8 +65,19 @@ const playerGuide = (
       {
         icon: BookOpen,
         title: "What is this?",
-        content:
-          "An interactive view of a given player. Probably inferior in every way to <a href=`https://dcss-stats.com/`>DCSS Stats</a>",
+        content: (
+          <>
+            An interactive view of a given player. Probably inferior in every way to{" "}
+            <a
+              href="https://dcss-stats.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-health underline underline-offset-2 hover:text-health/80 transition-colors"
+            >
+              DCSS Stats
+            </a>.
+          </>
+        ),
       },
       {
         icon: Target,
