@@ -13,6 +13,7 @@ export const navTooltips = {
   playerSummary: "A view of a player's games with basic sorting and filtering",
   records: "Sortable, filterable list of combo records. Find your next goal",
   about: "Site status, words from me, limited value",
+  appeal: "Three proposals for the DCSS dev community",
 } as const;
 
 // =============================================================================
