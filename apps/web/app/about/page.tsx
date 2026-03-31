@@ -1,14 +1,7 @@
 import { ExternalLink, AlertTriangle, HelpCircle, Link2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { PageWrapper } from "@/components/page-wrapper";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { ServiceStats } from "./service-stats";
-import { ZigDeathModal } from "./zig-death-modal";
 
 export default function AboutPage() {
   return (
@@ -31,66 +24,26 @@ export default function AboutPage() {
       {/* Service Stats */}
       <ServiceStats />
 
-      {/* FAQ Section */}
+      {/* About */}
       <Card className="bg-card border-border mb-6 py-0 gap-0">
         <div className="border-b border-border px-4 py-2">
           <div className="flex items-center gap-2 text-base font-semibold">
             <HelpCircle className="w-4 h-4 text-primary" />
-            Infrequently Asked Questions
+            What is this?
           </div>
         </div>
-        <div className="px-4 py-2">
-          <Accordion type="single" collapsible defaultValue="what" className="w-full">
-            <AccordionItem value="what">
-              <AccordionTrigger>What is this?</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-muted-foreground">                  
-                  CrawlCrawler is a collection of analytics and exploration tools for <a href="https://crawl.develz.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dungeon Crawl
-                  Stone Soup (DCSS)</a>.
-                  It provides insights into what choices streak players are making and what combos records to go for.
-                  I've also included updated player and morgue summary pages to reflect the info I typically need.
-                  Perhaps most importantly, it's a proof of concept for what is possible with our game.
-                  Please see <a href="/appeal" className="text-primary hover:underline">my appeal to the dev community</a> for my thoughts on what we can do.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="why">
-              <AccordionTrigger>Why is this?</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-muted-foreground">
-                  I've been playing this game since <a href="/morgue?url=https%3A%2F%2Fcrawl.akrasiac.org%2Frawdata%2Fhenryci%2Fmorgue-henryci-20090627-221400.txt" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">2009</a>.
-                  As the community has grown beyond 20 people in an IRC channel so to has all the data we have available.
-                  I've been writing one off scripts to answer questions like "What species/background ruins the most streaks?" or "Which god do most people pick here?"
-                  Recently, I killed a great character on <ZigDeathModal /> and decided to work out my frustration by putting together this app for people.
-                  Perhaps it can serve to orient us more towards data. Let's make any moment from any game findable and replayable.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="how">
-              <AccordionTrigger>How is this?</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-muted-foreground">
-                  This is an important question because the answer is kind of terrible.
-                  I downloaded the streak files from CAO (over the course of a month so as not to create a bunch of load). Unfortunately, those 
-                  are plain text files in a format that has undergone so many changes over the years. I had Claude read through a sample of them and develop a parser
-                  which is of medium correctness. It is enough to provide some info but boy is is text not the best way to get this data into a database.
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="is">
-              <AccordionTrigger>Is this?</AccordionTrigger>
-              <AccordionContent>
-                {Math.random() < 0.5 ? (
-                  <p className="text-muted-foreground">Yes.</p>
-                ) : (
-                  <p className="text-muted-foreground">No.</p>
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+        <div className="px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            CrawlCrawler is a proof of concept for what's possible with{" "}
+            <a href="https://crawl.develz.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">DCSS</a>{" "}
+            data. As a turn-based game, every action in every game is recorded — giving us a depth
+            of data that most games simply don't have, and making it possible to build search and
+            analytics experiences that are unique to our community. It's built on a shaky
+            foundation — parsing morgue files is genuinely hard, and the parser is far from
+            perfect — but it's enough to show what's possible. Check out{" "}
+            <a href="/appeal" className="text-primary hover:underline">the Appeal</a>{" "}
+            for ideas on what we can build together.
+          </p>
         </div>
       </Card>
 
