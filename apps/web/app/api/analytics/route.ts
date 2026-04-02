@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
 import {
   LEGACY_SPECIES_NAMES,
   LEGACY_BACKGROUND_NAMES,
 } from 'dcss-game-data';
-
-export const dynamic = 'force-dynamic';
+import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
 
 interface FilterParams {
   races?: string[];
@@ -26,6 +26,29 @@ interface FilterParams {
   offset?: number;
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
+}
+
+interface AnalyticsResult {
+  games: Array<{
+    id: number;
+    player_name: string;
+    score: number;
+    race: string;
+    background: string;
+    god: string | null;
+    character_level: number;
+    is_win: boolean;
+    runes_count: number;
+    total_turns: number;
+    end_date: string | null;
+    version: string | null;
+    title: string | null;
+    morgue_hash: string | null;
+  }>;
+  totalCount: number;
+  totalGamesCount: number;
+  limit: number;
+  offset: number;
 }
 
 // Valid sort columns (maps API param to SQL column)
@@ -236,54 +259,64 @@ function buildWhereClause(filters: FilterParams): { where: string; params: unkno
   };
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const filters = parseFilters(searchParams);
-    const { where, params } = buildWhereClause(filters);
-    
-    // Get filtered count and total count in parallel
-    const [countResult, totalGamesResult] = await Promise.all([
-      query<{ count: string }>(`
-        SELECT COUNT(*) as count
-        FROM games g
-        LEFT JOIN races r ON g.race_id = r.id
-        LEFT JOIN backgrounds b ON g.background_id = b.id
-        LEFT JOIN gods god ON g.god_id = god.id
-        LEFT JOIN game_versions v ON g.version_id = v.id
-        ${where}
-      `, params),
-      query<{ count: string }>('SELECT COUNT(*) as count FROM games'),
-    ]);
-    
-    const totalCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
-    const totalGamesCount = parseInt(totalGamesResult.rows[0]?.count ?? '0', 10);
-    
-    // Get games with pagination and sorting
-    const limitParamIndex = params.length + 1;
-    const offsetParamIndex = params.length + 2;
-    
-    // Build ORDER BY clause
-    const sortColumn = filters.sortBy ? VALID_SORT_COLUMNS[filters.sortBy] : 'g.score';
-    const sortDirection = filters.sortDir ?? 'desc';
-    const orderBy = `ORDER BY ${sortColumn} ${sortDirection.toUpperCase()} NULLS LAST`;
-    
-    const gamesResult = await query<{
-      id: number;
-      player_name: string;
-      score: number;
-      race: string;
-      background: string;
-      god: string | null;
-      character_level: number;
-      is_win: boolean;
-      runes_count: number;
-      total_turns: number;
-      end_date: string | null;
-      version: string | null;
-      title: string | null;
-      morgue_hash: string | null;
-    }>(`
+function normalizeArray(values: string[] | undefined): string[] | undefined {
+  if (!values || values.length === 0) return undefined;
+  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
+function isCacheable(filters: FilterParams): boolean {
+  return !filters.player;
+}
+
+function analyticsCacheKey(filters: FilterParams): string {
+  return JSON.stringify({
+    races: normalizeArray(filters.races),
+    backgrounds: normalizeArray(filters.backgrounds),
+    gods: normalizeArray(filters.gods),
+    isWin: filters.isWin,
+    minVersion: filters.minVersion,
+    maxVersion: filters.maxVersion,
+    minRunes: filters.minRunes,
+    maxRunes: filters.maxRunes,
+    minTurns: filters.minTurns,
+    maxTurns: filters.maxTurns,
+    minScore: filters.minScore,
+    maxScore: filters.maxScore,
+    excludeLegacy: filters.excludeLegacy === true,
+    limit: filters.limit ?? 100,
+    offset: filters.offset ?? 0,
+    sortBy: filters.sortBy ?? 'score',
+    sortDir: filters.sortDir ?? 'desc',
+  });
+}
+
+async function getAnalyticsData(filters: FilterParams): Promise<AnalyticsResult> {
+  const { where, params } = buildWhereClause(filters);
+
+  const [countResult, totalGamesResult] = await Promise.all([
+    query<{ count: string }>(`
+      SELECT COUNT(*) as count
+      FROM games g
+      LEFT JOIN races r ON g.race_id = r.id
+      LEFT JOIN backgrounds b ON g.background_id = b.id
+      LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
+      ${where}
+    `, params),
+    query<{ count: string }>('SELECT COUNT(*) as count FROM games'),
+  ]);
+
+  const totalCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
+  const totalGamesCount = parseInt(totalGamesResult.rows[0]?.count ?? '0', 10);
+
+  const limitParamIndex = params.length + 1;
+  const offsetParamIndex = params.length + 2;
+
+  const sortColumn = filters.sortBy ? VALID_SORT_COLUMNS[filters.sortBy] : 'g.score';
+  const sortDirection = filters.sortDir ?? 'desc';
+  const orderBy = `ORDER BY ${sortColumn} ${sortDirection.toUpperCase()} NULLS LAST`;
+
+  const gamesResult = await query<AnalyticsResult['games'][number]>(`
       SELECT 
         g.id,
         g.player_name,
@@ -308,14 +341,33 @@ export async function GET(request: NextRequest) {
       ${orderBy}
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `, [...params, filters.limit, filters.offset]);
-    
-    return NextResponse.json({
-      games: gamesResult.rows,
-      totalCount,
-      totalGamesCount,
-      limit: filters.limit,
-      offset: filters.offset,
-    });
+
+  return {
+    games: gamesResult.rows,
+    totalCount,
+    totalGamesCount,
+    limit: filters.limit ?? 100,
+    offset: filters.offset ?? 0,
+  };
+}
+
+const fetchAnalyticsData = unstable_cache(
+  async (cacheKey: string) => {
+    const filters = JSON.parse(cacheKey) as FilterParams;
+    return getAnalyticsData(filters);
+  },
+  ['analytics'],
+  { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
+);
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = new URL(request.url).searchParams;
+    const filters = parseFilters(searchParams);
+    const data = isCacheable(filters)
+      ? await fetchAnalyticsData(analyticsCacheKey(filters))
+      : await getAnalyticsData(filters);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics API error:', error);
     return NextResponse.json(

@@ -60,6 +60,39 @@ export interface CommonFilters {
   excludeLegacy: boolean;
 }
 
+function normalizeArray(values: string[] | null): string[] | null {
+  if (!values || values.length === 0) return null;
+  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
+export function isCommonFiltersCacheable(filters: CommonFilters): boolean {
+  return filters.player === null;
+}
+
+export function commonFiltersCacheKey(filters: CommonFilters): string {
+  return JSON.stringify({
+    races: normalizeArray(filters.races),
+    backgrounds: normalizeArray(filters.backgrounds),
+    gods: normalizeArray(filters.gods),
+    isWin: filters.isWin,
+    minVersion: filters.minVersion,
+    maxVersion: filters.maxVersion,
+    minRunes: filters.minRunes,
+    maxRunes: filters.maxRunes,
+    minTurns: filters.minTurns,
+    maxTurns: filters.maxTurns,
+    excludeLegacy: filters.excludeLegacy,
+  });
+}
+
+export function commonFiltersFromCacheKey(cacheKey: string): CommonFilters {
+  const parsed = JSON.parse(cacheKey) as Omit<CommonFilters, 'player'>;
+  return {
+    ...parsed,
+    player: null,
+  };
+}
+
 export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters {
   const races = sanitizeStringArray(searchParams.get('races'));
   const backgrounds = sanitizeStringArray(searchParams.get('backgrounds'));

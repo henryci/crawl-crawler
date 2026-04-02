@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
-import { parseCommonFilters, buildCommonWhereClause } from '@/lib/analytics-filters';
+import {
+  parseCommonFilters,
+  buildCommonWhereClause,
+  commonFiltersCacheKey,
+  commonFiltersFromCacheKey,
+  isCommonFiltersCacheable,
+  type CommonFilters,
+} from '@/lib/analytics-filters';
+import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
 
-export const dynamic = 'force-dynamic';
+interface SpellsResult {
+  spells: Array<{
+    spell_name: string;
+    spell_level: number | null;
+    game_count: number;
+    avg_failure: number | null;
+    schools: string;
+    percentage: number;
+  }>;
+  totalGames: number;
+}
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    
-    // Parse and validate filter params
-    const filters = parseCommonFilters(searchParams);
-    const { where: whereClause, params } = buildCommonWhereClause(filters);
-    
-    // Get spell popularity
-    const result = await query<{
+async function getSpellsData(filters: CommonFilters): Promise<SpellsResult> {
+  const { where: whereClause, params } = buildCommonWhereClause(filters);
+
+  const [result, totalResult] = await Promise.all([
+    query<{
       spell_name: string;
       spell_level: number | null;
       game_count: number;
@@ -42,10 +56,8 @@ export async function GET(request: NextRequest) {
       ${whereClause}
       GROUP BY sp.id, sp.name, sp.level
       ORDER BY game_count DESC
-    `, params);
-    
-    // Get total games for percentage calculation
-    const totalResult = await query<{ count: string }>(`
+    `, params),
+    query<{ count: string }>(`
       SELECT COUNT(DISTINCT g.id) as count
       FROM games g
       LEFT JOIN races r ON g.race_id = r.id
@@ -53,17 +65,36 @@ export async function GET(request: NextRequest) {
       LEFT JOIN gods god ON g.god_id = god.id
       LEFT JOIN game_versions v ON g.version_id = v.id
       ${whereClause}
-    `, params);
-    
-    const totalGames = parseInt(totalResult.rows[0]?.count ?? '0', 10);
-    
-    return NextResponse.json({
-      spells: result.rows.map(row => ({
-        ...row,
-        percentage: totalGames > 0 ? Math.round((Number(row.game_count) / totalGames) * 100) : 0,
-      })),
-      totalGames,
-    });
+    `, params),
+  ]);
+
+  const totalGames = parseInt(totalResult.rows[0]?.count ?? '0', 10);
+
+  return {
+    spells: result.rows.map(row => ({
+      ...row,
+      percentage: totalGames > 0 ? Math.round((Number(row.game_count) / totalGames) * 100) : 0,
+    })),
+    totalGames,
+  };
+}
+
+const fetchSpellsData = unstable_cache(
+  async (cacheKey: string) => {
+    const filters = commonFiltersFromCacheKey(cacheKey);
+    return getSpellsData(filters);
+  },
+  ['analytics-spells'],
+  { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
+);
+
+export async function GET(request: NextRequest) {
+  try {
+    const filters = parseCommonFilters(new URL(request.url).searchParams);
+    const data = isCommonFiltersCacheable(filters)
+      ? await fetchSpellsData(commonFiltersCacheKey(filters))
+      : await getSpellsData(filters);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Spells API error:', error);
     return NextResponse.json(

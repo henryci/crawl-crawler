@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
-import { parseCommonFilters, buildCommonWhereClause } from '@/lib/analytics-filters';
-
-export const dynamic = 'force-dynamic';
+import {
+  parseCommonFilters,
+  buildCommonWhereClause,
+  commonFiltersCacheKey,
+  commonFiltersFromCacheKey,
+  isCommonFiltersCacheable,
+  type CommonFilters,
+} from '@/lib/analytics-filters';
+import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
 
 interface SkillHeatmapRow {
   skill_name: string;
@@ -11,16 +18,21 @@ interface SkillHeatmapRow {
   game_count: number;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    
-    // Parse and validate filter params
-    const filters = parseCommonFilters(searchParams);
-    const { where: whereClause, params } = buildCommonWhereClause(filters);
-    
-    // Get skill progression heatmap data
-    const result = await query<SkillHeatmapRow>(`
+interface SkillsResult {
+  progression: SkillHeatmapRow[];
+  finalSkills: Array<{
+    skill_name: string;
+    avg_level: number;
+    max_level: number;
+    game_count: number;
+  }>;
+}
+
+async function getSkillsData(filters: CommonFilters): Promise<SkillsResult> {
+  const { where: whereClause, params } = buildCommonWhereClause(filters);
+
+  const [result, finalSkillsResult] = await Promise.all([
+    query<SkillHeatmapRow>(`
       SELECT 
         s.name as skill_name,
         gsp.xl,
@@ -36,10 +48,8 @@ export async function GET(request: NextRequest) {
       ${whereClause}
       GROUP BY s.name, gsp.xl
       ORDER BY s.name, gsp.xl
-    `, params);
-    
-    // Also get final skill levels
-    const finalSkillsResult = await query<{
+    `, params),
+    query<{
       skill_name: string;
       avg_level: number;
       max_level: number;
@@ -60,12 +70,31 @@ export async function GET(request: NextRequest) {
       ${whereClause}
       GROUP BY s.name
       ORDER BY avg_level DESC
-    `, params);
-    
-    return NextResponse.json({
-      progression: result.rows,
-      finalSkills: finalSkillsResult.rows,
-    });
+    `, params),
+  ]);
+
+  return {
+    progression: result.rows,
+    finalSkills: finalSkillsResult.rows,
+  };
+}
+
+const fetchSkillsData = unstable_cache(
+  async (cacheKey: string) => {
+    const filters = commonFiltersFromCacheKey(cacheKey);
+    return getSkillsData(filters);
+  },
+  ['analytics-skills'],
+  { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
+);
+
+export async function GET(request: NextRequest) {
+  try {
+    const filters = parseCommonFilters(new URL(request.url).searchParams);
+    const data = isCommonFiltersCacheable(filters)
+      ? await fetchSkillsData(commonFiltersCacheKey(filters))
+      : await getSkillsData(filters);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Skills API error:', error);
     return NextResponse.json(

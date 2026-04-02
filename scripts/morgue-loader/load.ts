@@ -726,58 +726,94 @@ async function main(): Promise<void> {
   const urlMapping = await loadUrlMapping(inputDir);
 
   const pool = getPool();
-  
-  let loaded = 0;
-  let skipped = 0;
-  let failed = 0;
+  try {
+    let loaded = 0;
+    let skipped = 0;
+    let failed = 0;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i]!;
-    const filePath = join(inputDir, file);
-    
-    try {
-      const content = readFileSync(filePath, 'utf-8');
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]!;
+      const filePath = join(inputDir, file);
       
-      // Get the source URL from the mapping (if available)
-      const sourceUrl = urlMapping.get(file);
-      
-      const result = await parseMorgue(content, { sourceUrl });
-      
-      if (!result.data.playerName) {
-        console.log(`  [${i + 1}/${files.length}] Skipping ${file} (no player name)`);
-        skipped++;
-        continue;
-      }
-
-      const gameId = await loadMorgue(pool, result.data, file);
-
-      if (gameId) {
-        loaded++;
-        if ((loaded % 50) === 0 || loaded === 1) {
-          console.log(`  [${i + 1}/${files.length}] Loaded ${file} -> game #${gameId}`);
+      try {
+        const content = readFileSync(filePath, 'utf-8');
+        
+        // Get the source URL from the mapping (if available)
+        const sourceUrl = urlMapping.get(file);
+        
+        const result = await parseMorgue(content, { sourceUrl });
+        
+        if (!result.data.playerName) {
+          console.log(`  [${i + 1}/${files.length}] Skipping ${file} (no player name)`);
+          skipped++;
+          continue;
         }
-      } else {
-        skipped++;
+
+        const gameId = await loadMorgue(pool, result.data, file);
+
+        if (gameId) {
+          loaded++;
+          if ((loaded % 50) === 0 || loaded === 1) {
+            console.log(`  [${i + 1}/${files.length}] Loaded ${file} -> game #${gameId}`);
+          }
+        } else {
+          skipped++;
+        }
+      } catch (error) {
+        failed++;
+        console.error(`  [${i + 1}/${files.length}] Failed to load ${file}:`, error instanceof Error ? error.message : error);
       }
-    } catch (error) {
-      failed++;
-      console.error(`  [${i + 1}/${files.length}] Failed to load ${file}:`, error instanceof Error ? error.message : error);
     }
+
+    console.log(`\nComplete!`);
+    console.log(`  Loaded: ${loaded}`);
+    console.log(`  Skipped (already loaded or invalid): ${skipped}`);
+    console.log(`  Failed: ${failed}`);
+
+    // Record the streak download date and revalidate cache
+    if (loaded > 0) {
+      console.log(`\nRecording streak download date...`);
+      await recordStreakDownloadDate();
+      console.log(`  ✓ Streak download date recorded`);
+
+      console.log(`\nRevalidating cache...`);
+      await revalidateCache();
+      console.log('  ✓ Cache revalidated');
+    }
+  } finally {
+    await closePool();
+  }
+}
+
+async function revalidateCache(): Promise<void> {
+  const url = process.env.REVALIDATE_URL;
+  const secret = process.env.REVALIDATE_SECRET;
+
+  if (!url || !secret) {
+    throw new Error('REVALIDATE_URL and REVALIDATE_SECRET must be set for cache revalidation');
   }
 
-  console.log(`\nComplete!`);
-  console.log(`  Loaded: ${loaded}`);
-  console.log(`  Skipped (already loaded or invalid): ${skipped}`);
-  console.log(`  Failed: ${failed}`);
+  const endpoint = `${url.replace(/\/$/, '')}/api/revalidate`;
+  const abortController = new AbortController();
+  const timeout = setTimeout(() => abortController.abort(), 10_000);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'x-revalidate-secret': secret },
+      signal: abortController.signal,
+    });
 
-  // Record the streak download date
-  if (loaded > 0) {
-    console.log(`\nRecording streak download date...`);
-    await recordStreakDownloadDate();
-    console.log(`  ✓ Streak download date recorded`);
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Cache revalidation failed (${response.status}): ${body}`);
+    }
+  } catch (error) {
+    throw new Error(
+      `Cache revalidation request failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  } finally {
+    clearTimeout(timeout);
   }
-
-  await closePool();
 }
 
 main().catch((error) => {

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
-import { parseCommonFilters, buildCommonWhereClause } from '@/lib/analytics-filters';
+import {
+  parseCommonFilters,
+  buildCommonWhereClause,
+  commonFiltersCacheKey,
+  commonFiltersFromCacheKey,
+  isCommonFiltersCacheable,
+  type CommonFilters,
+} from '@/lib/analytics-filters';
 import {
   DIMENSIONS,
   METRICS,
@@ -14,14 +22,25 @@ import {
   type DimensionKey,
   type MetricKey,
 } from '@/lib/analytics-types';
-
-export const dynamic = 'force-dynamic';
+import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
 
 interface TrendsParams {
   track: DimensionKey;
   over: DimensionKey;
   metric: MetricKey;
   topN: number;
+}
+
+interface TrendsResult {
+  track: DimensionKey;
+  over: DimensionKey;
+  metric: MetricKey;
+  topN: number;
+  overValues: string[];
+  series: Array<{
+    name: string;
+    data: Array<{ over: string; value: number; rank: number }>;
+  }>;
 }
 
 function parseTrendsParams(searchParams: URLSearchParams): TrendsParams | { error: string } {
@@ -53,30 +72,18 @@ function parseTrendsParams(searchParams: URLSearchParams): TrendsParams | { erro
   };
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-
-    // Parse trends parameters
-    const trendsParams = parseTrendsParams(searchParams);
-    if ('error' in trendsParams) {
-      return NextResponse.json({ error: trendsParams.error }, { status: 400 });
-    }
-
+async function getTrendsData(
+  trendsParams: TrendsParams,
+  filters: CommonFilters
+): Promise<TrendsResult> {
     const { track, over, metric, topN } = trendsParams;
-
-    // Parse common filters
-    const filters = parseCommonFilters(searchParams);
     const { where, params } = buildCommonWhereClause(filters);
 
     const trackConfig = DIMENSIONS[track];
     const metricConfig = METRICS[metric];
-    
-    // For "over" dimension in trends, we need the raw value for sorting
     const overSelectRaw = getDimensionSelectForTrends(over);
     const overAlias = DIMENSIONS[over].alias;
 
-    // Query: Get all data grouped by track dimension and over dimension
     const sql = `
       SELECT 
         ${trackConfig.sql} AS ${trackConfig.alias},
@@ -95,12 +102,9 @@ export async function GET(request: NextRequest) {
 
     const result = await query<Record<string, unknown>>(sql, params);
 
-    // Process results: for each "over" value, rank the items and keep top N
-    // Then collect all items that appear in top N for any "over" value
     const byOver = new Map<string | number, Array<{ item: string; value: number; rank: number }>>();
     const topItems = new Set<string>();
 
-    // Group by "over" dimension
     for (const row of result.rows) {
       const overValue = row[overAlias] as string | number;
       const item = row[trackConfig.alias] as string;
@@ -112,7 +116,6 @@ export async function GET(request: NextRequest) {
       byOver.get(overValue)!.push({ item, value, rank: 0 });
     }
 
-    // Sort and rank within each "over" value, collect top N items
     for (const [, items] of byOver) {
       items.sort((a, b) => b.value - a.value);
       items.forEach((item, index) => {
@@ -123,16 +126,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get sorted list of "over" values
     const overValues = Array.from(byOver.keys()).sort((a, b) => {
       if (typeof a === 'number' && typeof b === 'number') return a - b;
       return String(a).localeCompare(String(b));
     });
 
-    // Get the formatter for this dimension
     const formatter = DIMENSION_FORMATTERS[over] || ((v: number) => String(v));
 
-    // Build series data for each top item
     const series: Array<{
       name: string;
       data: Array<{ over: string; value: number; rank: number }>;
@@ -144,14 +144,11 @@ export async function GET(request: NextRequest) {
       for (const overValue of overValues) {
         const items = byOver.get(overValue)!;
         const found = items.find(i => i.item === item);
-        
-        // Format the over value for display
         const formattedOver = formatter(overValue as number);
-        
+
         if (found) {
           data.push({ over: formattedOver, value: found.value, rank: found.rank });
         } else {
-          // Item doesn't exist for this "over" value
           data.push({ over: formattedOver, value: 0, rank: 0 });
         }
       }
@@ -159,21 +156,52 @@ export async function GET(request: NextRequest) {
       series.push({ name: item, data });
     }
 
-    // Sort series by their best (lowest) rank achieved
     series.sort((a, b) => {
       const bestRankA = Math.min(...a.data.filter(d => d.rank > 0).map(d => d.rank));
       const bestRankB = Math.min(...b.data.filter(d => d.rank > 0).map(d => d.rank));
       return bestRankA - bestRankB;
     });
 
-    return NextResponse.json({
+    return {
       track,
       over,
       metric,
       topN,
       overValues: overValues.map(v => formatter(v as number)),
       series,
-    });
+    };
+}
+
+const fetchTrendsData = unstable_cache(
+  async (cacheKey: string) => {
+    const parsed = JSON.parse(cacheKey) as {
+      trendsParams: TrendsParams;
+      commonFiltersKey: string;
+    };
+    return getTrendsData(
+      parsed.trendsParams,
+      commonFiltersFromCacheKey(parsed.commonFiltersKey)
+    );
+  },
+  ['analytics-trends'],
+  { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
+);
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = new URL(request.url).searchParams;
+    const trendsParams = parseTrendsParams(searchParams);
+    if ('error' in trendsParams) {
+      return NextResponse.json({ error: trendsParams.error }, { status: 400 });
+    }
+    const filters = parseCommonFilters(searchParams);
+    const data = isCommonFiltersCacheable(filters)
+      ? await fetchTrendsData(JSON.stringify({
+          trendsParams,
+          commonFiltersKey: commonFiltersCacheKey(filters),
+        }))
+      : await getTrendsData(trendsParams, filters);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Trends API error:', error);
     return NextResponse.json(

@@ -1,13 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
 import type { MorgueData } from 'dcss-morgue-parser';
+import { DB_CACHE_TAG } from '@/lib/cache';
 
-export const dynamic = 'force-dynamic';
-
-// Validate that the hash looks like a valid SHA-256 hex string
 function isValidHash(hash: string): boolean {
   return /^[a-f0-9]{64}$/i.test(hash);
 }
+
+const fetchMorgueData = unstable_cache(
+  async (hash: string): Promise<MorgueData | null> => {
+    const result = await query<{ parsed_json: MorgueData }>(`
+      SELECT parsed_json
+      FROM parsed_morgue_json
+      WHERE morgue_hash = $1
+    `, [hash]);
+
+    return result.rows[0]?.parsed_json ?? null;
+  },
+  ['morgue'],
+  { tags: [DB_CACHE_TAG] }
+);
 
 export async function GET(
   request: NextRequest,
@@ -15,33 +28,24 @@ export async function GET(
 ) {
   try {
     const { hash } = await params;
-    
-    // Validate hash format
+
     if (!isValidHash(hash)) {
       return NextResponse.json(
         { error: 'Invalid hash format' },
         { status: 400 }
       );
     }
-    
-    // Query for the parsed morgue JSON
-    const result = await query<{ parsed_json: MorgueData }>(`
-      SELECT parsed_json
-      FROM parsed_morgue_json
-      WHERE morgue_hash = $1
-    `, [hash.toLowerCase()]);
-    
-    if (result.rows.length === 0) {
+
+    const data = await fetchMorgueData(hash.toLowerCase());
+
+    if (!data) {
       return NextResponse.json(
         { error: 'Morgue not found' },
         { status: 404 }
       );
     }
-    
-    return NextResponse.json({
-      success: true,
-      data: result.rows[0]!.parsed_json,
-    });
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Morgue API error:', error);
     return NextResponse.json(

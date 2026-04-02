@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
-import { parseCommonFilters, buildCommonWhereClause } from '@/lib/analytics-filters';
+import {
+  parseCommonFilters,
+  buildCommonWhereClause,
+  commonFiltersCacheKey,
+  commonFiltersFromCacheKey,
+  isCommonFiltersCacheable,
+  type CommonFilters,
+} from '@/lib/analytics-filters';
 import {
   DIMENSIONS,
   METRICS,
@@ -12,10 +20,22 @@ import {
   type DimensionKey,
   type MetricKey,
 } from '@/lib/analytics-types';
-
-export const dynamic = 'force-dynamic';
+import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
 
 interface AggregateParams {
+  groupBy: DimensionKey[];
+  metrics: MetricKey[];
+  sortBy: string;
+  sortDir: 'asc' | 'desc';
+  limit: number;
+  offset: number;
+}
+
+interface AggregateResult {
+  results: Record<string, unknown>[];
+  totalGames: number;
+  totalWins: number;
+  totalGroups: number;
   groupBy: DimensionKey[];
   metrics: MetricKey[];
   sortBy: string;
@@ -95,39 +115,25 @@ function parseAggregateParams(searchParams: URLSearchParams): AggregateParams | 
   return { groupBy, metrics, sortBy, sortDir, limit, offset };
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    
-    // Parse aggregation parameters
-    const aggParams = parseAggregateParams(searchParams);
-    if ('error' in aggParams) {
-      return NextResponse.json({ error: aggParams.error }, { status: 400 });
-    }
-    
+async function getAggregateData(
+  aggParams: AggregateParams,
+  filters: CommonFilters
+): Promise<AggregateResult> {
     const { groupBy, metrics, sortBy, sortDir, limit, offset } = aggParams;
-    
-    // Parse common filters
-    const filters = parseCommonFilters(searchParams);
-    
-    // Build required JOINs based on dimensions, metrics, and filters
+
     const requiredJoins = new Set<string>();
-    
-    // Always need these for filters
     requiredJoins.add('LEFT JOIN races r ON g.race_id = r.id');
     requiredJoins.add('LEFT JOIN backgrounds b ON g.background_id = b.id');
     requiredJoins.add('LEFT JOIN gods god ON g.god_id = god.id');
     requiredJoins.add('LEFT JOIN game_versions v ON g.version_id = v.id');
-    
-    // Add joins for selected dimensions
+
     for (const dim of groupBy) {
       const dimConfig = DIMENSIONS[dim];
       if (dimConfig.join) {
         requiredJoins.add(`LEFT JOIN ${dimConfig.join}`);
       }
     }
-    
-    // Build SELECT clause
+
     const selectParts: string[] = [];
     for (const dim of groupBy) {
       const dimConfig = DIMENSIONS[dim];
@@ -137,14 +143,10 @@ export async function GET(request: NextRequest) {
       const metricConfig = METRICS[metric];
       selectParts.push(`${metricConfig.sql} AS ${metricConfig.alias}`);
     }
-    
-    // Build GROUP BY clause
+
     const groupByParts = groupBy.map(dim => DIMENSIONS[dim].sql);
-    
-    // Build WHERE clause from filters
     const { where, params } = buildCommonWhereClause(filters);
-    
-    // Build final query with pagination
+
     const sql = `
       SELECT ${selectParts.join(', ')}
       FROM games g
@@ -154,10 +156,9 @@ export async function GET(request: NextRequest) {
       ORDER BY ${sortBy} ${sortDir.toUpperCase()} NULLS LAST
       LIMIT $${params.length + 1} OFFSET $${params.length + 2}
     `;
-    
+
     const result = await query<Record<string, unknown>>(sql, [...params, limit, offset]);
-    
-    // Get totals for pagination and percentage calculations
+
     const countSql = `
       SELECT COUNT(*) as total_games,
              SUM(CASE WHEN g.is_win THEN 1 ELSE 0 END) as total_wins
@@ -165,7 +166,7 @@ export async function GET(request: NextRequest) {
       ${Array.from(requiredJoins).join('\n      ')}
       ${where}
     `;
-    
+
     const groupCountSql = `
       SELECT COUNT(*) as total FROM (
         SELECT 1
@@ -175,17 +176,17 @@ export async function GET(request: NextRequest) {
         GROUP BY ${groupByParts.join(', ')}
       ) subquery
     `;
-    
+
     const [countResult, groupCountResult] = await Promise.all([
       query<{ total_games: string; total_wins: string }>(countSql, params),
       query<{ total: string }>(groupCountSql, params),
     ]);
-    
+
     const totalGames = parseInt(countResult.rows[0]?.total_games ?? '0', 10);
     const totalWins = parseInt(countResult.rows[0]?.total_wins ?? '0', 10);
     const totalGroups = parseInt(groupCountResult.rows[0]?.total ?? '0', 10);
-    
-    return NextResponse.json({
+
+    return {
       results: result.rows,
       totalGames,
       totalWins,
@@ -196,7 +197,39 @@ export async function GET(request: NextRequest) {
       sortDir,
       limit,
       offset,
-    });
+    };
+}
+
+const fetchAggregateData = unstable_cache(
+  async (cacheKey: string) => {
+    const parsed = JSON.parse(cacheKey) as {
+      aggParams: AggregateParams;
+      commonFiltersKey: string;
+    };
+    return getAggregateData(
+      parsed.aggParams,
+      commonFiltersFromCacheKey(parsed.commonFiltersKey)
+    );
+  },
+  ['analytics-aggregate'],
+  { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
+);
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = new URL(request.url).searchParams;
+    const aggParams = parseAggregateParams(searchParams);
+    if ('error' in aggParams) {
+      return NextResponse.json({ error: aggParams.error }, { status: 400 });
+    }
+    const filters = parseCommonFilters(searchParams);
+    const data = isCommonFiltersCacheable(filters)
+      ? await fetchAggregateData(JSON.stringify({
+          aggParams,
+          commonFiltersKey: commonFiltersCacheKey(filters),
+        }))
+      : await getAggregateData(aggParams, filters);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Aggregate API error:', error);
     return NextResponse.json(
