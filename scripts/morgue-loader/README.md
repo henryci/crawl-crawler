@@ -38,17 +38,23 @@ pnpm generate-csv <morgue-directory> <output-directory>
 
 # Load into PostgreSQL
 psql -d crawl_crawler -f <output-directory>/load.sql
+
+# Update streak metadata timestamp shown on About page
+pnpm mark:streaks-updated
 ```
 
 **Example:**
 ```bash
 pnpm generate-csv ../streak-downloader/outputs ./csv-output
 psql -d crawl_crawler -f ./csv-output/load.sql
+pnpm mark:streaks-updated
 ```
 
 This generates:
 - CSV files for all database tables (lookup tables, games, detail tables)
 - A `load.sql` script that loads all CSVs in the correct order
+
+Because CSV + COPY bypasses the direct loader script, it does not automatically update the `streak_download_date` metadata. Run `pnpm mark:streaks-updated` after a successful bulk load.
 
 **Why use this method?**
 - ~100x faster than individual INSERTs for large datasets

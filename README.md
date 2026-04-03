@@ -114,9 +114,11 @@ pnpm load:morgues scripts/streak-downloader/outputs
 cd scripts/morgue-loader
 pnpm generate-csv <morgue-directory> <output-directory>
 psql -d crawl_crawler -f <output-directory>/load.sql
+pnpm mark:streaks-updated
 ```
 
 Use this method for large datasets because it is much faster than row-by-row inserts.
+After CSV + COPY, run `pnpm mark:streaks-updated` so the About page shows the latest streak load date.
 
 ## Load Combo Records Data
 
@@ -133,9 +135,10 @@ This updates `apps/web/public/data/combo-records.json`.
 1. Download morgues with `scripts/streak-downloader`
 2. Run `pnpm db:migrate`
 3. Load morgues via `pnpm load:morgues ...` (or CSV + COPY for bulk)
-4. Run `pnpm download:combo-records`
-5. Start the app with `pnpm dev`
-6. Explore `/analytics` and `/records` in the web UI
+4. If you used CSV + COPY, run `pnpm mark:streaks-updated`
+5. Run `pnpm download:combo-records`
+6. Start the app with `pnpm dev`
+7. Explore `/analytics` and `/records` in the web UI
 
 ## Common Commands (Workspace Root)
 
@@ -154,6 +157,7 @@ pnpm db:migrate
 pnpm db:migrate:down
 pnpm db:reset
 pnpm load:morgues <dir>
+pnpm mark:streaks-updated
 
 # Utilities
 pnpm diagnose:morgue
