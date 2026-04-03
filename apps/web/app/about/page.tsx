@@ -33,16 +33,24 @@ export default function AboutPage() {
           </div>
         </div>
         <div className="px-4 py-3">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-3">
             CrawlCrawler is a proof of concept for what's possible with{" "}
             <a href="https://crawl.develz.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">DCSS</a>{" "}
             data. As a turn-based game, every action in every game is recorded — giving us a depth
             of data that most games simply don't have, and making it possible to build search and
             analytics experiences that are unique to our community. This tool is built on a shaky
             foundation — parsing morgue files is genuinely hard, and the parser is far from
-            perfect — but it's enough to show what's possible. If you like what you see, Check out{" "}
-            <a href="/appeal" className="text-primary hover:underline">the Appeal</a>{" "}
-            for ideas on what we can build together.
+            perfect — but it's enough to show what's possible.
+          </p>
+          <p className="text-sm text-muted-foreground mb-3">
+            The real gem here is the streak analytics. I crawled 53,000 games listed on{" "}
+            <a href="https://crawl.akrasiac.org/scoring/streaks.html" className="text-primary hover:underline">CAO&apos;s streak page</a>, and around
+            30,000 were still available. Because these runs come from players sustaining long
+            streaks, the dataset offers unusually strong insight into high-level consistent play.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            If you like what you see here, please check out{" "}
+            <a href="/appeal" className="text-primary hover:underline">the appeal</a>.
           </p>
         </div>
       </Card>
