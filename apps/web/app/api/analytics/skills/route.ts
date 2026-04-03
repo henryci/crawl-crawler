@@ -22,7 +22,22 @@ interface SkillHeatmapRow {
   game_count: number;
 }
 
+interface FinalSkillDistributionRow {
+  skill_name: string;
+  level_bucket: string;
+  bucket_order: number;
+  game_count: number;
+}
+
+interface CapstoneSkillRow {
+  skill_name: string;
+  games_15_plus: number;
+  games_20_plus: number;
+  avg_level: number;
+}
+
 interface SkillsResult {
+  totalGames: number;
   progression: SkillHeatmapRow[];
   finalSkills: Array<{
     skill_name: string;
@@ -30,12 +45,21 @@ interface SkillsResult {
     max_level: number;
     game_count: number;
   }>;
+  finalDistribution: FinalSkillDistributionRow[];
+  capstoneSkills: Array<{
+    skill_name: string;
+    games_15_plus: number;
+    games_20_plus: number;
+    pct_15_plus: number;
+    pct_20_plus: number;
+    avg_level: number;
+  }>;
 }
 
 async function getSkillsData(filters: CommonFilters): Promise<SkillsResult> {
   const { where: whereClause, params } = buildCommonWhereClause(filters);
 
-  const [result, finalSkillsResult] = await Promise.all([
+  const [result, finalSkillsResult, totalGamesResult, distributionResult, capstoneResult] = await Promise.all([
     query<SkillHeatmapRow>(`
       SELECT 
         s.name as skill_name,
@@ -75,11 +99,86 @@ async function getSkillsData(filters: CommonFilters): Promise<SkillsResult> {
       GROUP BY s.name
       ORDER BY avg_level DESC
     `, params),
+    query<{ total_games: number }>(`
+      SELECT COUNT(DISTINCT g.id) as total_games
+      FROM games g
+      LEFT JOIN races r ON g.race_id = r.id
+      LEFT JOIN backgrounds b ON g.background_id = b.id
+      LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
+      ${whereClause}
+    `, params),
+    query<FinalSkillDistributionRow>(`
+      SELECT
+        s.name as skill_name,
+        CASE
+          WHEN gs.level = 0 THEN '0'
+          WHEN gs.level BETWEEN 1 AND 4 THEN '1-4'
+          WHEN gs.level BETWEEN 5 AND 9 THEN '5-9'
+          WHEN gs.level BETWEEN 10 AND 14 THEN '10-14'
+          WHEN gs.level BETWEEN 15 AND 19 THEN '15-19'
+          WHEN gs.level BETWEEN 20 AND 26 THEN '20-26'
+          ELSE '27'
+        END as level_bucket,
+        CASE
+          WHEN gs.level = 0 THEN 0
+          WHEN gs.level BETWEEN 1 AND 4 THEN 1
+          WHEN gs.level BETWEEN 5 AND 9 THEN 2
+          WHEN gs.level BETWEEN 10 AND 14 THEN 3
+          WHEN gs.level BETWEEN 15 AND 19 THEN 4
+          WHEN gs.level BETWEEN 20 AND 26 THEN 5
+          ELSE 6
+        END as bucket_order,
+        COUNT(DISTINCT gs.game_id) as game_count
+      FROM game_skills gs
+      JOIN skills s ON gs.skill_id = s.id
+      JOIN games g ON gs.game_id = g.id
+      LEFT JOIN races r ON g.race_id = r.id
+      LEFT JOIN backgrounds b ON g.background_id = b.id
+      LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
+      ${whereClause}
+      GROUP BY s.name, level_bucket, bucket_order
+      ORDER BY s.name, bucket_order
+    `, params),
+    query<CapstoneSkillRow>(`
+      SELECT
+        s.name as skill_name,
+        COUNT(DISTINCT CASE WHEN gs.level >= 15 THEN gs.game_id END) as games_15_plus,
+        COUNT(DISTINCT CASE WHEN gs.level >= 20 THEN gs.game_id END) as games_20_plus,
+        ROUND(AVG(gs.level)::numeric, 1) as avg_level
+      FROM game_skills gs
+      JOIN skills s ON gs.skill_id = s.id
+      JOIN games g ON gs.game_id = g.id
+      LEFT JOIN races r ON g.race_id = r.id
+      LEFT JOIN backgrounds b ON g.background_id = b.id
+      LEFT JOIN gods god ON g.god_id = god.id
+      LEFT JOIN game_versions v ON g.version_id = v.id
+      ${whereClause}
+      GROUP BY s.name
+      ORDER BY games_20_plus DESC, games_15_plus DESC, avg_level DESC
+    `, params),
   ]);
 
+  const totalGames = Number(totalGamesResult.rows[0]?.total_games ?? 0);
+
   return {
+    totalGames,
     progression: result.rows,
     finalSkills: finalSkillsResult.rows,
+    finalDistribution: distributionResult.rows,
+    capstoneSkills: capstoneResult.rows.map((row) => {
+      const games15 = Number(row.games_15_plus);
+      const games20 = Number(row.games_20_plus);
+      return {
+        skill_name: row.skill_name,
+        games_15_plus: games15,
+        games_20_plus: games20,
+        pct_15_plus: totalGames > 0 ? Number(((games15 / totalGames) * 100).toFixed(1)) : 0,
+        pct_20_plus: totalGames > 0 ? Number(((games20 / totalGames) * 100).toFixed(1)) : 0,
+        avg_level: Number(row.avg_level),
+      };
+    }),
   };
 }
 
