@@ -48,6 +48,10 @@ export default function AboutPage() {
             30,000 were still available. Because these runs come from players sustaining long
             streaks, the dataset offers unusually strong insight into high-level consistent play.
           </p>
+          <p className="text-sm text-muted-foreground mb-3">
+            This site uses Google Analytics to understand how people are using the tool so I can
+            improve it. It is not used for ads or monetization.
+          </p>
           <p className="text-sm text-muted-foreground">
             If you like what you see here, please check out{" "}
             <a href="/appeal" className="text-primary hover:underline">the appeal</a>.

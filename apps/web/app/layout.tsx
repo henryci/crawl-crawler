@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { GoogleAnalytics } from "@/components/google-analytics"
 
 const geist = Geist({
   subsets: ["latin"],
@@ -48,6 +49,7 @@ export default function RootLayout({
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <GoogleAnalytics />
         <Analytics />
       </body>
     </html>

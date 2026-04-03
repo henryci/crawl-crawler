@@ -78,6 +78,14 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
+## Analytics
+
+This site uses Google Analytics to understand how people use the app and prioritize improvements.
+It is not used for ads or monetization.
+
+Google Analytics is only enabled in production when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set.
+It does not run in local development.
+
 ## Load Data into the Database
 
 If your main question is "how do I actually populate the DB?", start here.
