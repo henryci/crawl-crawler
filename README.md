@@ -126,7 +126,7 @@ pnpm mark:streaks-updated
 ```
 
 Use this method for large datasets because it is much faster than row-by-row inserts.
-After CSV + COPY, run `pnpm mark:streaks-updated` so the About page shows the latest streak load date.
+After CSV + COPY, run `pnpm mark:streaks-updated` so the About page shows the latest streak load date and analytics caches are invalidated.
 
 ## Load Combo Records Data
 

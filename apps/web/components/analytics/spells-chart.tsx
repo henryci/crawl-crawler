@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -26,10 +27,12 @@ interface SpellsChartProps {
   queryString: string;
 }
 
+const PAGE_SIZE = 30;
+
 export function SpellsChart({ queryString }: SpellsChartProps) {
   const [loading, setLoading] = useState(true);
   const [spells, setSpells] = useState<SpellData[]>([]);
-  const [totalGames, setTotalGames] = useState(0);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     async function loadSpells() {
@@ -39,7 +42,6 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
         if (!response.ok) throw new Error("Failed to load spells");
         const data = await response.json();
         setSpells(data.spells);
-        setTotalGames(data.totalGames);
       } catch (err) {
         console.error("Failed to load spells:", err);
       } finally {
@@ -48,6 +50,15 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
     }
     loadSpells();
   }, [queryString]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [queryString]);
+
+  useEffect(() => {
+    const maxPage = Math.max(0, Math.ceil(spells.length / PAGE_SIZE) - 1);
+    setPage((currentPage) => Math.min(currentPage, maxPage));
+  }, [spells.length]);
 
   function getSpellLevelColor(level: number | null): string {
     if (!level) return "bg-secondary/50 border-border text-muted-foreground";
@@ -68,54 +79,13 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Games
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {totalGames.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Unique Spells Used
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-mana">
-              {spells.length}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Most Popular
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold text-health truncate">
-              {spells[0]?.spell_name ?? "—"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {spells[0] ? `${spells[0].percentage}% of games` : ""}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+  const totalPages = Math.ceil(spells.length / PAGE_SIZE);
+  const pageStart = page * PAGE_SIZE;
+  const pageEnd = pageStart + PAGE_SIZE;
+  const paginatedSpells = spells.slice(pageStart, pageEnd);
 
-      {/* Spells Table */}
+  return (
+    <div>
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-lg">Spell Popularity</CardTitle>
@@ -140,11 +110,11 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {spells.slice(0, 30).map((spell, index) => (
+                  {paginatedSpells.map((spell, index) => (
                     <TableRow key={spell.spell_name} className="hover:bg-secondary/30">
                       <TableCell className="font-medium">
                         <span className="text-muted-foreground mr-2 text-xs">
-                          #{index + 1}
+                          #{pageStart + index + 1}
                         </span>
                         {spell.spell_name}
                       </TableCell>
@@ -183,6 +153,60 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
             </div>
           )}
         </CardContent>
+        {spells.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <div className="text-sm text-muted-foreground">
+              Showing{" "}
+              <span className="font-mono text-foreground">{(pageStart + 1).toLocaleString()}</span>
+              {" - "}
+              <span className="font-mono text-foreground">{Math.min(pageEnd, spells.length).toLocaleString()}</span>
+              {" of "}
+              <span className="font-mono text-foreground">{spells.length.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="px-3 text-sm text-muted-foreground">
+                Page <span className="font-mono text-foreground">{page + 1}</span> of{" "}
+                <span className="font-mono text-foreground">{totalPages}</span>
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
