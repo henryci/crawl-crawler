@@ -41,7 +41,8 @@ export default function AppealPage() {
           Right now, most of it is trapped in formats that are hard to work with
           and scattered across servers with no unified access. Below are three
           proposals — ranging from practical to ambitious — that would unlock
-          this data for players and tool builders alike.
+          this data for players and tool builders alike. I would be happy to 
+          work on any of these if we agree on the requirements.
         </p>
       </div>
 
