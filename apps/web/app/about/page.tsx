@@ -38,9 +38,9 @@ export default function AboutPage() {
             <a href="https://crawl.develz.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">DCSS</a>{" "}
             data. As a turn-based game, every action in every game is recorded — giving us a depth
             of data that most games simply don't have, and making it possible to build search and
-            analytics experiences that are unique to our community. It's built on a shaky
+            analytics experiences that are unique to our community. This tool is built on a shaky
             foundation — parsing morgue files is genuinely hard, and the parser is far from
-            perfect — but it's enough to show what's possible. Check out{" "}
+            perfect — but it's enough to show what's possible. If you like what you see, Check out{" "}
             <a href="/appeal" className="text-primary hover:underline">the Appeal</a>{" "}
             for ideas on what we can build together.
           </p>
