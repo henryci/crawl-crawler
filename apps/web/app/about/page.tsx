@@ -15,7 +15,25 @@ export default function AboutPage() {
             <p className="text-xs text-muted-foreground">
               CrawlCrawler is still very much a test project. The big thing to watch out for is that the morgue parser is very fragile, so there will be data errors.
               I also have no sense of what load this service will see, so don't be surprised if it's slow, or down.
-              If you encounter any bugs or have suggestions, please send me an email at: me(at)henrycipolla.com.
+              If you encounter any bugs or have suggestions, please open a{" "}
+              <a
+                href="https://github.com/henryci/crawl-crawler/issues/new/choose"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                GitHub issue
+              </a>{" "}
+              or start a{" "}
+              <a
+                href="https://github.com/henryci/crawl-crawler/discussions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                GitHub discussion
+              </a>
+              .
             </p>
           </div>
         </div>

@@ -241,7 +241,25 @@ export default function AppealPage() {
           the data is clean and complete.
         </p>
         <p className="text-xs text-muted-foreground/60">
-          Questions or thoughts? Reach me at me(at)henrycipolla.com.
+          Questions or thoughts? Start a{" "}
+          <a
+            href="https://github.com/henryci/crawl-crawler/discussions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            GitHub discussion
+          </a>{" "}
+          or message me on{" "}
+          <a
+            href="https://www.reddit.com/user/henryci/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            Reddit (@henryci)
+          </a>
+          .
         </p>
       </div>
     </PageWrapper>
