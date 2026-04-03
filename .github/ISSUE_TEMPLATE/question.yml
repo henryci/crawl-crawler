@@ -1,0 +1,25 @@
+name: Question
+description: Ask a usage or project question.
+title: "[Question]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions are welcome. Include as much context as possible so maintainers can answer quickly.
+  - type: textarea
+    id: question
+    attributes:
+      label: What is your question?
+      description: Tell us what you are trying to do and where you are blocked.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant context
+      description: Commands, errors, links, and the package/page involved.
+      placeholder: |
+        I ran `pnpm load:morgues ...` and got ...
+        Working in `scripts/morgue-loader`.

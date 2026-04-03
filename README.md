@@ -190,3 +190,8 @@ pnpm download:combo-records
 - `scripts/morgue-parser-diagnostic/README.md` - Troubleshoot parser behavior
 - `scripts/combo-records-updater/README.md` - Update combo records data
 
+## Contributing
+
+- For bugs, features, and questions, open a GitHub issue using the provided templates.
+- See `CONTRIBUTING.md` for contribution workflow and expectations.
+

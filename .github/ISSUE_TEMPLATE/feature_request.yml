@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest an idea or improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Clear problem statements are the fastest way to turn requests into shipped work.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user problem are you trying to solve?
+      placeholder: I want to compare spell usage across versions without exporting data manually.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe what you would like to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or alternatives have you tried?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web UI (apps/web)
+        - API routes (apps/web/app/api)
+        - Morgue parser package
+        - Player parser package
+        - DB or migrations
+        - Scripts or tooling
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Mockups, examples, links, or notes.

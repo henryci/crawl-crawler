@@ -1,0 +1,49 @@
+name: Bug report
+description: Report something that is broken or behaving unexpectedly.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please provide enough detail for us to reproduce and fix it quickly.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A short description of the bug and what you expected instead.
+      placeholder: The analytics filters reset after selecting a species...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Please include exact steps, links, commands, or sample input.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Affected area
+      description: Which package/app is affected?
+      placeholder: apps/web, packages/dcss-morgue-parser, scripts/morgue-loader, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or morgue snippet
+      description: Paste any relevant output or screenshots.
+      render: shell
+  - type: input
+    id: environment
+    attributes:
+      label: Environment (optional)
+      description: Browser, OS, Node.js, and pnpm versions can help.
+      placeholder: macOS 15, Node 20.11, pnpm 9.12, Chrome 124
