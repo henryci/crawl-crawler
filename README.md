@@ -82,6 +82,20 @@ Open `http://localhost:3000`.
 
 If your main question is "how do I actually populate the DB?", start here.
 
+### Step 0: Get morgue files first
+
+Before loading, you need a directory of morgue `.txt` files.
+
+If you do not already have morgues on disk, run the downloader:
+
+```bash
+cd scripts/streak-downloader
+python download_morgues.py "http://crawl.akrasiac.org/scoring/streaks.html"
+```
+
+By default this writes files to `scripts/streak-downloader/outputs`.
+See `scripts/streak-downloader/README.md` for options like sampling, output directory, and delay.
+
 ### Option A: Direct loading (simple, incremental)
 
 ```bash
