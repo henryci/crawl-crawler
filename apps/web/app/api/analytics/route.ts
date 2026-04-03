@@ -20,6 +20,11 @@ interface FilterParams {
   maxTurns?: number;
   minScore?: number;
   maxScore?: number;
+  skillFilters?: Array<{
+    skillName: string;
+    skillLevel: number;
+    skillLevelMode: 'gte' | 'lt' | 'eq';
+  }>;
   player?: string;
   excludeLegacy?: boolean;
   limit?: number;
@@ -128,6 +133,23 @@ function parseFilters(searchParams: URLSearchParams): FilterParams {
   
   const maxScore = sanitizeInt(searchParams.get('maxScore'), 0);
   if (maxScore !== null) filters.maxScore = maxScore;
+
+  const skillFilters: NonNullable<FilterParams['skillFilters']> = [];
+  for (const suffix of ['', '2', '3']) {
+    const skillName = sanitizeString(searchParams.get(`skillName${suffix}`));
+    const skillLevel = sanitizeInt(searchParams.get(`skillLevel${suffix}`), 0, 27);
+    if (skillName && skillLevel !== null) {
+      const skillLevelMode = searchParams.get(`skillLevelMode${suffix}`);
+      skillFilters.push({
+        skillName,
+        skillLevel,
+        skillLevelMode: skillLevelMode === 'lt' ? 'lt' : skillLevelMode === 'eq' ? 'eq' : 'gte',
+      });
+    }
+  }
+  if (skillFilters.length > 0) {
+    filters.skillFilters = skillFilters;
+  }
   
   const player = sanitizeString(searchParams.get('player'));
   if (player) filters.player = player;
@@ -220,6 +242,39 @@ function buildWhereClause(filters: FilterParams): { where: string; params: unkno
     params.push(filters.maxScore);
     paramIndex++;
   }
+
+  for (const skillFilter of filters.skillFilters ?? []) {
+    if (skillFilter.skillLevelMode === 'lt') {
+      conditions.push(`NOT EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level >= $${paramIndex + 1}
+      )`);
+    } else if (skillFilter.skillLevelMode === 'eq') {
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level = $${paramIndex + 1}
+      )`);
+    } else {
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level >= $${paramIndex + 1}
+      )`);
+    }
+    params.push(skillFilter.skillName, skillFilter.skillLevel);
+    paramIndex += 2;
+  }
   
   if (filters.player) {
     conditions.push(`g.player_name ILIKE $${paramIndex}`);
@@ -282,6 +337,7 @@ function analyticsCacheKey(filters: FilterParams): string {
     maxTurns: filters.maxTurns,
     minScore: filters.minScore,
     maxScore: filters.maxScore,
+    skillFilters: filters.skillFilters ?? [],
     excludeLegacy: filters.excludeLegacy === true,
     limit: filters.limit ?? 100,
     offset: filters.offset ?? 0,

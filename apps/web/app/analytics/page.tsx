@@ -21,7 +21,7 @@ import {
   Lightbulb,
   AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +91,15 @@ interface Filters {
   maxRunes: string;
   minTurns: string;
   maxTurns: string;
+  skillName: string;
+  skillLevel: string;
+  skillLevelMode: "gte" | "lt" | "eq";
+  skillName2: string;
+  skillLevel2: string;
+  skillLevelMode2: "gte" | "lt" | "eq";
+  skillName3: string;
+  skillLevel3: string;
+  skillLevelMode3: "gte" | "lt" | "eq";
   player: string;
   minVersion: string;
   maxVersion: string;
@@ -107,6 +116,15 @@ const clearFilters: Filters = {
   maxRunes: "",
   minTurns: "",
   maxTurns: "",
+  skillName: "",
+  skillLevel: "",
+  skillLevelMode: "gte",
+  skillName2: "",
+  skillLevel2: "",
+  skillLevelMode2: "gte",
+  skillName3: "",
+  skillLevel3: "",
+  skillLevelMode3: "gte",
   player: "",
   minVersion: "",
   maxVersion: "",
@@ -123,6 +141,15 @@ const defaultFilters: Filters = {
   maxRunes: "",
   minTurns: "",
   maxTurns: "",
+  skillName: "",
+  skillLevel: "",
+  skillLevelMode: "gte",
+  skillName2: "",
+  skillLevel2: "",
+  skillLevelMode2: "gte",
+  skillName3: "",
+  skillLevel3: "",
+  skillLevelMode3: "gte",
   player: "",
   minVersion: "0.20",
   maxVersion: "",
@@ -136,7 +163,10 @@ function parseFiltersFromUrl(searchParams: URLSearchParams): Filters | null {
   // Check if there are any filter params - if not, return null to use defaults
   const hasFilterParams = [
     'races', 'backgrounds', 'gods', 'isWin', 'minRunes', 'maxRunes',
-    'minTurns', 'maxTurns', 'player', 'minVersion', 'maxVersion', 'excludeLegacy'
+    'minTurns', 'maxTurns', 'skillName', 'skillLevel', 'skillLevelMode',
+    'skillName2', 'skillLevel2', 'skillLevelMode2',
+    'skillName3', 'skillLevel3', 'skillLevelMode3',
+    'player', 'minVersion', 'maxVersion', 'excludeLegacy'
   ].some(key => searchParams.has(key));
   
   if (!hasFilterParams) return null;
@@ -150,6 +180,27 @@ function parseFiltersFromUrl(searchParams: URLSearchParams): Filters | null {
     maxRunes: searchParams.get('maxRunes') ?? "",
     minTurns: searchParams.get('minTurns') ?? "",
     maxTurns: searchParams.get('maxTurns') ?? "",
+    skillName: searchParams.get('skillName') ?? "",
+    skillLevel: searchParams.get('skillLevel') ?? "",
+    skillLevelMode: searchParams.get('skillLevelMode') === 'lt'
+      ? 'lt'
+      : searchParams.get('skillLevelMode') === 'eq'
+      ? 'eq'
+      : 'gte',
+    skillName2: searchParams.get('skillName2') ?? "",
+    skillLevel2: searchParams.get('skillLevel2') ?? "",
+    skillLevelMode2: searchParams.get('skillLevelMode2') === 'lt'
+      ? 'lt'
+      : searchParams.get('skillLevelMode2') === 'eq'
+      ? 'eq'
+      : 'gte',
+    skillName3: searchParams.get('skillName3') ?? "",
+    skillLevel3: searchParams.get('skillLevel3') ?? "",
+    skillLevelMode3: searchParams.get('skillLevelMode3') === 'lt'
+      ? 'lt'
+      : searchParams.get('skillLevelMode3') === 'eq'
+      ? 'eq'
+      : 'gte',
     player: searchParams.get('player') ?? "",
     minVersion: searchParams.get('minVersion') ?? "",
     maxVersion: searchParams.get('maxVersion') ?? "",
@@ -170,6 +221,21 @@ function filtersToQueryParams(filters: Filters): URLSearchParams {
   if (filters.maxRunes) params.set("maxRunes", filters.maxRunes);
   if (filters.minTurns) params.set("minTurns", filters.minTurns);
   if (filters.maxTurns) params.set("maxTurns", filters.maxTurns);
+  if (filters.skillName && filters.skillLevel) {
+    params.set("skillName", filters.skillName);
+    params.set("skillLevel", filters.skillLevel);
+    params.set("skillLevelMode", filters.skillLevelMode);
+  }
+  if (filters.skillName2 && filters.skillLevel2) {
+    params.set("skillName2", filters.skillName2);
+    params.set("skillLevel2", filters.skillLevel2);
+    params.set("skillLevelMode2", filters.skillLevelMode2);
+  }
+  if (filters.skillName3 && filters.skillLevel3) {
+    params.set("skillName3", filters.skillName3);
+    params.set("skillLevel3", filters.skillLevel3);
+    params.set("skillLevelMode3", filters.skillLevelMode3);
+  }
   if (filters.player) params.set("player", filters.player);
   if (filters.minVersion) params.set("minVersion", filters.minVersion);
   if (filters.maxVersion) params.set("maxVersion", filters.maxVersion);
@@ -203,6 +269,15 @@ function filtersEqual(a: Filters, b: Filters): boolean {
     a.maxRunes === b.maxRunes &&
     a.minTurns === b.minTurns &&
     a.maxTurns === b.maxTurns &&
+    a.skillName === b.skillName &&
+    a.skillLevel === b.skillLevel &&
+    a.skillLevelMode === b.skillLevelMode &&
+    a.skillName2 === b.skillName2 &&
+    a.skillLevel2 === b.skillLevel2 &&
+    a.skillLevelMode2 === b.skillLevelMode2 &&
+    a.skillName3 === b.skillName3 &&
+    a.skillLevel3 === b.skillLevel3 &&
+    a.skillLevelMode3 === b.skillLevelMode3 &&
     a.player === b.player &&
     a.minVersion === b.minVersion &&
     a.maxVersion === b.maxVersion &&
@@ -457,6 +532,14 @@ function AnalyticsContent() {
     }));
   }, [lookups]);
 
+  const skillOptions = useMemo(() => {
+    if (!lookups) return [];
+    return lookups.skills.map(skill => ({
+      value: skill.name,
+      label: skill.name,
+    }));
+  }, [lookups]);
+
   // Get unique versions for the version selector
   const versionOptions = useMemo(() => {
     if (!lookups) return [];
@@ -506,201 +589,195 @@ function AnalyticsContent() {
       />
 
       {/* Filters Section */}
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">Filters</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={activePreset === "default" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => applyPreset("default")}
+            className="h-7 text-xs"
+          >
+            Default
+          </Button>
+          <Button
+            variant={activePreset === "clear" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => applyPreset("clear")}
+            className="h-7 text-xs"
+          >
+            Clear
+          </Button>
+        </div>
+      </div>
       <Card className="bg-card border-border mb-6">
-        <CardHeader className="py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <CardTitle className="text-base">Filters</CardTitle>
-              <div className="flex items-center gap-1 ml-2">
-                <Button
-                  variant={activePreset === "default" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => applyPreset("default")}
-                  className="h-7 text-xs"
-                >
-                  Default
-                </Button>
-                <Button
-                  variant={activePreset === "clear" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => applyPreset("clear")}
-                  className="h-7 text-xs"
-                >
-                  Clear
-                </Button>
+        <CardContent className="py-3">
+          <div className="space-y-4">
+            <div>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Min Version</label>
+                  <Select
+                    value={filters.minVersion || "all"}
+                    onValueChange={(v) => updateFilters(prev => ({
+                      ...prev,
+                      minVersion: v === "all" ? "" : v,
+                    }))}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Any" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any</SelectItem>
+                      {versionOptions.map((v) => (
+                        <SelectItem key={v.value} value={v.value}>
+                          {v.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Max Version</label>
+                  <Select
+                    value={filters.maxVersion || "all"}
+                    onValueChange={(v) => updateFilters(prev => ({
+                      ...prev,
+                      maxVersion: v === "all" ? "" : v,
+                    }))}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="Any" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any</SelectItem>
+                      {versionOptions.map((v) => (
+                        <SelectItem key={v.value} value={v.value}>
+                          {v.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Player Name</label>
+                  <Input
+                    placeholder="Search by player name..."
+                    value={filters.player}
+                    onChange={(e) => updateFilters(prev => ({ ...prev, player: e.target.value }))}
+                    className="h-9 text-sm"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 pb-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* Race Multi-Select */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Species</label>
-                <MultiSelect
-                  options={raceOptions}
-                  selected={filters.races}
-                  onChange={(races) => updateFilters(prev => ({ ...prev, races }))}
-                  placeholder="All Species"
-                  className="text-sm"
-                />
-              </div>
 
-              {/* Background Multi-Select */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Background</label>
-                <MultiSelect
-                  options={backgroundOptions}
-                  selected={filters.backgrounds}
-                  onChange={(backgrounds) => updateFilters(prev => ({ ...prev, backgrounds }))}
-                  placeholder="All Backgrounds"
-                  className="text-sm"
-                />
+            <div className="border-t border-border/60 pt-3">
+              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Outcome</label>
+                  <Select
+                    value={filters.isWin || "all"}
+                    onValueChange={(v) => updateFilters(prev => ({
+                      ...prev,
+                      isWin: v === "all" ? "" : v,
+                    }))}
+                  >
+                    <SelectTrigger className="h-9 w-full text-sm">
+                      <SelectValue placeholder="All Games" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Games</SelectItem>
+                      <SelectItem value="true">Wins Only</SelectItem>
+                      <SelectItem value="false">Deaths Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Min Runes</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={filters.minRunes}
+                    onChange={(e) => updateFilters(prev => ({ ...prev, minRunes: e.target.value }))}
+                    className="h-9 text-sm"
+                    min={0}
+                    max={15}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Max Runes</label>
+                  <Input
+                    type="number"
+                    placeholder="15"
+                    value={filters.maxRunes}
+                    onChange={(e) => updateFilters(prev => ({ ...prev, maxRunes: e.target.value }))}
+                    className="h-9 text-sm"
+                    min={0}
+                    max={15}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Min Turns</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={filters.minTurns}
+                    onChange={(e) => updateFilters(prev => ({ ...prev, minTurns: e.target.value }))}
+                    className="h-9 text-sm"
+                    min={0}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Max Turns</label>
+                  <Input
+                    type="number"
+                    placeholder="∞"
+                    value={filters.maxTurns}
+                    onChange={(e) => updateFilters(prev => ({ ...prev, maxTurns: e.target.value }))}
+                    className="h-9 text-sm"
+                    min={0}
+                  />
+                </div>
               </div>
+            </div>
 
-              {/* God Multi-Select */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">God</label>
-                <MultiSelect
-                  options={godOptions}
-                  selected={filters.gods}
-                  onChange={(gods) => updateFilters(prev => ({ ...prev, gods }))}
-                  placeholder="All Gods"
-                  className="text-sm"
-                />
+            <div className="border-t border-border/60 pt-3">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Species</label>
+                  <MultiSelect
+                    options={raceOptions}
+                    selected={filters.races}
+                    onChange={(races) => updateFilters(prev => ({ ...prev, races }))}
+                    placeholder="All Species"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Background</label>
+                  <MultiSelect
+                    options={backgroundOptions}
+                    selected={filters.backgrounds}
+                    onChange={(backgrounds) => updateFilters(prev => ({ ...prev, backgrounds }))}
+                    placeholder="All Backgrounds"
+                    className="text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">God</label>
+                  <MultiSelect
+                    options={godOptions}
+                    selected={filters.gods}
+                    onChange={(gods) => updateFilters(prev => ({ ...prev, gods }))}
+                    placeholder="All Gods"
+                    className="text-sm"
+                  />
+                </div>
               </div>
-
-              {/* Win Filter */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Outcome</label>
-                <Select
-                  value={filters.isWin || "all"}
-                  onValueChange={(v) => updateFilters(prev => ({
-                    ...prev,
-                    isWin: v === "all" ? "" : v,
-                  }))}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="All Games" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Games</SelectItem>
-                    <SelectItem value="true">Wins Only</SelectItem>
-                    <SelectItem value="false">Deaths Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Version Range */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Min Version</label>
-                <Select
-                  value={filters.minVersion || "all"}
-                  onValueChange={(v) => updateFilters(prev => ({
-                    ...prev,
-                    minVersion: v === "all" ? "" : v,
-                  }))}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Any" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Any</SelectItem>
-                    {versionOptions.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Max Version</label>
-                <Select
-                  value={filters.maxVersion || "all"}
-                  onValueChange={(v) => updateFilters(prev => ({
-                    ...prev,
-                    maxVersion: v === "all" ? "" : v,
-                  }))}
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Any" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Any</SelectItem>
-                    {versionOptions.map((v) => (
-                      <SelectItem key={v.value} value={v.value}>
-                        {v.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Runes Range */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Min Runes</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={filters.minRunes}
-                  onChange={(e) => updateFilters(prev => ({ ...prev, minRunes: e.target.value }))}
-                  className="h-9 text-sm"
-                  min={0}
-                  max={15}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Max Runes</label>
-                <Input
-                  type="number"
-                  placeholder="15"
-                  value={filters.maxRunes}
-                  onChange={(e) => updateFilters(prev => ({ ...prev, maxRunes: e.target.value }))}
-                  className="h-9 text-sm"
-                  min={0}
-                  max={15}
-                />
-              </div>
-
-              {/* Turns Range */}
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Min Turns</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={filters.minTurns}
-                  onChange={(e) => updateFilters(prev => ({ ...prev, minTurns: e.target.value }))}
-                  className="h-9 text-sm"
-                  min={0}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Max Turns</label>
-                <Input
-                  type="number"
-                  placeholder="∞"
-                  value={filters.maxTurns}
-                  onChange={(e) => updateFilters(prev => ({ ...prev, maxTurns: e.target.value }))}
-                  className="h-9 text-sm"
-                  min={0}
-                />
-              </div>
-
-              {/* Player Search */}
-              <div className="md:col-span-2">
-                <label className="text-xs text-muted-foreground mb-1 block">Player Name</label>
-                <Input
-                  placeholder="Search by player name..."
-                  value={filters.player}
-                  onChange={(e) => updateFilters(prev => ({ ...prev, player: e.target.value }))}
-                  className="h-9 text-sm"
-                />
-              </div>
-
-              {/* Exclude Legacy Checkbox */}
-              <div className="md:col-span-2 flex items-center gap-2 pt-5">
+              <div className="mt-3 flex items-center gap-2">
                 <Checkbox
                   id="exclude-legacy"
                   checked={filters.excludeLegacy}
@@ -717,7 +794,183 @@ function AnalyticsContent() {
                 </label>
               </div>
             </div>
-          </CardContent>
+
+            <div className="border-t border-border/60 pt-3">
+              <div className="space-y-2">
+                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem]">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Skill</label>
+                    <Select
+                      value={filters.skillName || "all"}
+                      onValueChange={(v) => updateFilters(prev => ({
+                        ...prev,
+                        skillName: v === "all" ? "" : v,
+                        skillLevel: v === "all" ? "" : prev.skillLevel || "1",
+                      }))}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue placeholder="Any Skill" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Skill</SelectItem>
+                        {skillOptions.map((skill) => (
+                          <SelectItem key={skill.value} value={skill.value}>
+                            {skill.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Condition</label>
+                    <Select
+                      value={filters.skillLevelMode}
+                      onValueChange={(v: "gte" | "lt" | "eq") => updateFilters(prev => ({
+                        ...prev,
+                        skillLevelMode: v,
+                      }))}
+                      disabled={!filters.skillName}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gte">At least level</SelectItem>
+                        <SelectItem value="eq">Exactly level</SelectItem>
+                        <SelectItem value="lt">Below level</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Level</label>
+                    <Input
+                      type="number"
+                      placeholder="1"
+                      value={filters.skillLevel}
+                      onChange={(e) => updateFilters(prev => ({ ...prev, skillLevel: e.target.value }))}
+                      className="h-9 w-full text-sm"
+                      min={0}
+                      max={27}
+                      disabled={!filters.skillName}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem]">
+                  <div>
+                    <Select
+                      value={filters.skillName2 || "all"}
+                      onValueChange={(v) => updateFilters(prev => ({
+                        ...prev,
+                        skillName2: v === "all" ? "" : v,
+                        skillLevel2: v === "all" ? "" : prev.skillLevel2 || "1",
+                      }))}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue placeholder="Any Skill" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Skill</SelectItem>
+                        {skillOptions.map((skill) => (
+                          <SelectItem key={skill.value} value={skill.value}>
+                            {skill.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Select
+                      value={filters.skillLevelMode2}
+                      onValueChange={(v: "gte" | "lt" | "eq") => updateFilters(prev => ({
+                        ...prev,
+                        skillLevelMode2: v,
+                      }))}
+                      disabled={!filters.skillName2}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gte">At least level</SelectItem>
+                        <SelectItem value="eq">Exactly level</SelectItem>
+                        <SelectItem value="lt">Below level</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Input
+                      type="number"
+                      placeholder="1"
+                      value={filters.skillLevel2}
+                      onChange={(e) => updateFilters(prev => ({ ...prev, skillLevel2: e.target.value }))}
+                      className="h-9 w-full text-sm"
+                      min={0}
+                      max={27}
+                      disabled={!filters.skillName2}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem]">
+                  <div>
+                    <Select
+                      value={filters.skillName3 || "all"}
+                      onValueChange={(v) => updateFilters(prev => ({
+                        ...prev,
+                        skillName3: v === "all" ? "" : v,
+                        skillLevel3: v === "all" ? "" : prev.skillLevel3 || "1",
+                      }))}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue placeholder="Any Skill" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Any Skill</SelectItem>
+                        {skillOptions.map((skill) => (
+                          <SelectItem key={skill.value} value={skill.value}>
+                            {skill.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Select
+                      value={filters.skillLevelMode3}
+                      onValueChange={(v: "gte" | "lt" | "eq") => updateFilters(prev => ({
+                        ...prev,
+                        skillLevelMode3: v,
+                      }))}
+                      disabled={!filters.skillName3}
+                    >
+                      <SelectTrigger className="h-9 w-full text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gte">At least level</SelectItem>
+                        <SelectItem value="eq">Exactly level</SelectItem>
+                        <SelectItem value="lt">Below level</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Input
+                      type="number"
+                      placeholder="1"
+                      value={filters.skillLevel3}
+                      onChange={(e) => updateFilters(prev => ({ ...prev, skillLevel3: e.target.value }))}
+                      className="h-9 w-full text-sm"
+                      min={0}
+                      max={27}
+                      disabled={!filters.skillName3}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Results Count and Tabs */}

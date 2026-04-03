@@ -42,6 +42,12 @@ export function sanitizeInt(value: string | null | undefined, min = 0, max = Num
   return Math.max(min, Math.min(max, parsed));
 }
 
+export interface SkillThresholdFilter {
+  skillName: string;
+  skillLevel: number;
+  skillLevelMode: 'gte' | 'lt' | 'eq';
+}
+
 /**
  * Parse common filter parameters from URL search params.
  */
@@ -56,6 +62,7 @@ export interface CommonFilters {
   maxRunes: number | null;
   minTurns: number | null;
   maxTurns: number | null;
+  skillFilters: SkillThresholdFilter[];
   player: string | null;
   excludeLegacy: boolean;
 }
@@ -81,6 +88,7 @@ export function commonFiltersCacheKey(filters: CommonFilters): string {
     maxRunes: filters.maxRunes,
     minTurns: filters.minTurns,
     maxTurns: filters.maxTurns,
+    skillFilters: filters.skillFilters,
     excludeLegacy: filters.excludeLegacy,
   });
 }
@@ -110,6 +118,19 @@ export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters
   const maxRunes = sanitizeInt(searchParams.get('maxRunes'), 0, 15);
   const minTurns = sanitizeInt(searchParams.get('minTurns'), 0);
   const maxTurns = sanitizeInt(searchParams.get('maxTurns'), 0);
+  const skillFilters: SkillThresholdFilter[] = [];
+  for (const suffix of ['', '2', '3']) {
+    const skillNameRaw = sanitizeString(searchParams.get(`skillName${suffix}`));
+    const skillLevelRaw = sanitizeInt(searchParams.get(`skillLevel${suffix}`), 0, 27);
+    if (skillNameRaw && skillLevelRaw !== null) {
+      const skillLevelModeRaw = searchParams.get(`skillLevelMode${suffix}`);
+      skillFilters.push({
+        skillName: skillNameRaw,
+        skillLevel: skillLevelRaw,
+        skillLevelMode: skillLevelModeRaw === 'lt' ? 'lt' : skillLevelModeRaw === 'eq' ? 'eq' : 'gte',
+      });
+    }
+  }
   
   const player = sanitizeString(searchParams.get('player'));
   
@@ -126,6 +147,7 @@ export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters
     maxRunes,
     minTurns,
     maxTurns,
+    skillFilters,
     player,
     excludeLegacy,
   };
@@ -195,6 +217,39 @@ export function buildCommonWhereClause(filters: CommonFilters, options?: { inclu
     conditions.push(`g.total_turns <= $${paramIndex}`);
     params.push(filters.maxTurns);
     paramIndex++;
+  }
+
+  for (const skillFilter of filters.skillFilters) {
+    if (skillFilter.skillLevelMode === 'lt') {
+      conditions.push(`NOT EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level >= $${paramIndex + 1}
+      )`);
+    } else if (skillFilter.skillLevelMode === 'eq') {
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level = $${paramIndex + 1}
+      )`);
+    } else {
+      conditions.push(`EXISTS (
+        SELECT 1
+        FROM game_skills gs
+        JOIN skills sf ON gs.skill_id = sf.id
+        WHERE gs.game_id = g.id
+          AND sf.name = $${paramIndex}
+          AND gs.level >= $${paramIndex + 1}
+      )`);
+    }
+    params.push(skillFilter.skillName, skillFilter.skillLevel);
+    paramIndex += 2;
   }
   
   if (filters.player) {
