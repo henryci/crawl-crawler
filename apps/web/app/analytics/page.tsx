@@ -978,13 +978,13 @@ function AnalyticsContent() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Tabs */}
           <TooltipProvider>
-            <TabsList className="bg-transparent gap-2 p-0">
+            <TabsList className="h-auto w-full flex-wrap justify-start bg-transparent gap-2 p-0 sm:w-auto">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
                     <TabsTrigger
                       value="games"
-                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <Gamepad2 className="w-4 h-4 mr-2" />
                       Games
@@ -998,7 +998,7 @@ function AnalyticsContent() {
                   <span className="inline-flex">
                     <TabsTrigger
                       value="breakdown"
-                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       Breakdown
@@ -1012,7 +1012,7 @@ function AnalyticsContent() {
                   <span className="inline-flex">
                     <TabsTrigger
                       value="trends"
-                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Trends
@@ -1026,7 +1026,7 @@ function AnalyticsContent() {
                   <span className="inline-flex">
                     <TabsTrigger
                       value="skills"
-                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <BookOpen className="w-4 h-4 mr-2" />
                       Skills
@@ -1040,7 +1040,7 @@ function AnalyticsContent() {
                   <span className="inline-flex">
                     <TabsTrigger
                       value="spells"
-                      className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
                     >
                       <Wand2 className="w-4 h-4 mr-2" />
                       Spells

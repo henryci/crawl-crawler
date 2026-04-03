@@ -351,44 +351,44 @@ function PlayerDataDisplay({ data }: { data: PlayerData }) {
 
       {/* Tabs for different views */}
       <Tabs defaultValue="wins" className="w-full">
-        <TabsList className="bg-transparent gap-2 p-0">
-          <TabsTrigger
-            value="wins"
-            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-          >
-            <Trophy className="w-4 h-4 mr-2" />
-            Wins ({data.wins.length})
-          </TabsTrigger>
-          {data.recentGames.length > 0 && (
+        <TabsList className="h-auto w-full flex-wrap justify-start bg-transparent gap-2 p-0">
             <TabsTrigger
-              value="recent"
-              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+              value="wins"
+              className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
             >
-              <Clock className="w-4 h-4 mr-2" />
-              Recent Games ({data.recentGames.length})
+              <Trophy className="w-4 h-4 mr-2" />
+              Wins ({data.wins.length})
             </TabsTrigger>
-          )}
-          <TabsTrigger
-            value="timeline"
-            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Timeline
-          </TabsTrigger>
-          <TabsTrigger
-            value="streaks"
-            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-          >
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Streaks ({data.streaks.length})
-          </TabsTrigger>
-          <TabsTrigger
-            value="combos"
-            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-          >
-            <Target className="w-4 h-4 mr-2" />
-            Combo Stats
-          </TabsTrigger>
+            {data.recentGames.length > 0 && (
+              <TabsTrigger
+                value="recent"
+                className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Recent Games ({data.recentGames.length})
+              </TabsTrigger>
+            )}
+            <TabsTrigger
+              value="timeline"
+              className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Timeline
+            </TabsTrigger>
+            <TabsTrigger
+              value="streaks"
+              className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Streaks ({data.streaks.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="combos"
+              className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Combo Stats
+            </TabsTrigger>
         </TabsList>
 
         <TabsContent value="wins" className="mt-6">
