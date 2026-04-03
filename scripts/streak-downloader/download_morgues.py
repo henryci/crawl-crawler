@@ -13,11 +13,12 @@ import csv
 import fcntl
 import os
 import random
+import shutil
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 from urllib.parse import urlparse
 
 import requests
@@ -37,9 +38,11 @@ class ProgressTracker:
     total: int
     delay_seconds: float = 0.0  # Delay between downloads (included in ETA)
     completed: int = 0
-    successful_downloads: int = 0  # Successful downloads only
+    downloaded: int = 0
+    skipped_exists: int = 0
+    skipped_server: int = 0  # host failed or previously known 404
     errors: int = 0  # Failed network requests
-    skipped: int = 0  # Items skipped (already exist, host failed)
+    requests_made: int = 0
     start_time: float = field(default_factory=time.time)
     # Track time spent on successful downloads only (not including delay)
     download_time: float = 0.0
@@ -53,25 +56,22 @@ class ProgressTracker:
         self._last_download_start = time.time()
     
     def record_result(self, result_type: str) -> None:
-        """
-        Record the result of processing an item.
-        
-        result_type should be one of:
-        - 'downloaded': successful download
-        - 'error': network error or invalid content
-        - 'skipped': file exists or host failed
-        """
+        """Record the result of processing an item."""
         self.completed += 1
-        
+
         if result_type == 'downloaded':
-            self.successful_downloads += 1
+            self.downloaded += 1
+            self.requests_made += 1
             # Only count time for successful downloads
             if self._last_download_start > 0:
                 self.download_time += time.time() - self._last_download_start
         elif result_type == 'error':
             self.errors += 1
-        else:  # skipped
-            self.skipped += 1
+            self.requests_made += 1
+        elif result_type == 'skipped_exists':
+            self.skipped_exists += 1
+        elif result_type == 'skipped_server':
+            self.skipped_server += 1
     
     def elapsed_seconds(self) -> float:
         """Return seconds elapsed since start."""
@@ -84,9 +84,9 @@ class ProgressTracker:
         This represents the real-world time for each download cycle:
         HTTP request time + mandatory delay.
         """
-        if self.successful_downloads == 0:
+        if self.downloaded == 0:
             return 0.0
-        avg_request_time = self.download_time / self.successful_downloads
+        avg_request_time = self.download_time / self.downloaded
         return avg_request_time + self.delay_seconds
     
     def downloads_per_minute(self) -> float:
@@ -105,7 +105,7 @@ class ProgressTracker:
         
         Includes the delay between downloads in the calculation.
         """
-        if self.successful_downloads < self.MIN_DOWNLOADS_FOR_ETA:
+        if self.downloaded < self.MIN_DOWNLOADS_FOR_ETA:
             return None
         
         # Average time per successful download (including delay)
@@ -118,6 +118,19 @@ class ProgressTracker:
         # This is conservative but more accurate than assuming the skip rate continues
         remaining_seconds = remaining_items * time_per_download
         return remaining_seconds / 60
+
+    def skip_adjusted_minutes_remaining(self) -> Optional[float]:
+        """
+        Estimate minutes remaining based on observed overall throughput.
+
+        This naturally accounts for skips, errors, and actual delay behavior.
+        """
+        if self.completed == 0:
+            return None
+
+        remaining_items = self.total - self.completed
+        avg_seconds_per_item = self.elapsed_seconds() / self.completed
+        return (remaining_items * avg_seconds_per_item) / 60
     
     def format_time(self, minutes: float) -> str:
         """Format minutes into a human-readable string."""
@@ -137,27 +150,67 @@ class ProgressTracker:
     def progress_line(self) -> str:
         """Generate a progress status line."""
         pct = (self.completed / self.total * 100) if self.total > 0 else 0
-        
-        parts = [f"[{self.completed}/{self.total}] ({pct:.1f}%)"]
-        
-        # Show skip count if any
-        if self.skipped > 0:
-            parts.append(f"[{self.skipped} skipped]")
-        
-        # Only show rate/ETA after we have enough successful downloads
-        if self.successful_downloads >= self.MIN_DOWNLOADS_FOR_ETA:
-            dpm = self.downloads_per_minute()
-            eta = self.estimated_minutes_remaining()
-            
-            parts.append(f"| {dpm:.1f} downloads/min")
-            
-            if eta is not None:
-                parts.append(f"| ETA: {self.format_time(eta)}")
-        elif self.successful_downloads > 0:
-            # Show that we're collecting data
-            parts.append(f"| {self.successful_downloads}/{self.MIN_DOWNLOADS_FOR_ETA} downloads for ETA...")
-        
-        return " ".join(parts)
+
+        remaining = self.total - self.completed
+        parts = [f"{self.completed}/{self.total} ({pct:.1f}%)"]
+        parts.append(f"Downloaded: {self.downloaded}")
+        parts.append(f"Skipped exists: {self.skipped_exists}")
+        parts.append(f"Skipped server: {self.skipped_server}")
+        parts.append(f"Remaining: {remaining}")
+
+        eta = self.estimated_minutes_remaining()
+        skip_eta = self.skip_adjusted_minutes_remaining()
+        if eta is not None:
+            parts.append(f"ETA: {self.format_time(eta)}")
+        if skip_eta is not None:
+            parts.append(f"Skip-adjusted ETA: {self.format_time(skip_eta)}")
+
+        return " | ".join(parts)
+
+
+class LiveStatusDisplay:
+    """
+    Render a single in-place status line while allowing logs to scroll above it.
+
+    Falls back to plain printing when stdout is not a TTY.
+    """
+
+    def __init__(self) -> None:
+        self.enabled = sys.stdout.isatty()
+        self._last_status = ""
+
+    def _truncate_for_terminal(self, text: str) -> str:
+        if not self.enabled:
+            return text
+        width = shutil.get_terminal_size(fallback=(120, 24)).columns
+        if width <= 0:
+            return text
+        return text[: max(1, width - 1)]
+
+    def update(self, status_line: str) -> None:
+        """Update the bottom status line in-place."""
+        self._last_status = self._truncate_for_terminal(status_line)
+        if not self.enabled:
+            return
+        sys.stdout.write(f"\r\033[2K{self._last_status}")
+        sys.stdout.flush()
+
+    def log(self, message: str) -> None:
+        """Print a scrolling log line above the persistent status line."""
+        if not self.enabled:
+            print(message)
+            return
+        sys.stdout.write("\r\033[2K")
+        sys.stdout.write(f"{message}\n")
+        if self._last_status:
+            sys.stdout.write(f"\r\033[2K{self._last_status}")
+        sys.stdout.flush()
+
+    def finish(self) -> None:
+        """Move cursor to the next line so final summary prints cleanly."""
+        if self.enabled and self._last_status:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
 
 
 def parse_args() -> argparse.Namespace:
@@ -401,6 +454,7 @@ def download_morgue(
     max_host_errors: int,
     url_tracker: UrlMappingTracker,
     skip_tracker: SkipUrlTracker,
+    log_line: Callable[[str], None] = print,
     verbose: bool = False,
 ) -> tuple[str, Optional[str]]:
     """
@@ -415,13 +469,13 @@ def download_morgue(
     # Skip if this URL is in the skip list (e.g., previously returned 404)
     if skip_tracker.should_skip(url):
         if verbose:
-            print(f"  Skipping (URL in skip list)")
+            log_line("  Skipping (URL in skip list)")
         return DownloadResult.SKIPPED_404, "URL previously returned 404"
     
     # Skip if we've already had too many errors from this host
     if host in failed_hosts:
         if verbose:
-            print(f"  Skipping (host previously failed)")
+            log_line("  Skipping (host previously failed)")
         return DownloadResult.SKIPPED_HOST_FAILED, f"Host {host} previously failed"
     
     filename = get_filename_from_url(url)
@@ -430,12 +484,12 @@ def download_morgue(
     # Skip if file already exists
     if output_path.exists():
         if verbose:
-            print(f"  Skipping (already exists)")
+            log_line("  Skipping (already exists)")
         return DownloadResult.SKIPPED_EXISTS, None
     
     try:
         if verbose:
-            print(f"  Downloading from {host}...")
+            log_line(f"  Downloading from {host}...")
         
         response = requests.get(url, timeout=30)
         response.raise_for_status()
@@ -445,7 +499,7 @@ def download_morgue(
         if not is_valid:
             error_msg = f"Invalid content: {reason}"
             record_host_error(host, host_error_counts, failed_hosts, max_host_errors)
-            print(f"  ERROR: {error_msg}")
+            log_line(f"  ERROR: {error_msg}")
             return DownloadResult.INVALID_CONTENT, error_msg
         
         # Write to file atomically (write to temp file, then rename)
@@ -462,20 +516,20 @@ def download_morgue(
         temp_path.rename(output_path)
         
         if verbose:
-            print(f"  Saved {filename}")
+            log_line(f"  Saved {filename}")
         
         return DownloadResult.DOWNLOADED, None
     
     except requests.exceptions.ConnectionError as e:
         error_msg = f"Connection error for {host}: {e}"
         record_host_error(host, host_error_counts, failed_hosts, max_host_errors)
-        print(f"  ERROR: {error_msg}")
+        log_line(f"  ERROR: {error_msg}")
         return DownloadResult.ERROR, error_msg
     
     except requests.exceptions.Timeout as e:
         error_msg = f"Timeout for {host}: {e}"
         record_host_error(host, host_error_counts, failed_hosts, max_host_errors)
-        print(f"  ERROR: {error_msg}")
+        log_line(f"  ERROR: {error_msg}")
         return DownloadResult.ERROR, error_msg
     
     except requests.exceptions.HTTPError as e:
@@ -483,19 +537,19 @@ def download_morgue(
         # Handle 404s specially - add to skip list for future runs
         if response.status_code == 404:
             skip_tracker.add_skip_url(url)
-            print(f"  ERROR: {error_msg} (added to skip list)")
+            log_line(f"  ERROR: {error_msg} (added to skip list)")
             return DownloadResult.ERROR_404, error_msg
         # Count toward host failure if:
         # - 5xx errors (server issues)
         # - 401/403 (host is blocking access)
         if response.status_code >= 500 or response.status_code in (401, 403):
             record_host_error(host, host_error_counts, failed_hosts, max_host_errors)
-        print(f"  ERROR: {error_msg}")
+        log_line(f"  ERROR: {error_msg}")
         return DownloadResult.ERROR, error_msg
     
     except Exception as e:
         error_msg = f"Unexpected error: {e}"
-        print(f"  ERROR: {error_msg}")
+        log_line(f"  ERROR: {error_msg}")
         return DownloadResult.ERROR, error_msg
 
 
@@ -542,16 +596,17 @@ def main() -> int:
     # Initialize progress tracker
     total = len(morgue_urls)
     progress = ProgressTracker(total=total, delay_seconds=args.delay)
+    status_display = LiveStatusDisplay()
     
     # Print initial status
     print()
-    print(f"Starting download of {total} morgue files...")
-    print(f"Output directory: {args.output_dir.absolute()}")
-    print(f"URL mapping file: {url_mapping_path.absolute()}")
-    print(f"Skip URLs file: {skip_urls_path.absolute()}")
+    status_display.log(f"Starting download of {total} morgue files...")
+    status_display.log(f"Output directory: {args.output_dir.absolute()}")
+    status_display.log(f"URL mapping file: {url_mapping_path.absolute()}")
+    status_display.log(f"Skip URLs file: {skip_urls_path.absolute()}")
     if skip_tracker.count() > 0:
-        print(f"Loaded {skip_tracker.count()} URLs to skip (previous 404s)")
-    print(f"Delay between downloads: {args.delay}s")
+        status_display.log(f"Loaded {skip_tracker.count()} URLs to skip (previous 404s)")
+    status_display.log(f"Delay between downloads: {args.delay}s")
     print()
     
     # Download morgues
@@ -564,9 +619,9 @@ def main() -> int:
     
     for i, url in enumerate(morgue_urls, 1):
         filename = get_filename_from_url(url)
-        
-        # Show progress with filename
-        print(f"{progress.progress_line()} - {filename}")
+
+        # Print each filename as a scrolling log line.
+        status_display.log(f"[{i}/{total}] {filename}")
         
         # Start timing this item
         progress.start_item()
@@ -579,6 +634,7 @@ def main() -> int:
             args.max_host_errors,
             url_tracker,
             skip_tracker,
+            log_line=status_display.log,
             verbose=args.verbose,
         )
         
@@ -605,27 +661,32 @@ def main() -> int:
             DownloadResult.INVALID_CONTENT,
         )
         
-        # Record progress with result type
+        # Record progress with detailed result type
         if result == DownloadResult.DOWNLOADED:
             progress.record_result('downloaded')
         elif result in (DownloadResult.ERROR, DownloadResult.ERROR_404, DownloadResult.INVALID_CONTENT):
             progress.record_result('error')
-        else:
-            progress.record_result('skipped')
+        elif result == DownloadResult.SKIPPED_EXISTS:
+            progress.record_result('skipped_exists')
+        elif result in (DownloadResult.SKIPPED_HOST_FAILED, DownloadResult.SKIPPED_404):
+            progress.record_result('skipped_server')
+
+        status_display.update(progress.progress_line())
         
         if i < total and args.delay > 0 and made_request:
             if args.verbose:
-                print(f"  Waiting {args.delay}s...")
+                status_display.log(f"  Waiting {args.delay}s...")
             time.sleep(args.delay)
     
     # Final summary
+    status_display.finish()
     elapsed_min = progress.elapsed_seconds() / 60
     download_time_min = progress.download_time / 60
     print()
     print("=" * 50)
     print(f"Download complete!")
     print(f"  Total time: {progress.format_time(elapsed_min)}")
-    if progress.successful_downloads > 0:
+    if progress.downloaded > 0:
         print(f"  Time spent downloading: {progress.format_time(download_time_min)}")
     print(f"  Total URLs: {total}")
     print(f"  Downloaded: {downloaded_count}")
@@ -634,7 +695,7 @@ def main() -> int:
     print(f"  Skipped (previous 404): {skipped_404_count}")
     print(f"  Errors (404): {error_404_count}")
     print(f"  Errors (other): {error_count}")
-    if progress.successful_downloads > 0:
+    if progress.downloaded > 0:
         print(f"  Average download rate: {progress.downloads_per_minute():.1f} downloads/min")
     if failed_hosts:
         print(f"  Failed hosts: {', '.join(sorted(failed_hosts))}")
