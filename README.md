@@ -62,7 +62,15 @@ PGPASSWORD=your_password
 pnpm db:migrate
 ```
 
-### 5) Run the web app
+### 5) Load combo records data
+
+The `/records` page reads from `apps/web/public/data/combo-records.json`, so refresh that file after setup (and whenever you want newer records):
+
+```bash
+pnpm download:combo-records
+```
+
+### 6) Run the web app
 
 ```bash
 pnpm dev
@@ -96,13 +104,24 @@ psql -d crawl_crawler -f <output-directory>/load.sql
 
 Use this method for large datasets because it is much faster than row-by-row inserts.
 
+## Load Combo Records Data
+
+Combo records are not stored in PostgreSQL. They are downloaded to a JSON file used by the web app.
+
+```bash
+pnpm download:combo-records
+```
+
+This updates `apps/web/public/data/combo-records.json`.
+
 ### Typical end-to-end ingestion flow
 
 1. Download morgues with `scripts/streak-downloader`
 2. Run `pnpm db:migrate`
 3. Load morgues via `pnpm load:morgues ...` (or CSV + COPY for bulk)
-4. Start the app with `pnpm dev`
-5. Explore `/analytics` in the web UI
+4. Run `pnpm download:combo-records`
+5. Start the app with `pnpm dev`
+6. Explore `/analytics` and `/records` in the web UI
 
 ## Common Commands (Workspace Root)
 
