@@ -1,71 +1,147 @@
 # Crawl Crawler
 
-A monorepo for DCSS (Dungeon Crawl Stone Soup) tools and utilities.
+Tools for working with [Dungeon Crawl Stone Soup (DCSS)](https://crawl.develz.org/) data: parse morgue files, load them into PostgreSQL, analyze games, and browse results in a Next.js web app.
 
-## Project Structure
+## What You Can Do Here
 
-```
+- Parse raw morgue `.txt` files into structured JSON
+- Load parsed game data into a PostgreSQL schema built for analytics
+- Run a web UI for player lookup, morgue breakdowns, records, and analytics
+- Download morgues from scoring/streak pages for bulk ingestion
+
+## Monorepo at a Glance
+
+This repo uses [pnpm workspaces](https://pnpm.io/workspaces).
+
+```text
 crawl-crawler/
 ├── apps/
-│   └── web/                    # Next.js web application
+│   └── web/                          # Next.js app (UI + API routes)
 ├── packages/
-│   └── dcss-morgue-parser/     # Library for parsing DCSS morgue files
+│   ├── dcss-morgue-parser/           # Morgue text -> structured data
+│   ├── dcss-player-parser/           # Player page HTML -> structured data
+│   ├── dcss-combo-records-parser/    # Combo records parser/CLI
+│   ├── dcss-game-data/               # Static DCSS reference data
+│   └── game-data-db/                 # PostgreSQL schema + migrations
 └── scripts/
-    └── streak-downloader/      # Python script for downloading morgue files
+    ├── streak-downloader/            # Download morgue files from streak pages
+    ├── morgue-loader/                # Parse + load morgues into PostgreSQL
+    ├── combo-records-updater/        # Refresh combo records JSON
+    └── morgue-parser-diagnostic/     # Investigate parser edge cases
 ```
 
-## Getting Started
+## Quick Start
 
-This project uses [pnpm](https://pnpm.io/) as its package manager with workspaces.
+### 1) Prerequisites
 
-### Prerequisites
+- Node.js 18+
+- pnpm 9+
+- PostgreSQL 14+ (for analytics/database-backed features)
 
-- Node.js >= 18
-- pnpm >= 9
-
-### Installation
+### 2) Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### Development
+### 3) Configure database env
+
+Create `apps/web/.env` with PostgreSQL connection details:
 
 ```bash
-# Run the web app in development mode
+PGHOST=localhost
+PGPORT=5432
+PGDATABASE=crawl_crawler
+PGUSER=your_username
+PGPASSWORD=your_password
+```
+
+### 4) Run migrations
+
+```bash
+pnpm db:migrate
+```
+
+### 5) Run the web app
+
+```bash
 pnpm dev
-
-# Build the web app
-pnpm build
-
-# Build the morgue parser library
-pnpm build:parser
-
-# Run parser tests
-pnpm test:parser
 ```
 
-## Packages
+Open `http://localhost:3000`.
 
-### @crawl-crawler/web
+## Load Data into the Database
 
-The main Next.js web application. Located in `apps/web/`.
+If your main question is "how do I actually populate the DB?", start here.
 
-### dcss-morgue-parser
-
-A TypeScript library for parsing DCSS morgue files. Can be used as a library or via CLI. Located in `packages/dcss-morgue-parser/`.
+### Option A: Direct loading (simple, incremental)
 
 ```bash
-# Use as CLI
-pnpm --filter dcss-morgue-parser cli <morgue-file>
+pnpm load:morgues <directory-with-morgue-txt-files>
 ```
 
-### streak-downloader
+Example:
 
-A Python script for downloading morgue files. Located in `scripts/streak-downloader/`.
+```bash
+pnpm load:morgues scripts/streak-downloader/outputs
+```
 
-See [scripts/streak-downloader/README.md](scripts/streak-downloader/README.md) for usage.
+### Option B: CSV + PostgreSQL COPY (fast for bulk imports)
 
-## Deployment
+```bash
+cd scripts/morgue-loader
+pnpm generate-csv <morgue-directory> <output-directory>
+psql -d crawl_crawler -f <output-directory>/load.sql
+```
 
-The web app can be deployed on Vercel. Configure the root directory to `apps/web` in your Vercel project settings.
+Use this method for large datasets because it is much faster than row-by-row inserts.
+
+### Typical end-to-end ingestion flow
+
+1. Download morgues with `scripts/streak-downloader`
+2. Run `pnpm db:migrate`
+3. Load morgues via `pnpm load:morgues ...` (or CSV + COPY for bulk)
+4. Start the app with `pnpm dev`
+5. Explore `/analytics` in the web UI
+
+## Common Commands (Workspace Root)
+
+```bash
+# App
+pnpm dev
+pnpm build
+pnpm lint
+
+# Parser package
+pnpm build:parser
+pnpm test:parser
+
+# Database
+pnpm db:migrate
+pnpm db:migrate:down
+pnpm db:reset
+pnpm load:morgues <dir>
+
+# Utilities
+pnpm diagnose:morgue
+pnpm diagnose:morgue:verbose
+pnpm download:combo-records
+```
+
+## Documentation Map
+
+### Core packages
+
+- `packages/dcss-morgue-parser/README.md` - Morgue parser library and CLI
+- `packages/dcss-player-parser/README.md` - Player page parser
+- `packages/dcss-combo-records-parser/README.md` - Combo records parser
+- `packages/dcss-game-data/README.md` - Static species/background/god/branch data
+- `packages/game-data-db/README.md` - DB schema, migrations, and query utilities
+
+### Scripts
+
+- `scripts/streak-downloader/README.md` - Download morgue files from streak pages
+- `scripts/morgue-loader/README.md` - Parse and load morgues into PostgreSQL
+- `scripts/morgue-parser-diagnostic/README.md` - Troubleshoot parser behavior
+- `scripts/combo-records-updater/README.md` - Update combo records data
+
