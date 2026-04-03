@@ -22,7 +22,11 @@ import {
   type DimensionKey,
   type MetricKey,
 } from '@/lib/analytics-types';
-import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
+import {
+  DB_CACHE_TAG,
+  DB_CACHE_REVALIDATE_SECONDS,
+  buildCacheDebugHeaders,
+} from '@/lib/cache';
 
 interface TrendsParams {
   track: DimensionKey;
@@ -178,10 +182,13 @@ const fetchTrendsData = unstable_cache(
       trendsParams: TrendsParams;
       commonFiltersKey: string;
     };
-    return getTrendsData(
-      parsed.trendsParams,
-      commonFiltersFromCacheKey(parsed.commonFiltersKey)
-    );
+    return {
+      data: await getTrendsData(
+        parsed.trendsParams,
+        commonFiltersFromCacheKey(parsed.commonFiltersKey)
+      ),
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['analytics-trends'],
   { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
@@ -195,13 +202,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: trendsParams.error }, { status: 400 });
     }
     const filters = parseCommonFilters(searchParams);
-    const data = isCommonFiltersCacheable(filters)
-      ? await fetchTrendsData(JSON.stringify({
-          trendsParams,
-          commonFiltersKey: commonFiltersCacheKey(filters),
-        }))
-      : await getTrendsData(trendsParams, filters);
-    return NextResponse.json(data);
+    const cacheable = isCommonFiltersCacheable(filters);
+    if (cacheable) {
+      const cached = await fetchTrendsData(JSON.stringify({
+        trendsParams,
+        commonFiltersKey: commonFiltersCacheKey(filters),
+      }));
+      return NextResponse.json(cached.data, {
+        headers: buildCacheDebugHeaders({
+          route: '/api/analytics/trends',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+        }),
+      });
+    }
+
+    const data = await getTrendsData(trendsParams, filters);
+    return NextResponse.json(data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics/trends',
+        cacheable: false,
+      }),
+    });
   } catch (error) {
     console.error('Trends API error:', error);
     return NextResponse.json(

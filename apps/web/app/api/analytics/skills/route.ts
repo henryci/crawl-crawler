@@ -9,7 +9,11 @@ import {
   isCommonFiltersCacheable,
   type CommonFilters,
 } from '@/lib/analytics-filters';
-import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
+import {
+  DB_CACHE_TAG,
+  DB_CACHE_REVALIDATE_SECONDS,
+  buildCacheDebugHeaders,
+} from '@/lib/cache';
 
 interface SkillHeatmapRow {
   skill_name: string;
@@ -82,7 +86,10 @@ async function getSkillsData(filters: CommonFilters): Promise<SkillsResult> {
 const fetchSkillsData = unstable_cache(
   async (cacheKey: string) => {
     const filters = commonFiltersFromCacheKey(cacheKey);
-    return getSkillsData(filters);
+    return {
+      data: await getSkillsData(filters),
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['analytics-skills'],
   { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
@@ -91,10 +98,25 @@ const fetchSkillsData = unstable_cache(
 export async function GET(request: NextRequest) {
   try {
     const filters = parseCommonFilters(new URL(request.url).searchParams);
-    const data = isCommonFiltersCacheable(filters)
-      ? await fetchSkillsData(commonFiltersCacheKey(filters))
-      : await getSkillsData(filters);
-    return NextResponse.json(data);
+    const cacheable = isCommonFiltersCacheable(filters);
+    if (cacheable) {
+      const cached = await fetchSkillsData(commonFiltersCacheKey(filters));
+      return NextResponse.json(cached.data, {
+        headers: buildCacheDebugHeaders({
+          route: '/api/analytics/skills',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+        }),
+      });
+    }
+
+    const data = await getSkillsData(filters);
+    return NextResponse.json(data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics/skills',
+        cacheable: false,
+      }),
+    });
   } catch (error) {
     console.error('Skills API error:', error);
     return NextResponse.json(

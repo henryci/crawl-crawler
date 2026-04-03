@@ -9,7 +9,11 @@ import {
   isCommonFiltersCacheable,
   type CommonFilters,
 } from '@/lib/analytics-filters';
-import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
+import {
+  DB_CACHE_TAG,
+  DB_CACHE_REVALIDATE_SECONDS,
+  buildCacheDebugHeaders,
+} from '@/lib/cache';
 
 interface SpellsResult {
   spells: Array<{
@@ -82,7 +86,10 @@ async function getSpellsData(filters: CommonFilters): Promise<SpellsResult> {
 const fetchSpellsData = unstable_cache(
   async (cacheKey: string) => {
     const filters = commonFiltersFromCacheKey(cacheKey);
-    return getSpellsData(filters);
+    return {
+      data: await getSpellsData(filters),
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['analytics-spells'],
   { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
@@ -91,10 +98,25 @@ const fetchSpellsData = unstable_cache(
 export async function GET(request: NextRequest) {
   try {
     const filters = parseCommonFilters(new URL(request.url).searchParams);
-    const data = isCommonFiltersCacheable(filters)
-      ? await fetchSpellsData(commonFiltersCacheKey(filters))
-      : await getSpellsData(filters);
-    return NextResponse.json(data);
+    const cacheable = isCommonFiltersCacheable(filters);
+    if (cacheable) {
+      const cached = await fetchSpellsData(commonFiltersCacheKey(filters));
+      return NextResponse.json(cached.data, {
+        headers: buildCacheDebugHeaders({
+          route: '/api/analytics/spells',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+        }),
+      });
+    }
+
+    const data = await getSpellsData(filters);
+    return NextResponse.json(data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics/spells',
+        cacheable: false,
+      }),
+    });
   } catch (error) {
     console.error('Spells API error:', error);
     return NextResponse.json(

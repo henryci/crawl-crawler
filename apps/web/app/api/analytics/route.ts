@@ -5,7 +5,11 @@ import {
   LEGACY_SPECIES_NAMES,
   LEGACY_BACKGROUND_NAMES,
 } from 'dcss-game-data';
-import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
+import {
+  DB_CACHE_TAG,
+  DB_CACHE_REVALIDATE_SECONDS,
+  buildCacheDebugHeaders,
+} from '@/lib/cache';
 
 interface FilterParams {
   races?: string[];
@@ -410,7 +414,10 @@ async function getAnalyticsData(filters: FilterParams): Promise<AnalyticsResult>
 const fetchAnalyticsData = unstable_cache(
   async (cacheKey: string) => {
     const filters = JSON.parse(cacheKey) as FilterParams;
-    return getAnalyticsData(filters);
+    return {
+      data: await getAnalyticsData(filters),
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['analytics'],
   { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
@@ -420,10 +427,25 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = new URL(request.url).searchParams;
     const filters = parseFilters(searchParams);
-    const data = isCacheable(filters)
-      ? await fetchAnalyticsData(analyticsCacheKey(filters))
-      : await getAnalyticsData(filters);
-    return NextResponse.json(data);
+    const cacheable = isCacheable(filters);
+    if (cacheable) {
+      const cached = await fetchAnalyticsData(analyticsCacheKey(filters));
+      return NextResponse.json(cached.data, {
+        headers: buildCacheDebugHeaders({
+          route: '/api/analytics',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+        }),
+      });
+    }
+
+    const data = await getAnalyticsData(filters);
+    return NextResponse.json(data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics',
+        cacheable: false,
+      }),
+    });
   } catch (error) {
     console.error('Analytics API error:', error);
     return NextResponse.json(

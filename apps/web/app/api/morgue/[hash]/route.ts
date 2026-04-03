@@ -2,21 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
 import type { MorgueData } from 'dcss-morgue-parser';
-import { DB_CACHE_TAG } from '@/lib/cache';
+import { DB_CACHE_TAG, buildCacheDebugHeaders } from '@/lib/cache';
 
 function isValidHash(hash: string): boolean {
   return /^[a-f0-9]{64}$/i.test(hash);
 }
 
 const fetchMorgueData = unstable_cache(
-  async (hash: string): Promise<MorgueData | null> => {
+  async (hash: string): Promise<{ data: MorgueData | null; cachedAtUnixMs: number }> => {
     const result = await query<{ parsed_json: MorgueData }>(`
       SELECT parsed_json
       FROM parsed_morgue_json
       WHERE morgue_hash = $1
     `, [hash]);
 
-    return result.rows[0]?.parsed_json ?? null;
+    return {
+      data: result.rows[0]?.parsed_json ?? null,
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['morgue'],
   { tags: [DB_CACHE_TAG] }
@@ -36,16 +39,26 @@ export async function GET(
       );
     }
 
-    const data = await fetchMorgueData(hash.toLowerCase());
+    const cached = await fetchMorgueData(hash.toLowerCase());
 
-    if (!data) {
+    if (!cached.data) {
       return NextResponse.json(
         { error: 'Morgue not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data: cached.data },
+      {
+        headers: buildCacheDebugHeaders({
+          route: '/api/morgue/[hash]',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+          revalidateSeconds: null,
+        }),
+      }
+    );
   } catch (error) {
     console.error('Morgue API error:', error);
     return NextResponse.json(

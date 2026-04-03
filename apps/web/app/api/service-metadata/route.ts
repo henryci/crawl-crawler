@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { query } from '@crawl-crawler/game-data-db';
-import { DB_CACHE_TAG } from '@/lib/cache';
+import { DB_CACHE_TAG, buildCacheDebugHeaders } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +26,10 @@ const fetchServiceMetadata = unstable_cache(
 
     const totalGamesCount = parseInt(gamesResult.rows[0]?.count ?? '0', 10);
 
-    return { metadata, totalGamesCount };
+    return {
+      data: { metadata, totalGamesCount },
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['service-metadata'],
   { tags: [DB_CACHE_TAG] }
@@ -34,8 +37,15 @@ const fetchServiceMetadata = unstable_cache(
 
 export async function GET() {
   try {
-    const data = await fetchServiceMetadata();
-    return NextResponse.json(data);
+    const cached = await fetchServiceMetadata();
+    return NextResponse.json(cached.data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/service-metadata',
+        cacheable: true,
+        cachedAtUnixMs: cached.cachedAtUnixMs,
+        revalidateSeconds: null,
+      }),
+    });
   } catch (error) {
     console.error('Service metadata API error:', error);
     return NextResponse.json(

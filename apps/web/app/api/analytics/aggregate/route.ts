@@ -20,7 +20,11 @@ import {
   type DimensionKey,
   type MetricKey,
 } from '@/lib/analytics-types';
-import { DB_CACHE_TAG, DB_CACHE_REVALIDATE_SECONDS } from '@/lib/cache';
+import {
+  DB_CACHE_TAG,
+  DB_CACHE_REVALIDATE_SECONDS,
+  buildCacheDebugHeaders,
+} from '@/lib/cache';
 
 interface AggregateParams {
   groupBy: DimensionKey[];
@@ -206,10 +210,13 @@ const fetchAggregateData = unstable_cache(
       aggParams: AggregateParams;
       commonFiltersKey: string;
     };
-    return getAggregateData(
-      parsed.aggParams,
-      commonFiltersFromCacheKey(parsed.commonFiltersKey)
-    );
+    return {
+      data: await getAggregateData(
+        parsed.aggParams,
+        commonFiltersFromCacheKey(parsed.commonFiltersKey)
+      ),
+      cachedAtUnixMs: Date.now(),
+    };
   },
   ['analytics-aggregate'],
   { tags: [DB_CACHE_TAG], revalidate: DB_CACHE_REVALIDATE_SECONDS }
@@ -223,13 +230,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: aggParams.error }, { status: 400 });
     }
     const filters = parseCommonFilters(searchParams);
-    const data = isCommonFiltersCacheable(filters)
-      ? await fetchAggregateData(JSON.stringify({
-          aggParams,
-          commonFiltersKey: commonFiltersCacheKey(filters),
-        }))
-      : await getAggregateData(aggParams, filters);
-    return NextResponse.json(data);
+    const cacheable = isCommonFiltersCacheable(filters);
+    if (cacheable) {
+      const cached = await fetchAggregateData(JSON.stringify({
+        aggParams,
+        commonFiltersKey: commonFiltersCacheKey(filters),
+      }));
+      return NextResponse.json(cached.data, {
+        headers: buildCacheDebugHeaders({
+          route: '/api/analytics/aggregate',
+          cacheable: true,
+          cachedAtUnixMs: cached.cachedAtUnixMs,
+        }),
+      });
+    }
+
+    const data = await getAggregateData(aggParams, filters);
+    return NextResponse.json(data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics/aggregate',
+        cacheable: false,
+      }),
+    });
   } catch (error) {
     console.error('Aggregate API error:', error);
     return NextResponse.json(

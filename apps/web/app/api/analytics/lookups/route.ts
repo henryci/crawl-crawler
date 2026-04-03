@@ -5,7 +5,7 @@ import {
   LEGACY_SPECIES_NAMES,
   LEGACY_BACKGROUND_NAMES,
 } from 'dcss-game-data';
-import { DB_CACHE_TAG } from '@/lib/cache';
+import { DB_CACHE_TAG, buildCacheDebugHeaders } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,13 +20,16 @@ const fetchLookupData = unstable_cache(
     ]);
 
     return {
-      races: racesResult.rows,
-      backgrounds: backgroundsResult.rows,
-      gods: godsResult.rows,
-      skills: skillsResult.rows,
-      versions: versionsResult.rows,
-      legacySpecies: [...LEGACY_SPECIES_NAMES],
-      legacyBackgrounds: [...LEGACY_BACKGROUND_NAMES],
+      data: {
+        races: racesResult.rows,
+        backgrounds: backgroundsResult.rows,
+        gods: godsResult.rows,
+        skills: skillsResult.rows,
+        versions: versionsResult.rows,
+        legacySpecies: [...LEGACY_SPECIES_NAMES],
+        legacyBackgrounds: [...LEGACY_BACKGROUND_NAMES],
+      },
+      cachedAtUnixMs: Date.now(),
     };
   },
   ['analytics-lookups'],
@@ -35,8 +38,15 @@ const fetchLookupData = unstable_cache(
 
 export async function GET() {
   try {
-    const data = await fetchLookupData();
-    return NextResponse.json(data);
+    const cached = await fetchLookupData();
+    return NextResponse.json(cached.data, {
+      headers: buildCacheDebugHeaders({
+        route: '/api/analytics/lookups',
+        cacheable: true,
+        cachedAtUnixMs: cached.cachedAtUnixMs,
+        revalidateSeconds: null,
+      }),
+    });
   } catch (error) {
     console.error('Lookups API error:', error);
     return NextResponse.json(
