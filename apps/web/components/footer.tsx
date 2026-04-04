@@ -50,12 +50,22 @@ export function Footer() {
               {'"Crawl Crawler crawls Crawl crawls"'}
             </p>
 
-            <button
-              onClick={() => setTosOpen(true)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
-            >
-              Terms of Service
-            </button>
+            <div className="flex items-center gap-4">
+              <Link
+                href="https://github.com/henryci/crawl-crawler/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+              >
+                GitHub
+              </Link>
+              <button
+                onClick={() => setTosOpen(true)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-4 hover:underline"
+              >
+                Terms of Service
+              </button>
+            </div>
           </div>
         </div>
       </footer>
