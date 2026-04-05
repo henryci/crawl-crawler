@@ -849,6 +849,7 @@ CASCADE;
 \\copy game_versions(id, version, major, minor, is_trunk) FROM '${absPath}/game_versions.csv' WITH (FORMAT csv, HEADER true);
 
 -- Load main games table
+ALTER TABLE games ADD COLUMN IF NOT EXISTS draconian_color VARCHAR(10);
 \\copy games(id, morgue_filename, player_name, score, version_id, race_id, background_id, character_level, title, is_win, end_date, start_date, game_duration_seconds, total_turns, runes_count, gems_count, god_id, piety, hp_max, mp_max, ac, ev, sh, str, int, dex, gold, branches_visited, levels_seen, is_webtiles, game_seed, parser_version, morgue_hash, source_url, draconian_color) FROM '${absPath}/games.csv' WITH (FORMAT csv, HEADER true);
 
 -- Load detail tables

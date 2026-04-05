@@ -144,6 +144,7 @@ function extractSkillsTable(content: string): SkillsData | null {
   if (xlColumns.length === 0) {
     return null;
   }
+  const maxXl = Math.max(...xlColumns);
 
   // Find the start of skill rows (after the separator line)
   const tableStart = headerMatch.index + headerMatch[0].length;
@@ -156,10 +157,20 @@ function extractSkillsTable(content: string): SkillsData | null {
 
   // Parse each skill row
   const lines = content.slice(rowsStart).split('\n');
+  let parsedAnySkillRow = false;
 
   for (const line of lines) {
-    if (!line.trim() || !line.includes('|')) {
-      break;
+    if (!line.trim()) {
+      if (parsedAnySkillRow) {
+        break;
+      }
+      continue;
+    }
+    if (!line.includes('|')) {
+      if (parsedAnySkillRow) {
+        break;
+      }
+      continue;
     }
 
     // Parse skill row: "Fighting       |  1  2  3        5      | 23.0"
@@ -172,11 +183,13 @@ function extractSkillsTable(content: string): SkillsData | null {
     if (!skillName) {
       continue;
     }
+    parsedAnySkillRow = true;
 
     // Parse final level
     const finalLevelStr = rowMatch[3];
+    let finalLevel: number | null = null;
     if (finalLevelStr) {
-      const finalLevel = parseFloatSafe(finalLevelStr);
+      finalLevel = parseFloatSafe(finalLevelStr);
       if (finalLevel !== null) {
         result.endingSkills[skillName] = finalLevel;
       }
@@ -186,6 +199,11 @@ function extractSkillsTable(content: string): SkillsData | null {
     const xlContent = rowMatch[2];
     if (xlContent && result.skillsByXl) {
       const skillProgression = parseXlProgression(xlContent, xlColumns);
+      // Always anchor progression at the terminal XL with the canonical final level.
+      // This prevents alignment issues in spaced columns from leaving the last value stale.
+      if (finalLevel !== null) {
+        skillProgression[String(maxXl)] = finalLevel;
+      }
       if (Object.keys(skillProgression).length > 0) {
         result.skillsByXl[skillName] = skillProgression;
       }

@@ -318,6 +318,17 @@ describe('parseMorgue', () => {
       expect(result.data.race).toBe('Minotaur');
       expect(result.data.background).toBe('Fighter');
     });
+
+    it('keeps max-XL skill progression aligned with final skill level', async () => {
+      const content = `
+Skill      XL: |  1  3  6  9 12 15 18 21 24 27 |
+---------------+--------------------------------+-----
+Ice Magic      |              10    10    15    15    15    20 | 20.0
+`;
+      const result = await parseMorgue(content);
+      expect(result.data.endingSkills?.['Ice Magic']).toBe(20);
+      expect(result.data.skillsByXl?.['Ice Magic']?.['27']).toBe(20);
+    });
   });
 
   describe('parseMorgueData convenience function', () => {
