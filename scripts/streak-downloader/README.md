@@ -8,6 +8,13 @@ Downloads morgue files (game logs) for Dungeon Crawl Stone Soup from a streaks H
 pip install requests beautifulsoup4
 ```
 
+If downloading from `underhound.eu`, set these environment variables first:
+
+```bash
+export UNDERHOUND_BASIC_AUTH_USERNAME=your_underhound_username
+export UNDERHOUND_BASIC_AUTH_PASSWORD=your_underhound_password
+```
+
 ## Usage
 
 ```bash

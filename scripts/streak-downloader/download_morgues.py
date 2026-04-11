@@ -31,6 +31,10 @@ URL_MAPPING_FILENAME = "url_mapping.csv"
 # Default name for the skip file (URLs that returned 404)
 SKIP_URLS_FILENAME = "skip_urls.txt"
 
+UNDERHOUND_HOST = "underhound.eu"
+UNDERHOUND_USERNAME_ENV = "UNDERHOUND_BASIC_AUTH_USERNAME"
+UNDERHOUND_PASSWORD_ENV = "UNDERHOUND_BASIC_AUTH_PASSWORD"
+
 
 @dataclass
 class ProgressTracker:
@@ -253,12 +257,39 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def is_underhound_host(hostname: str) -> bool:
+    return hostname == UNDERHOUND_HOST or hostname.endswith(f".{UNDERHOUND_HOST}")
+
+
+def get_basic_auth_for_url(
+    url: str,
+    log_line: Callable[[str], None] = print,
+) -> Optional[tuple[str, str]]:
+    parsed = urlparse(url)
+    if not is_underhound_host(parsed.hostname or ""):
+        return None
+
+    username = os.getenv(UNDERHOUND_USERNAME_ENV)
+    password = os.getenv(UNDERHOUND_PASSWORD_ENV)
+    if username and password:
+        return (username, password)
+
+    log_line(
+        f"WARNING: Missing underhound credentials. Set {UNDERHOUND_USERNAME_ENV} and {UNDERHOUND_PASSWORD_ENV}."
+    )
+    return None
+
+
 def fetch_html(url: str, verbose: bool = False) -> str:
     """Fetch HTML content from URL."""
     if verbose:
         print(f"Fetching HTML from {url}")
-    
-    response = requests.get(url, timeout=30)
+
+    response = requests.get(
+        url,
+        timeout=30,
+        auth=get_basic_auth_for_url(url),
+    )
     response.raise_for_status()
     return response.text
 
@@ -490,8 +521,12 @@ def download_morgue(
     try:
         if verbose:
             log_line(f"  Downloading from {host}...")
-        
-        response = requests.get(url, timeout=30)
+
+        response = requests.get(
+            url,
+            timeout=30,
+            auth=get_basic_auth_for_url(url, log_line=log_line),
+        )
         response.raise_for_status()
         
         # Validate content before saving

@@ -16,6 +16,10 @@ const ALLOWED_HOSTS = [
   'crawl.develz.org',
 ];
 
+const UNDERHOUND_HOST = 'underhound.eu';
+const UNDERHOUND_USERNAME_ENV = 'UNDERHOUND_BASIC_AUTH_USERNAME';
+const UNDERHOUND_PASSWORD_ENV = 'UNDERHOUND_BASIC_AUTH_PASSWORD';
+
 /**
  * Check if a URL's host is in our allowlist.
  */
@@ -28,6 +32,29 @@ function isAllowedUrl(urlString: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isUnderhoundHost(hostname: string): boolean {
+  return hostname === UNDERHOUND_HOST || hostname.endsWith(`.${UNDERHOUND_HOST}`);
+}
+
+function getAuthHeaderForUrl(urlString: string): string | undefined {
+  const url = new URL(urlString);
+  if (!isUnderhoundHost(url.hostname)) {
+    return undefined;
+  }
+
+  const username = process.env[UNDERHOUND_USERNAME_ENV];
+  const password = process.env[UNDERHOUND_PASSWORD_ENV];
+
+  if (!username || !password) {
+    console.warn(
+      `Missing underhound credentials. Set ${UNDERHOUND_USERNAME_ENV} and ${UNDERHOUND_PASSWORD_ENV}.`
+    );
+    return undefined;
+  }
+
+  return `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -46,9 +73,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const authHeader = getAuthHeaderForUrl(targetUrl);
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; CrawlCrawler/1.0)',
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
     });
 
