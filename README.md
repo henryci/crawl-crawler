@@ -59,8 +59,8 @@ PGPASSWORD=your_password
 If you fetch morgues from `underhound.eu`, also set:
 
 ```bash
-UNDERHOUND_BASIC_AUTH_USERNAME=your_underhound_username
-UNDERHOUND_BASIC_AUTH_PASSWORD=your_underhound_password
+UNDERHOUND_BASIC_AUTH_USERNAME=underhound_username
+UNDERHOUND_BASIC_AUTH_PASSWORD=underhound_password
 ```
 
 ### 4) Run migrations
