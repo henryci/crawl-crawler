@@ -36,6 +36,7 @@ python download_morgues.py <url> [options]
 | `-s, --sample` | None | Download only N randomly-selected morgues (for testing) |
 | `-v, --verbose` | False | Enable verbose output |
 | `--max-host-errors` | `2` | Number of errors before a host is marked as failed |
+| `--only-host` | None | Only process morgue URLs from a specific host (e.g. `underhound.eu`) |
 
 ### Examples
 
@@ -51,6 +52,9 @@ python download_morgues.py -s 10 -d 1 -v "http://crawl.akrasiac.org/scoring/stre
 
 # Be more lenient with failing hosts (5 errors before skipping)
 python download_morgues.py --max-host-errors 5 "http://crawl.akrasiac.org/scoring/streaks.html"
+
+# Debug one host only (underhound)
+python download_morgues.py --only-host underhound.eu -v "http://crawl.akrasiac.org/scoring/streaks.html"
 ```
 
 ## Features

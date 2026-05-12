@@ -254,7 +254,25 @@ def parse_args() -> argparse.Namespace:
         default=2,
         help="Number of errors before a host is marked as failed (default: 2)",
     )
+    parser.add_argument(
+        "--only-host",
+        type=str,
+        default=None,
+        help="Only process morgue URLs from this host (e.g. underhound.eu)",
+    )
     return parser.parse_args()
+
+
+def normalize_host(host: str) -> str:
+    """Normalize a host string for consistent matching."""
+    return host.strip().lower()
+
+
+def url_matches_host(url: str, host: str) -> bool:
+    """Return True if URL host matches host exactly or as subdomain."""
+    hostname = normalize_host(urlparse(url).hostname or "")
+    normalized_host = normalize_host(host)
+    return hostname == normalized_host or hostname.endswith(f".{normalized_host}")
 
 
 def is_underhound_host(hostname: str) -> bool:
@@ -604,7 +622,18 @@ def main() -> int:
     if not morgue_urls:
         print("No morgue file URLs found in the HTML")
         return 1
-    
+
+    if args.only_host is not None:
+        host_filter = normalize_host(args.only_host)
+        before_count = len(morgue_urls)
+        morgue_urls = [url for url in morgue_urls if url_matches_host(url, host_filter)]
+        print(
+            f"Applied host filter '{host_filter}': {len(morgue_urls)} of {before_count} URLs matched"
+        )
+        if not morgue_urls:
+            print("No morgue file URLs matched the host filter")
+            return 1
+
     # Sample if requested
     if args.sample is not None:
         if args.sample < len(morgue_urls):
