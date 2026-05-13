@@ -196,9 +196,10 @@ export function normalizeSpeciesName(race: string): string {
 export function parseRaceBackground(raceBackground: string): {
   race: string | null;
   background: string | null;
+  speciesData?: Record<string, unknown> | null;
 } {
   if (!raceBackground) {
-    return { race: null, background: null };
+    return { race: null, background: null, speciesData: null };
   }
 
   const trimmed = raceBackground.trim();
@@ -207,22 +208,45 @@ export function parseRaceBackground(raceBackground: string): {
   for (const species of KNOWN_SPECIES_NAMES) {
     if (trimmed.startsWith(species + ' ')) {
       const background = trimmed.slice(species.length).trim();
-      return { race: species, background: background || null };
+      const canonicalRace = getSpeciesByName(species)?.name ?? species;
+      return { race: canonicalRace, background: background || null, speciesData: null };
     }
     // Also try case-insensitive match
     if (trimmed.toLowerCase().startsWith(species.toLowerCase() + ' ')) {
       const background = trimmed.slice(species.length).trim();
-      return { race: species, background: background || null };
+      const canonicalRace = getSpeciesByName(species)?.name ?? species;
+      return { race: canonicalRace, background: background || null, speciesData: null };
     }
+  }
+
+  // Legacy color-prefixed species variants not listed in canonical species names:
+  // - "Mottled Draconian Conjurer"
+  // - "Gale Centaur Hunter"
+  const draconianColorMatch = /^([A-Za-z]+)\s+Draconian(?:\s+(.+))?$/i.exec(trimmed);
+  if (draconianColorMatch) {
+    return {
+      race: 'Draconian',
+      background: draconianColorMatch[2]?.trim() || null,
+      speciesData: { color: draconianColorMatch[1] },
+    };
+  }
+
+  const centaurColorMatch = /^([A-Za-z]+)\s+Centaur(?:\s+(.+))?$/i.exec(trimmed);
+  if (centaurColorMatch) {
+    return {
+      race: 'Centaur',
+      background: centaurColorMatch[2]?.trim() || null,
+      speciesData: { color: centaurColorMatch[1] },
+    };
   }
 
   // Fallback: assume first word is race
   const parts = trimmed.split(/\s+/);
   if (parts.length >= 2) {
-    return { race: parts[0] ?? null, background: parts.slice(1).join(' ') };
+    return { race: parts[0] ?? null, background: parts.slice(1).join(' '), speciesData: null };
   }
 
-  return { race: trimmed, background: null };
+  return { race: trimmed, background: null, speciesData: null };
 }
 
 // ============================================

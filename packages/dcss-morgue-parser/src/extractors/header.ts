@@ -21,6 +21,7 @@ export interface HeaderData {
   title: string | null;
   race: string | null;
   background: string | null;
+  speciesData: Record<string, unknown> | null;
   characterLevel: number | null;
   startDate: string | null;
   endDate: string | null;
@@ -61,6 +62,7 @@ export function extractHeader(content: string): HeaderData {
     title: null,
     race: null,
     background: null,
+    speciesData: null,
     characterLevel: null,
     startDate: null,
     endDate: null,
@@ -175,6 +177,9 @@ function extractScoreAndPlayer(lines: string[], result: HeaderData): void {
   // Fallback for very old format (0.2.x) where player name and level are on separate lines
   // Format: "dpeg the Annihilator" followed later by "Level      :      27"
   extractOldFormatPlayerAndLevel(lines, result);
+  if (result.score === null) {
+    result.score = extractLegacyScore(lines);
+  }
 }
 
 /**
@@ -203,9 +208,13 @@ function extractOldFormatPlayerAndLevel(lines: string[], result: HeaderData): vo
       result.race = raceMatch[1]?.trim() ?? null;
     }
 
-    const classMatch = /^Class\s*:\s*(.+?)(?:\s{2,}|$)/i.exec(line);
+    // Old fixed-width headers can let the class text overflow into the next
+    // resistance column, e.g. "Earth ElementalistRes.Cold  : + . .".
+    // Stop class capture before the first "Res.*" column marker.
+    const classMatch = /^Class\s*:\s*(.+?)(?=\s*Res\.[A-Za-z]+(?:\s*:|$)|\s{2,}|$)/i.exec(line);
     if (classMatch && !result.background) {
-      result.background = classMatch[1]?.trim() ?? null;
+      const classValue = classMatch[1]?.trim() ?? null;
+      result.background = sanitizeLegacyClassValue(classValue);
     }
 
     // Extract player name from "Name the Title" pattern (line 3 usually in old format)
@@ -218,6 +227,29 @@ function extractOldFormatPlayerAndLevel(lines: string[], result: HeaderData): vo
       }
     }
   }
+}
+
+function sanitizeLegacyClassValue(classValue: string | null): string | null {
+  if (!classValue) {
+    return null;
+  }
+  // Defensive cleanup for occasional legacy spillover artifacts.
+  const cleaned = classValue
+    .replace(/\s*Res\.[A-Za-z]+.*$/i, '')
+    .trim();
+  return cleaned || null;
+}
+
+function extractLegacyScore(lines: string[]): number | null {
+  for (let i = 0; i < Math.min(40, lines.length); i++) {
+    const line = lines[i];
+    if (!line) continue;
+    const pointsMatch = /\(([\d,]+)\s+points\)/i.exec(line);
+    if (pointsMatch?.[1]) {
+      return parseIntSafe(pointsMatch[1]);
+    }
+  }
+  return null;
 }
 
 /**
@@ -240,6 +272,7 @@ function extractDatesAndBackground(lines: string[], result: HeaderData): void {
       const parsed = parseRaceBackground(raceBackground);
       result.race = parsed.race;
       result.background = parsed.background;
+      result.speciesData = parsed.speciesData ?? null;
       result.startDate = beganMatch[2] ?? null;
       continue;
     }
@@ -251,6 +284,7 @@ function extractDatesAndBackground(lines: string[], result: HeaderData): void {
       const parsed = parseRaceBackground(raceBackground);
       result.race = parsed.race;
       result.background = parsed.background;
+      result.speciesData = parsed.speciesData ?? null;
     }
 
     // Look for runes and end date
@@ -428,11 +462,14 @@ function extractRunes(content: string, result: HeaderData): void {
     const runesMatchFull = /runes?:\s*(.+)/.exec(fullRunesText);
     if (runesMatchFull?.[1]) {
       const runesText = runesMatchFull[1].replace(/\s+/g, ' ');
-      const runesList = runesText
+      const runesList = sanitizeRuneList(runesText
         .split(',')
         .map((r) => r.trim())
-        .filter((r) => r.length > 0);
+        .filter((r) => r.length > 0));
       result.runesList = runesList;
+      if (!result.runesCollected) {
+        result.runesCollected = runesList.length;
+      }
     }
     return;
   }
@@ -494,9 +531,9 @@ function extractRunesFromInventory(content: string, result: HeaderData): void {
   }
 
   if (runes.length > 0) {
-    result.runesList = runes;
+    result.runesList = sanitizeRuneList(runes);
     if (!result.runesCollected) {
-      result.runesCollected = runes.length;
+      result.runesCollected = result.runesList.length;
     }
   }
 }
@@ -519,11 +556,33 @@ function extractRunesFromNotes(content: string, result: HeaderData): void {
   }
 
   if (runes.length > 0) {
-    result.runesList = runes;
+    result.runesList = sanitizeRuneList(runes);
     if (!result.runesCollected) {
-      result.runesCollected = runes.length;
+      result.runesCollected = result.runesList.length;
     }
   }
+}
+
+function sanitizeRuneList(runes: string[]): string[] {
+  const cleanRunes: string[] = [];
+  for (const runeRaw of runes) {
+    const rune = runeRaw.trim().replace(/[.!]+$/, '');
+    if (!isValidRuneName(rune)) {
+      continue;
+    }
+    if (!cleanRunes.includes(rune)) {
+      cleanRunes.push(rune);
+    }
+  }
+  return cleanRunes;
+}
+
+function isValidRuneName(rune: string): boolean {
+  if (!rune) return false;
+  if (rune.length > 50) return false;
+  if (!/^[A-Za-z][A-Za-z' -]*$/.test(rune)) return false;
+  if (/^(?:you|turn|level|dungeon|notes?|message|branches?|skills?)\b/i.test(rune)) return false;
+  return true;
 }
 
 /**

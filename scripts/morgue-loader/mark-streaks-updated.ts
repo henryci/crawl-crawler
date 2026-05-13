@@ -1,5 +1,12 @@
 import { closePool, recordStreakDownloadDate } from "@crawl-crawler/game-data-db";
 
+interface RevalidateResponseBody {
+  revalidated?: boolean;
+  tag?: string;
+  instance?: string;
+  error?: string;
+}
+
 async function main(): Promise<void> {
   console.log("Recording streak download date...");
   await recordStreakDownloadDate();
@@ -27,11 +34,34 @@ async function revalidateCache(): Promise<void> {
       headers: { "x-revalidate-secret": secret },
       signal: abortController.signal,
     });
+    const bodyText = await response.text();
+    let body: RevalidateResponseBody = {};
+    if (bodyText.trim()) {
+      try {
+        body = JSON.parse(bodyText) as RevalidateResponseBody;
+      } catch {
+        // Keep raw body text in error paths below; some gateways may return HTML/plain text.
+      }
+    }
 
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Cache revalidation failed (${response.status}): ${body}`);
+      throw new Error(`Cache revalidation failed (${response.status}): ${bodyText}`);
     }
+
+    const instance = body.instance ?? response.headers.get("x-crawl-instance");
+    const appOrigin = response.headers.get("x-do-app-origin");
+    const cfRay = response.headers.get("cf-ray");
+    const server = response.headers.get("server");
+
+    if (instance) {
+      console.log(`  Revalidated on instance: ${instance}`);
+    } else {
+      console.log("  Revalidated instance: unknown (instance header/body not present)");
+    }
+
+    if (appOrigin) console.log(`  x-do-app-origin: ${appOrigin}`);
+    if (cfRay) console.log(`  cf-ray: ${cfRay}`);
+    if (server) console.log(`  edge server: ${server}`);
   } catch (error) {
     throw new Error(
       `Cache revalidation request failed: ${error instanceof Error ? error.message : String(error)}`

@@ -29,9 +29,12 @@ export function extractBranches(content: string): Record<string, BranchInfo> | n
 
   // Extract from Dungeon Overview
   extractFromOverview(content, branches);
+  extractFromLegacyBranchList(content, branches);
 
   // Extract entry turns from Notes
   extractEntryTurns(content, branches);
+
+  ensureDungeonFromSummary(content, branches);
 
   // The player always starts on D:1 at turn 0, but the Notes section won't
   // have an "Entered" event for it, so hardcode the entry turn.
@@ -157,6 +160,64 @@ function extractEntryTurns(content: string, branches: Record<string, BranchInfo>
         branch.firstEntryTurn = turn;
       }
     }
+  }
+}
+
+function extractFromLegacyBranchList(content: string, branches: Record<string, BranchInfo>): void {
+  const listHeaderMatch = /^Branches:\s*\(.*\)\s*$/m.exec(content);
+  if (!listHeaderMatch) {
+    return;
+  }
+  const lines = content.slice(listHeaderMatch.index + listHeaderMatch[0].length).split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      break;
+    }
+    if (
+      /^Altars:/i.test(trimmed)
+      || /^Shops:/i.test(trimmed)
+      || /^Portals:/i.test(trimmed)
+      || /^Annotations:/i.test(trimmed)
+    ) {
+      break;
+    }
+    const branchMatches = trimmed.matchAll(/([A-Za-z][A-Za-z ]*?)\s*:\s*[A-Za-z]+:\d+/g);
+    for (const match of branchMatches) {
+      const raw = match[1]?.trim();
+      if (!raw) continue;
+      const canonicalName = getCanonicalBranchName(raw);
+      if (!branches[canonicalName]) {
+        branches[canonicalName] = {
+          levelsSeen: null,
+          levelsTotal: null,
+          firstEntryTurn: null,
+        };
+      }
+    }
+  }
+}
+
+function ensureDungeonFromSummary(content: string, branches: Record<string, BranchInfo>): void {
+  const summaryMatch = PATTERNS.branchesVisited.exec(content);
+  if (!summaryMatch) {
+    return;
+  }
+  const visitedBranches = parseIntSafe(summaryMatch[1]);
+  const levelsSeen = parseIntSafe(summaryMatch[2]);
+  if (!branches.Dungeon) {
+    branches.Dungeon = {
+      levelsSeen: visitedBranches === 1 ? levelsSeen : null,
+      levelsTotal: null,
+      firstEntryTurn: 0,
+    };
+    return;
+  }
+  if (branches.Dungeon.firstEntryTurn === null) {
+    branches.Dungeon.firstEntryTurn = 0;
+  }
+  if (branches.Dungeon.levelsSeen === null && visitedBranches === 1) {
+    branches.Dungeon.levelsSeen = levelsSeen;
   }
 }
 

@@ -89,7 +89,7 @@ export const PATTERNS = {
   /**
    * Notes section line: "  5822 | Temple   | Became a worshipper of..."
    */
-  noteLine: /^\s*(\d+)\s+\|\s+(\S+)\s+\|\s+(.+)$/,
+  noteLine: /^\s*(\d+)\s+\|\s*(.*?)\s*\|\s+(.+)$/,
 
   /**
    * XP level reached: "Reached XP level 5"
@@ -104,7 +104,7 @@ export const PATTERNS = {
   /**
    * God worship: "Became a worshipper of Makhleb the Destroyer"
    */
-  becameWorshipper: /Became a worshipper of\s+(.+?)(?:\s+the|\s*$)/,
+  becameWorshipper: /Became a worshipper of\s+(.+)/,
 
   /**
    * Fell from grace: "Fell from the grace of Makhleb"
@@ -124,7 +124,7 @@ export const PATTERNS = {
   /**
    * Skill line (simple format): " + Level 22.5 Fighting"
    */
-  skillSimple: /^\s*([+\-O*])\s+Level\s+([\d.]+)\s+(.+?)\s*$/,
+  skillSimple: /^\s*([+\-O*])\s+Level\s+([\d.]+)(?:\([\d.]+\))?\s+(.+?)\s*$/,
 } as const;
 
 /**

@@ -132,6 +132,7 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     result.title = header.title;
     result.race = header.race;
     result.background = header.background;
+    result.speciesData = header.speciesData;
     if (result.race && DRACONIAN_COLORS.some(dc => dc === result.race)) {
       const color = result.race.replace(' Draconian', '');
       result.race = 'Draconian';

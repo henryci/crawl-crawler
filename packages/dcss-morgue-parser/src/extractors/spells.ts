@@ -35,11 +35,17 @@ export function extractSpells(content: string): Spell[] | null {
   }
 
   const spells: Spell[] = [];
+  const seenSpellNames = new Set<string>();
   const lines = spellsSection.split('\n');
 
   for (const line of lines) {
     const spell = parseSpellLine(line);
     if (spell) {
+      const normalizedName = spell.name.trim().toLowerCase().replace(/\s+/g, ' ');
+      if (seenSpellNames.has(normalizedName)) {
+        continue;
+      }
+      seenSpellNames.add(normalizedName);
       spells.push(spell);
     }
   }

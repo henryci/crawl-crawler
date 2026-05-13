@@ -16,8 +16,9 @@ import type { Species, ReusedCode } from './types.js';
  */
 export const SPECIES: Species[] = [
   // Current species (as of 0.32+)
+  { code: 'Ac', name: 'Anemocentaur', addedInVersion: '0.35', removedInVersion: '0.35' }, // Removed species (experimental)
   { code: 'At', name: 'Armataur', addedInVersion: '0.28' },
-  { code: 'Ba', name: 'Barachi', addedInVersion: '0.19' },
+  { code: 'Ba', name: 'Barachi', addedInVersion: '0.19', aliases: ['Barachian'] },
   { code: 'Cg', name: 'Coglin', addedInVersion: '0.31' },
   { code: 'DE', name: 'Deep Elf' },
   { code: 'Dg', name: 'Demigod' },
@@ -61,7 +62,7 @@ export const SPECIES: Species[] = [
   { code: 'Me', name: 'Meteoran', addedInVersion: '0.30', removedInVersion: '0.32' },
   { code: 'My', name: 'Mayflytaur', addedInVersion: '0.32', removedInVersion: '0.32' }, // Never in stable
   { code: 'Og', name: 'Ogre', removedInVersion: '0.26' },
-  { code: 'OM', name: 'Ogre Mage', removedInVersion: '0.5' },
+  { code: 'OM', name: 'Ogre Mage', removedInVersion: '0.5', aliases: ['Ogre-Mage'] },
   { code: 'Pa', name: 'Palentonga', addedInVersion: '0.26', removedInVersion: '0.31' },
   { code: 'Sa', name: 'Satyr', removedInVersion: '0.4' },
   { code: 'SE', name: 'Sludge Elf', removedInVersion: '0.14' },
@@ -148,24 +149,30 @@ export const SPECIES_CODES: Record<string, string> = Object.fromEntries(
  * List of all known species names (for parsing).
  * Multi-word species are listed first to ensure correct matching.
  */
-export const KNOWN_SPECIES_NAMES: readonly string[] = [
-  // Multi-word species (check these first)
-  'Deep Dwarf',
-  'Deep Elf',
-  'Grey Elf',
-  'High Elf',
-  'Hill Dwarf',
-  'Hill Orc',
-  'Lava Orc',
-  'Mountain Dwarf',
-  'Ogre Mage',
-  'Sludge Elf',
-  'Vine Stalker',
-  // Draconian colors
-  ...DRACONIAN_COLORS,
-  // Single-word species (alphabetical)
-  ...SPECIES.filter(s => !s.name.includes(' ')).map(s => s.name).sort(),
-];
+export const KNOWN_SPECIES_NAMES: readonly string[] = Array.from(
+  new Set([
+    // Multi-word species (check these first)
+    'Deep Dwarf',
+    'Deep Elf',
+    'Grey Elf',
+    'High Elf',
+    'Hill Dwarf',
+    'Hill Orc',
+    'Lava Orc',
+    'Mountain Dwarf',
+    'Ogre Mage',
+    'Sludge Elf',
+    'Vine Stalker',
+    // Draconian colors
+    ...DRACONIAN_COLORS,
+    // Legacy names from reused codes (e.g. Gn before 0.14)
+    ...Object.values(REUSED_SPECIES_CODES).map((s) => s.oldName),
+    // All declared aliases (e.g. Barachian, Ogre-Mage, Anemocentaur)
+    ...SPECIES.flatMap((s) => s.aliases ?? []),
+    // Single-word species (alphabetical)
+    ...SPECIES.filter(s => !s.name.includes(' ')).map(s => s.name).sort(),
+  ])
+).sort((a, b) => b.length - a.length || a.localeCompare(b));
 
 /**
  * Codes for species that have been removed from the game.

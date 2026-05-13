@@ -44,30 +44,32 @@ export function extractEquipment(content: string): Equipment | null {
 
   // Find the inventory section
   const inventorySection = findInventorySection(content);
-  if (!inventorySection) {
-    return null;
-  }
+  if (inventorySection) {
+    // Parse each line looking for worn/wielded items
+    const lines = inventorySection.split('\n');
 
-  // Parse each line looking for worn/wielded items
-  const lines = inventorySection.split('\n');
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) {
+        continue;
+      }
 
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    if (!trimmedLine) {
-      continue;
-    }
-
-    // Check for item markers
-    if (trimmedLine.includes('(weapon)')) {
-      result.weapon = cleanItemName(trimmedLine);
-    } else if (trimmedLine.includes('(left hand)') || trimmedLine.includes('(right hand)')) {
-      result.rings.push(cleanItemName(trimmedLine));
-    } else if (trimmedLine.includes('(worn)')) {
-      assignWornItem(trimmedLine, result);
-    } else if (trimmedLine.includes('(around neck)')) {
-      result.amulet = cleanItemName(trimmedLine);
+      // Check for item markers
+      if (trimmedLine.includes('(weapon)')) {
+        result.weapon = cleanItemName(trimmedLine);
+      } else if (trimmedLine.includes('(left hand)') || trimmedLine.includes('(right hand)')) {
+        result.rings.push(cleanItemName(trimmedLine));
+      } else if (trimmedLine.includes('(worn)')) {
+        assignWornItem(trimmedLine, result);
+      } else if (trimmedLine.includes('(around neck)')) {
+        result.amulet = cleanItemName(trimmedLine);
+      }
     }
   }
+
+  // Older morgues (0.1-0.3 era) may not mark items with "(worn)/(weapon)".
+  // They usually expose currently equipped gear in a compact stats block.
+  fillFromLegacySummary(content, result);
 
   return result;
 }
@@ -80,7 +82,7 @@ export function extractEquipment(content: string): Equipment | null {
  */
 function findInventorySection(content: string): string | null {
   // Look for Inventory header
-  const invMatch = /^Inventory:/m.exec(content);
+  const invMatch = /^\s*Inventory:?\s*$/m.exec(content);
   if (!invMatch) {
     return null;
   }
@@ -108,6 +110,61 @@ function findInventorySection(content: string): string | null {
   }
 
   return content.slice(start, end);
+}
+
+function extractLegacySummaryValue(content: string, label: string): string | null {
+  const match = new RegExp(`^${label}\\s*:\\s*(.+)$`, 'mi').exec(content);
+  if (!match?.[1]) {
+    return null;
+  }
+  const raw = match[1].trim();
+  if (!raw || /^\(no /i.test(raw) || raw === '-') {
+    return null;
+  }
+  return raw;
+}
+
+function extractLegacySummaryValues(content: string, label: string): string[] {
+  const matches = content.matchAll(new RegExp(`^${label}\\s*:\\s*(.+)$`, 'gmi'));
+  const values: string[] = [];
+  for (const match of matches) {
+    const raw = match[1]?.trim();
+    if (!raw || /^\(no /i.test(raw) || raw === '-') {
+      continue;
+    }
+    values.push(raw);
+  }
+  return values;
+}
+
+function fillFromLegacySummary(content: string, result: Equipment): void {
+  if (!result.weapon) {
+    result.weapon = extractLegacySummaryValue(content, 'Weapon');
+  }
+  if (!result.bodyArmour) {
+    result.bodyArmour = extractLegacySummaryValue(content, 'Armour');
+  }
+  if (!result.shield) {
+    result.shield = extractLegacySummaryValue(content, 'Shield');
+  }
+  if (!result.helmet) {
+    result.helmet = extractLegacySummaryValue(content, 'Helmet');
+  }
+  if (!result.cloak) {
+    result.cloak = extractLegacySummaryValue(content, 'Cloak');
+  }
+  if (!result.gloves) {
+    result.gloves = extractLegacySummaryValue(content, 'Gloves');
+  }
+  if (!result.boots) {
+    result.boots = extractLegacySummaryValue(content, 'Boots');
+  }
+  if (!result.amulet) {
+    result.amulet = extractLegacySummaryValue(content, 'Amulet');
+  }
+  if (result.rings.length === 0) {
+    result.rings.push(...extractLegacySummaryValues(content, 'Ring'));
+  }
 }
 
 /**

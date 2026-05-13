@@ -319,6 +319,73 @@ describe('parseMorgue', () => {
       expect(result.data.background).toBe('Fighter');
     });
 
+    it('strips old fixed-width class spillover into Res columns', async () => {
+      const partialContent = `
+ Dungeon Crawl Stone Soup version 0.2.7 (crawl-ref) character file.
+
+TestPlayer the Something
+Race       : Mountain Dwarf    Res.Fire  : + . .   See Invis. : +
+Class      : Earth ElementalistRes.Cold  : + . .   Warding    : .
+Level      :      27
+`;
+      const result = await parseMorgue(partialContent);
+      expect(result.data.race).toBe('Mountain Dwarf');
+      expect(result.data.background).toBe('Earth Elementalist');
+    });
+
+    it('sanitizes legacy God line spillover columns', async () => {
+      const partialContent = `
+ Dungeon Crawl Stone Soup version 0.2.7 (crawl-ref) character file.
+
+12345 TestPlayer the Paladin (level 27, 200/200 HPs)
+God       : The Shining****** Life Prot.: . . .   Conserve   : .
+`;
+      const result = await parseMorgue(partialContent);
+      expect(result.data.godsWorshipped).toEqual([
+        {
+          god: 'the Shining One',
+          startedTurn: 0,
+          startedLocation: 'D:1',
+          endedTurn: null,
+        },
+      ]);
+    });
+
+    it('treats legacy "No God" spillover lines as godless', async () => {
+      const partialContent = `
+ Dungeon Crawl Stone Soup version 0.2.7 (crawl-ref) character file.
+
+12345 TestPlayer the Reaver (level 20, 150/150 HPs)
+God       : No God            Life Prot.: . . .   Conserve   : .
+`;
+      const result = await parseMorgue(partialContent);
+      expect(result.data.godsWorshipped).toEqual([]);
+    });
+
+    it('deduplicates repeated spells and keeps first occurrence', async () => {
+      const partialContent = `
+Dungeon Crawl Stone Soup version 0.32-a0 (webtiles) character file.
+
+12345 TestPlayer the Devastator (level 27, 200/200 HPs)
+             Began as a Deep Elf Conjurer on Jan 1, 2025.
+
+You had 5 spell levels left.
+You knew the following spells:
+
+ Your Spells              Type           Power      Damage    Failure   Level
+a - Blink                 Tloc           100%       N/A       0%          2
+b - Fireball              Conj/Fire      80%        3d20      1%          5
+c - Blink                 Tloc           100%       N/A       0%          2
+d - Fireball              Conj/Fire      80%        3d20      1%          5
+`;
+      const result = await parseMorgue(partialContent);
+      const spells = result.data.endingSpells;
+      expect(spells).not.toBeNull();
+      expect(spells).toHaveLength(2);
+      expect(spells?.map((s) => s.name)).toEqual(['Blink', 'Fireball']);
+      expect(spells?.map((s) => s.slot)).toEqual(['a', 'b']);
+    });
+
     it('keeps max-XL skill progression aligned with final skill level', async () => {
       const content = `
 Skill      XL: |  1  3  6  9 12 15 18 21 24 27 |
@@ -789,6 +856,32 @@ Ice Magic      |              10    10    15    15    15    20 | 20.0
       expect(data.race).toBe('Draconian');
       expect(data.background).toBe('Fighter');
       expect(data.speciesData).toEqual({ color: 'Red' });
+    });
+
+    it('normalizes legacy mottled draconian starts', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.17-a0-589-gf3c920e (webtiles) character file.',
+        '',
+        '1234 TestPlayer the Conjurer (level 10, 80/80 HPs)',
+        '             Began as a Mottled Draconian Conjurer on Jan 1, 2015.',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Draconian');
+      expect(data.background).toBe('Conjurer');
+      expect(data.speciesData).toEqual({ color: 'Mottled' });
+    });
+
+    it('normalizes legacy gale centaur starts and preserves color metadata', async () => {
+      const content = [
+        'Dungeon Crawl Stone Soup version 0.35-a0-181-g84ebf06 (webtiles) character file.',
+        '',
+        '1234 TestPlayer the Hunter (level 10, 80/80 HPs)',
+        '             Began as a Gale Centaur Hunter on Jan 1, 2026.',
+      ].join('\n');
+      const data = await parseMorgueData(content);
+      expect(data.race).toBe('Centaur');
+      expect(data.background).toBe('Hunter');
+      expect(data.speciesData).toEqual({ color: 'Gale' });
     });
 
     it('returns null speciesData for non-Draconian species', async () => {
