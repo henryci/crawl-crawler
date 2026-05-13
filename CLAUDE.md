@@ -1,127 +1,136 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
-## Project Overview
+## What This Repo Is
 
-Crawl Crawler is a monorepo of tools for [DCSS (Dungeon Crawl Stone Soup)](https://crawl.develz.org/), a roguelike game. It provides morgue file parsing, player statistics, win streak analytics, and a web frontend. Uses **pnpm workspaces**.
+Crawl Crawler is a pnpm-workspace monorepo for [Dungeon Crawl Stone Soup (DCSS)](https://crawl.develz.org/) data tooling:
 
-## Commands
+- Parse DCSS morgue files into structured JSON
+- Parse DCSS player pages
+- Load and query game data in PostgreSQL
+- Serve analytics and UI via Next.js
+
+## First Steps For Any Task
+
+1. Read this file before making changes.
+2. Identify the smallest package(s) affected.
+3. Prefer targeted commands/tests over full-repo runs unless asked.
+4. Keep changes minimal and local; avoid broad refactors unless requested.
+5. Run relevant tests/lint for touched code before finishing.
+
+## Monorepo Layout
+
+```text
+apps/web/                         Next.js 16 app (App Router, React 19)
+packages/dcss-morgue-parser/      Raw morgue text -> MorgueData
+packages/dcss-player-parser/      Player page HTML -> PlayerData
+packages/dcss-game-data/          Canonical static game data (species/gods/branches/etc)
+packages/dcss-combo-records-parser/
+packages/game-data-db/            PostgreSQL access + migrations
+packages/sample_morgues/          Test/reference morgue files
+scripts/morgue-loader/            Parse morgues and insert into DB
+scripts/streak-downloader/        Download morgues for streak analysis (Python)
+scripts/combo-records-updater/
+scripts/morgue-parser-diagnostic/ Troubleshoot parser failures
+```
+
+## Core Data Flow
+
+1. Morgues are downloaded by `scripts/streak-downloader/`.
+2. `scripts/morgue-loader/load.ts` parses with `@crawl-crawler/dcss-morgue-parser`.
+3. Parsed output is inserted into PostgreSQL via `@crawl-crawler/game-data-db`.
+4. `apps/web` API routes query DB and frontend pages visualize data.
+5. `/player` and `/morgue` intentionally do client-side parsing for ad-hoc lookups.
+
+## High-Value Commands
 
 ```bash
-# Install dependencies
+# Install deps
 pnpm install
 
-# Run web app (Next.js dev server)
+# Dev app
 pnpm dev
 
-# Build everything
+# Build all workspaces
 pnpm build
 
-# Build just the morgue parser library
+# Parser-only build + tests
 pnpm build:parser
-
-# Run morgue parser tests
 pnpm test:parser
-
-# Run tests in watch mode (inside dcss-morgue-parser package)
 pnpm --filter dcss-morgue-parser test:watch
 
-# Lint
+# Whole-repo lint
 pnpm lint
 
-# Database migrations
-pnpm db:migrate        # run pending migrations
-pnpm db:migrate:down   # rollback
-pnpm db:reset          # reset all
+# DB migration lifecycle
+pnpm db:migrate
+pnpm db:migrate:down
+pnpm db:reset
 
-# Load parsed morgue files into DB
+# Data jobs
 pnpm load:morgues
-
-# Download and update combo records JSON
 pnpm download:combo-records
 
-# Diagnose a morgue parsing issue
+# Parser diagnostics
 pnpm diagnose:morgue
 pnpm diagnose:morgue:verbose
 ```
 
-## Architecture
+## Package-Specific Working Notes
 
-### Monorepo Structure
+### `packages/dcss-morgue-parser`
 
-```
-apps/web/               # Next.js 16 web application (App Router, React 19)
-packages/
-  dcss-morgue-parser/   # Parses raw morgue .txt files → structured MorgueData
-  dcss-player-parser/   # Parses player HTML pages from DCSS servers → PlayerData
-  dcss-combo-records-parser/ # Parses combo records JSON from CAO
-  dcss-game-data/       # Static DCSS game data: species, backgrounds, gods, branches, combos
-  game-data-db/         # PostgreSQL connection pool + migration runner
-  sample_morgues/       # Sample morgue files used for testing
-scripts/
-  morgue-loader/        # load.ts: reads morgue files from disk, parses, inserts into DB
-  streak-downloader/    # Python script to download morgue files for win streaks
-  combo-records-updater/
-```
+- Primary extractor-based parser (header, branches, skills, spells, etc.).
+- Prefer fixing extractor logic close to the failing section instead of adding parser-wide hacks.
+- Add/update vitest coverage in `packages/dcss-morgue-parser/tests/` whenever behavior changes.
+- Use `pnpm test:parser` first; use `pnpm diagnose:morgue` for hard edge cases.
 
-### Data Flow
+### `packages/dcss-game-data`
 
-1. **Data ingestion**: `scripts/streak-downloader/` (Python) downloads morgue `.txt` files from DCSS servers. `scripts/morgue-loader/load.ts` parses them via `dcss-morgue-parser` and inserts into PostgreSQL (`game-data-db`).
+- Source of canonical names and abbreviations.
+- Keep naming compatibility for legacy variants where possible.
+- Changes here can affect parser normalization and analytics grouping.
 
-2. **Web backend** (`apps/web/app/api/`): Next.js Route Handlers query PostgreSQL via `@crawl-crawler/game-data-db`. Key APIs:
-   - `/api/analytics` — filtered game analytics (species, background, god filters, sorting, pagination)
-   - `/api/analytics/aggregate` — aggregate stats
-   - `/api/analytics/trends` — time-series trends
-   - `/api/analytics/skills` and `/api/analytics/spells` — skill/spell usage data
-   - `/api/morgue/[hash]` — retrieve stored parsed morgue JSON by hash
-   - `/api/proxy` — allowlisted proxy to DCSS server URLs (for client-side fetching)
-   - `/api/service-metadata` — last update timestamps
+### `apps/web`
 
-3. **Web frontend pages** (`apps/web/app/`):
-   - `/` — home page with dungeon map navigation UI
-   - `/player` — client-side player lookup: fetches player HTML from DCSS servers via `/api/proxy`, parses it client-side with `dcss-player-parser`, displays stats/wins/streaks
-   - `/morgue` — client-side morgue file parser: fetches a morgue URL via `/api/proxy`, parses it client-side with `dcss-morgue-parser`, shows full game breakdown
-   - `/records` — combo records
-   - `/analytics` — server/client hybrid analytics dashboard querying the DB
+- API routes live under `apps/web/app/api/`.
+- Frontend pages use App Router and Tailwind.
+- `next.config.mjs` has `typescript.ignoreBuildErrors: true`; do not treat this as permission to ship type regressions.
 
-### Key Package Roles
+### `packages/game-data-db`
 
-- **`dcss-morgue-parser`**: Core parsing library. Takes raw morgue text → `MorgueData`. Has extractors per section (header, skills, branches, actions, spells, etc.). Uses vitest for tests. Can also run as a CLI.
-- **`dcss-player-parser`**: Parses player scoring pages (HTML) from DCSS servers into `PlayerData` (wins, streaks, stats). Client-side only (no server dependency).
-- **`dcss-game-data`**: Pure data: all valid species, backgrounds, gods, branches, and their abbreviations/names. Used by parsers and the analytics API for legacy name mapping.
-- **`game-data-db`**: Thin wrapper around `pg` (PostgreSQL). Exports `query()`, `withTransaction()`, migration runner. DB config comes from `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` env vars. Remote DBs (non-localhost) auto-enable SSL.
+- Migrations are numbered files in `packages/game-data-db/src/migrations/`.
+- DB config comes from `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`.
+- Remote DB connections automatically use SSL.
 
-### Database
+## Code Style Expectations (TypeScript)
 
-PostgreSQL. Migrations live in `packages/game-data-db/src/migrations/` (numbered `.ts` files). The `apps/web/.env` file provides DB connection variables for the web app; the root-level scripts use the same variables loaded via `--env-file=apps/web/.env`.
+- Remove dead code completely (do not leave commented-out blocks).
+- Avoid duplicated logic; extract shared helpers only when reuse is real.
+- Explicitly type exported/public function boundaries.
+- Prefer `unknown` over `any`, then narrow with guards.
+- Prefer type guards over broad type assertions.
+- Keep React components presentation-focused; move heavy transforms to helpers/hooks.
+- Derive values from existing state instead of introducing sync-prone parallel state.
 
-### Tech Stack
+## Testing & Validation Expectations
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui (Radix UI primitives), Recharts
-- **Package manager**: pnpm (v9) with workspaces
-- **Testing**: vitest (only in `dcss-morgue-parser` and `dcss-player-parser`)
-- **Deployment**: Vercel (set root directory to `apps/web`)
+- Run the narrowest relevant test command for touched areas.
+- If parser output changes, add or update tests to document the new behavior.
+- If DB code changes, validate migrations and basic query path.
+- If API/frontend code changes, smoke test the related route/page.
 
-### Notes
+## Safety Rules For Automated Edits
 
-- `next.config.mjs` has `typescript.ignoreBuildErrors: true` — TypeScript errors won't block builds.
-- The `/api/proxy` route only permits fetching from an allowlist of known DCSS servers.
-- Client-side parsing (player page, morgue page) is intentional — avoids server load for ad-hoc user lookups.
-- `pnpm -r` runs a command recursively across all workspace packages.
+- Do not delete unrelated changes in a dirty working tree.
+- Do not run destructive git commands unless explicitly requested.
+- Do not add dependencies if existing workspace packages already provide what is needed.
+- Keep commits focused and scoped to the requested task.
 
-## TypeScript Conventions
+## Environment Notes
 
-**No dead code.** Delete unused variables, imports, functions, and types rather than commenting them out or leaving them in place. If something is removed, remove it fully.
-
-**No duplicated logic.** Before writing a new helper, check whether the logic already exists in the codebase. Inline trivial one-liners rather than creating a helper for them; extract a shared helper only when the same non-trivial logic is genuinely needed in multiple places.
-
-**Prefer explicit types at boundaries.** Function parameters and return types should be typed explicitly when the function is exported or part of an API boundary. Internal/local variables can rely on inference.
-
-**Use `unknown` over `any`.** When a type is truly unknown, use `unknown` and narrow it. Avoid `any` — it silently defeats type checking.
-
-**Narrow with type guards, not casts.** Prefer `if (typeof x === 'string')` or a typed predicate function over `x as string`. Only use `as` when you have information TypeScript can't infer and narrowing is impractical.
-
-**Keep components focused.** React components should render UI. Extract data-fetching, filtering, and transformation logic into hooks or plain functions rather than embedding it inline in JSX.
-
-**Derive, don't sync.** Prefer computing derived values directly from existing state rather than introducing a parallel piece of state that must be kept in sync with `useEffect`.
+- Package manager: `pnpm` (workspace repo).
+- Main app env file: `apps/web/.env`.
+- Some root scripts may load env via `--env-file=apps/web/.env`.
+- Deployment target is Vercel with root directory `apps/web`.

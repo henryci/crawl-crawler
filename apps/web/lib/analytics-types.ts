@@ -106,6 +106,14 @@ export const DIMENSIONS = {
     alias: "draconian_color",
     join: null,
   },
+  player_name: {
+    value: "player_name",
+    label: "Player",
+    icon: "👤",
+    sql: "g.player_name",
+    alias: "player_name",
+    join: null,
+  },
 } as const;
 
 export type DimensionKey = keyof typeof DIMENSIONS;
