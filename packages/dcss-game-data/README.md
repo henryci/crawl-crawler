@@ -171,6 +171,88 @@ getSpeciesName('Gn', '0.10'); // "Gnome"
 getSpeciesName('Gn', '0.32'); // "Gnoll"
 ```
 
+## Equipment Data
+
+Equipment-related data for the equipment optimizer feature lives under
+`src/equipment/` and is split between:
+
+- **Curated** files (hand-written semantic metadata) — `properties.ts`,
+  `brands.ts`, `egos.ts`, `jewelry.ts`, `staves.ts`, `species-equip.ts`,
+  `multi-slot.ts`.
+- **Generated** files (auto-extracted from DCSS C++ source) under
+  `src/equipment/generated/` — `artp.ts` (and, as the extract surface
+  expands, `brand.ts`, `sparm.ts`, weapon/armor base tables, unrand data).
+
+Generated files are committed to the repo so consumers don't need a local
+DCSS source checkout. The pinned DCSS commit lives in `dcss-version.json`.
+
+See `EQUIPMENT_OPTIMIZER_DESIGN.md` in this package for the full design.
+
+### Updating to a new DCSS version
+
+When DCSS releases new content (new ARTPs, brands, egos, items, species
+rules), follow this procedure:
+
+```bash
+# 1. Update the local DCSS source to the target commit.
+cd ../../../source/crawl
+git fetch origin
+git checkout <target-sha>
+
+# 2. From the repo root, extract enums and tables from DCSS source.
+cd -
+pnpm --filter dcss-game-data extract
+
+# 3. Check for unmapped new entries.
+pnpm --filter dcss-game-data verify
+# On failure, the script prints which file needs a curated entry and
+# which DCSS enum value is missing. For each, add a curated entry to
+# the named file. (For ARTPs: extend CURATED_ARTP_META in properties.ts.)
+
+# 4. Re-run verify until it passes.
+pnpm --filter dcss-game-data verify
+
+# 5. Run typecheck and any relevant tests.
+pnpm --filter dcss-game-data typecheck
+pnpm --filter dcss-morgue-parser test
+
+# 6. Update the pinned SHA in dcss-version.json.
+
+# 7. Commit the changes:
+#    - dcss-version.json
+#    - src/equipment/generated/*.ts (regenerated)
+#    - any new curated entries in src/equipment/*.ts
+```
+
+### Verify script: what it checks
+
+`pnpm --filter dcss-game-data verify` fails if any of:
+
+1. The pinned `dcss-version.json` SHA doesn't match `git rev-parse HEAD`
+   in the local DCSS source. Catches "I updated the source but forgot to
+   bump the version."
+2. A non-legacy ARTP_* from DCSS source lacks a curated entry in
+   `properties.ts`. (Legacy ARTPs — those guarded by
+   `#if TAG_MAJOR_VERSION == 34` — are accepted silently.)
+3. A curated entry references an ARTP_* that no longer exists in DCSS.
+
+Future checks (added as the extract surface expands): SPWPN_* coverage,
+SPARM_* coverage, weapon/armor base table coverage, unrand list coverage.
+
+### Why this split?
+
+Mechanical extraction handles things that follow regular C++ patterns
+(enum declarations, struct tables, flat data files like `art-data.txt`).
+Hand-curation handles things that don't (an ego's actual effects are
+implemented imperatively across many source files; we have to read DCSS
+and write our model).
+
+By keeping the curated layer separate from the generated layer, we get:
+
+- Stable, reviewable hand-written semantics.
+- Mechanical detection of "DCSS added a thing we haven't mapped yet."
+- A short feedback loop when updating: `extract` → `verify` → fix → repeat.
+
 ## License
 
 MIT

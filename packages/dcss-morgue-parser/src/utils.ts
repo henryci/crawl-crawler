@@ -29,6 +29,19 @@ export const PATTERNS = {
   scoreLine: /^\s*(\d+)\s+(\S+)\s+the\s+(.+?)\s+\(level\s+(\d+),\s*(-?\d+)\/(\d+)(?:\s+\(\d+\))?\s+HPs?\)/,
 
   /**
+   * Character dump player line: in-game dump (DCSS &dump) instead of a
+   * death morgue. Example:
+   *   "henryci the Intangible (DsEE)                     Turns: 188192, Time: 11:04:59"
+   *
+   * Captures: 1=name, 2=title, 3=race code, 4=background code, 5=turns.
+   * Race/background codes are 2 chars each ("Ds"+"EE"=DsEE for
+   * Demonspawn Earth Elementalist). The expanded "Welcome back,
+   * henryci the Demonspawn Earth Elementalist." line later in the
+   * file is also informative but less reliable to anchor on.
+   */
+  characterDumpPlayer: /^(\S+)\s+the\s+(.+?)\s+\(([A-Z][a-zA-Z])([A-Z][a-zA-Z])\)\s+Turns:\s*(\d+)/,
+
+  /**
    * Began as: "Began as a Demigod Earth Elementalist on Apr 26, 2025."
    * Captures the full "Race Background" string for further parsing.
    */

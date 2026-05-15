@@ -5,6 +5,9 @@
  * All types are designed to be UI-friendly and suitable for direct consumption.
  */
 
+import type { ContributionMap, ParsedItem } from 'dcss-game-data';
+export type { ParsedItem } from 'dcss-game-data';
+
 /**
  * Character statistics at game end.
  */
@@ -195,6 +198,28 @@ export interface MorgueData {
   endingStats: CharacterStats | null;
   /** Equipped items */
   equipment: Equipment | null;
+  /**
+   * Full inventory parsed into structured `ParsedItem` objects with
+   * pre-computed property contributions. Available for DCSS 0.33+ only;
+   * `null` for older versions or when the inventory section is missing.
+   *
+   * Powers the equipment optimizer. Legacy consumers should continue to
+   * use `equipment` (still populated for all versions).
+   */
+  inventoryItems: ParsedItem[] | null;
+  /**
+   * Runtime totals parsed from the morgue header's defenses block
+   * (rFire ++, rCold ++, Will +++.., HPRegen 0.52/turn, etc.). Keyed
+   * by PropertyKey. Reflects the SUM of contributions from every
+   * source (species, god, mutations, currently-equipped items).
+   *
+   * Combined with `inventoryItems` (filtered to `isEquipped`), callers
+   * can derive a non-equipment baseline by subtraction.
+   *
+   * `null` when the block can't be located (older morgues or non-
+   * standard formats).
+   */
+  runtimeTotals: ContributionMap | null;
   /** Final skill levels (skill name -> level) */
   endingSkills: Record<string, number> | null;
   /** Skill progression by XL (skill name -> XL -> level) */

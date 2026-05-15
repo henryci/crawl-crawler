@@ -8,6 +8,8 @@
 export { extractHeader, type HeaderData } from './header.js';
 export { extractStats } from './stats.js';
 export { extractEquipment } from './equipment.js';
+export { extractInventoryItems, MIN_INVENTORY_PARSE_VERSION } from './inventory-items.js';
+export { extractDefensesSummary } from './defenses-summary.js';
 export { extractSkills, type SkillsData } from './skills.js';
 export { extractSpells } from './spells.js';
 export { extractGods } from './gods.js';

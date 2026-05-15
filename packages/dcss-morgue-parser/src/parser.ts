@@ -13,6 +13,8 @@ import {
   extractHeader,
   extractStats,
   extractEquipment,
+  extractInventoryItems,
+  extractDefensesSummary,
   extractSkills,
   extractSpells,
   extractGods,
@@ -111,6 +113,8 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
     // Detailed sections
     endingStats: null,
     equipment: null,
+    inventoryItems: null,
+    runtimeTotals: null,
     endingSkills: null,
     skillsByXl: null,
     skillsByXlSource: null,
@@ -167,6 +171,22 @@ export async function parseMorgue(content: string, options?: ParseOptions): Prom
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     result.parseErrors.push(`equipment: ${message}`);
+  }
+
+  // Extract structured inventory items (0.33+ only, for the equipment optimizer)
+  try {
+    result.inventoryItems = extractInventoryItems(content, result.version);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    result.parseErrors.push(`inventoryItems: ${message}`);
+  }
+
+  // Extract the runtime defenses block (rFire ++, Will +++..., HPRegen 0.52/turn, ...)
+  try {
+    result.runtimeTotals = extractDefensesSummary(content);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    result.parseErrors.push(`runtimeTotals: ${message}`);
   }
 
   // Extract skills

@@ -10,6 +10,7 @@
  * - Branch visit summary
  */
 
+import { getBackgroundName, getSpeciesName } from 'dcss-game-data';
 import { PATTERNS, durationToSeconds, parseIntSafe, parseRaceBackground } from '../utils.js';
 
 export interface HeaderData {
@@ -174,12 +175,54 @@ function extractScoreAndPlayer(lines: string[], result: HeaderData): void {
     }
   }
 
+  // Character dump (DCSS in-game &dump) format:
+  //   "henryci the Intangible (DsEE)                     Turns: 188192, Time: 11:04:59"
+  // No score; race+background codes in parens; expanded race/bg name
+  // resolved via dcss-game-data.
+  if (extractCharacterDumpPlayer(lines, result)) return;
+
   // Fallback for very old format (0.2.x) where player name and level are on separate lines
   // Format: "dpeg the Annihilator" followed later by "Level      :      27"
   extractOldFormatPlayerAndLevel(lines, result);
   if (result.score === null) {
     result.score = extractLegacyScore(lines);
   }
+}
+
+/**
+ * Extract player info from a character dump (DCSS `&dump`). Returns
+ * true if a character-dump line was matched. Character dumps have no
+ * score, but include race/background codes and a turn count.
+ */
+function extractCharacterDumpPlayer(lines: string[], result: HeaderData): boolean {
+  for (let i = 0; i < Math.min(40, lines.length); i++) {
+    const line = lines[i];
+    if (!line) continue;
+    const match = PATTERNS.characterDumpPlayer.exec(line);
+    if (!match) continue;
+
+    result.playerName = match[1] ?? null;
+    result.title = match[2] ?? null;
+    const raceCode = match[3]!;
+    const backgroundCode = match[4]!;
+    // Resolve codes to full names; fall back to the code itself.
+    result.race = getSpeciesName(raceCode, result.version ?? undefined);
+    result.background = getBackgroundName(backgroundCode, result.version ?? undefined);
+    result.totalTurns = parseIntSafe(match[5]);
+
+    // Character level isn't in this line — pick it up from the stats
+    // block (XL: NN). Look in the next ~10 lines.
+    for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
+      const statsLine = lines[j] ?? '';
+      const xlMatch = /XL:?\s*(\d+)/.exec(statsLine);
+      if (xlMatch) {
+        result.characterLevel = parseIntSafe(xlMatch[1]);
+        break;
+      }
+    }
+    return true;
+  }
+  return false;
 }
 
 /**

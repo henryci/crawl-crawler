@@ -41,6 +41,7 @@ import { PageGuide } from "@/components/page-guide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
+import { OptimizerPanel } from "@/components/optimizer-panel";
 
 type LoadingState = "idle" | "loading" | "success" | "error";
 
@@ -100,8 +101,8 @@ function getRuneColorClasses(runeName: string): string {
 
 const morgueGuide = (
   <PageGuide
-    title="Morgue Viewer"
-    description="Parse and visualize any DCSS morgue file."
+    title="Morgue / Character Viewer"
+    description="Parse and visualize DCSS morgues and ongoing-character dumps."
     icon={FileText}
     variant="mana"
     sections={[
@@ -109,25 +110,31 @@ const morgueGuide = (
         icon: BookOpen,
         title: "What is this?",
         content:
-          "A parser and viewer for DCSS morgue files. Paste a URL and get a breakdown of the character, their skills, equipment, spells, branch progression, etc.",
+          "A parser and viewer for DCSS morgue files (end-of-game summaries) and character dumps (snapshots of an ongoing character). Paste a URL and get a breakdown of the character, their skills, equipment, spells, branch progression, etc. The Optimizer tab uses the parsed inventory to find your best legal equipment loadout against an objective you pick.",
       },
       {
         icon: Target,
-        title: "How to use it",
+        title: "Loading a morgue",
         content:
-          'Paste the URL of a morgue .txt file from any supported DCSS server (CAO, CXC, etc.) and click "Parse Morgue".',
+          "When a character dies, DCSS writes a morgue-USERNAME-DATE.txt file. Paste its URL from any supported DCSS server (CAO, CXC, CKO, CBR2, etc.) and click \"Parse Morgue\".",
+      },
+      {
+        icon: Target,
+        title: "Loading a character dump (ongoing game)",
+        content:
+          "Press # in-game to write a character dump. On WebTiles you'll get a chat message with the file path. On CAO the URL is https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt — for other servers it's the same pattern under their rawdata directory. Character dumps work with the Optimizer tab so you can plan equipment changes mid-run.",
       },
       {
         icon: Lightbulb,
         title: "Tips",
         content:
-          "The Skills tab is neat. You can break down specific action groups, so you can see which spells you leaned on and when.",
+          "The Skills tab can break down specific action groups, so you can see which spells you leaned on and when. The Optimizer tab (0.33+ inventories only) lets you maximize objectives, add 'at least N' constraints, lock items you want to keep, and ban items you don't want suggested.",
       },
       {
         icon: AlertTriangle,
         title: "Keep in mind",
         content:
-          "Very old morgue files (pre-0.28) may not parse fully, as the format has changed across versions. This page is most impacted by version to version morgue format changes.",
+          "Very old morgue files (pre-0.28) may not parse fully — the format has changed across versions. The Optimizer specifically needs DCSS 0.33 or newer for its structured inventory data.",
       },
     ]}
   />
@@ -145,8 +152,8 @@ function MorgueViewerLoading() {
   return (
     <PageWrapper>
       <PageHeader
-        title="Morgue Viewer"
-        subtitle="Parse and explore DCSS post-game summaries"
+        title="Morgue / Character Viewer"
+        subtitle="Parse and explore DCSS games, including ongoing characters"
         icon={FileText}
         variant="mana"
         action={morgueGuide}
@@ -318,8 +325,8 @@ function MorgueViewerContent() {
       {loadingState === "loading" && <LoadingOverlay url={url} />}
 
       <PageHeader
-        title="Morgue Viewer"
-        subtitle="Parse and explore DCSS post-game summaries"
+        title="Morgue / Character Viewer"
+        subtitle="Parse and explore DCSS games, including ongoing characters"
         icon={FileText}
         variant="mana"
         action={morgueGuide}
@@ -333,7 +340,7 @@ function MorgueViewerContent() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <LinkIcon className="w-5 h-5 text-mana" />
-                  Load Morgue File
+                  Load Morgue or Character Dump
                 </CardTitle>
                 {morgueData && (
                   <Button
@@ -346,7 +353,43 @@ function MorgueViewerContent() {
                   </Button>
                 )}
               </div>
-              <CardDescription>Enter the URL to a DCSS morgue file to parse and display its contents</CardDescription>
+              <CardDescription className="text-sm space-y-2">
+                <div>Paste a URL for either:</div>
+                <ul className="space-y-1.5 list-none pl-0">
+                  <li className="flex items-start gap-2">
+                    <span className="text-mana font-mono shrink-0">A.</span>
+                    <span>
+                      <span className="text-foreground font-medium">Morgue file</span>{" "}
+                      — written automatically when your character dies. Look
+                      for {" "}
+                      <span className="font-mono text-mana">
+                        morgue-USERNAME-DATE.txt
+                      </span>{" "}
+                      under your server&apos;s{" "}
+                      <span className="font-mono text-mana">rawdata</span>{" "}
+                      directory.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-mana font-mono shrink-0">B.</span>
+                    <span>
+                      <span className="text-foreground font-medium">
+                        Character dump (ongoing game)
+                      </span>{" "}
+                      — press{" "}
+                      <span className="font-mono text-mana px-1 bg-secondary/60 rounded">
+                        #
+                      </span>{" "}
+                      in-game to write a dump. On WebTiles the path appears in
+                      chat. On CAO the URL is{" "}
+                      <span className="font-mono text-mana">
+                        https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt
+                      </span>
+                      .
+                    </span>
+                  </li>
+                </ul>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -464,6 +507,13 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
             Dungeon
           </TabsTrigger>
           <TabsTrigger
+            value="optimizer"
+            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Optimizer
+          </TabsTrigger>
+          <TabsTrigger
             value="debug"
             className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
           >
@@ -482,6 +532,10 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
 
         <TabsContent value="dungeon" className="mt-6">
           <DungeonTab data={data} />
+        </TabsContent>
+
+        <TabsContent value="optimizer" className="mt-6">
+          <OptimizerPanel data={data} />
         </TabsContent>
 
         <TabsContent value="debug" className="mt-6">

@@ -119,3 +119,6 @@ export {
   // Legacy config
   buildLegacyConfig,
 } from './utils.js';
+
+// Equipment data (see EQUIPMENT_OPTIMIZER_DESIGN.md)
+export * from './equipment/index.js';

@@ -17,6 +17,7 @@ export type {
   ParseResult,
   CharacterStats,
   Equipment,
+  ParsedItem,
   Spell,
   GodRecord,
   BranchInfo,

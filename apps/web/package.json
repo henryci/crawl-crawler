@@ -47,6 +47,7 @@
     "dcss-game-data": "workspace:*",
     "pg": "^8.13.1",
     "dcss-combo-records-parser": "workspace:*",
+    "dcss-loadout-optimizer": "workspace:*",
     "dcss-morgue-parser": "workspace:*",
     "dcss-player-parser": "workspace:*",
     "embla-carousel-react": "8.5.1",
