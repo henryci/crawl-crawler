@@ -985,8 +985,48 @@ function parseStructArray(filePath: string, arrayName: string): StructArrayEntry
     if (pos >= body.length) break;
 
     if (body[pos] !== '{') {
-      // Could be a macro invocation like DRAGON_ARMOUR(...). Skip to next
-      // top-level entry boundary (next `{` or `,` at depth 0).
+      // DRAGON_ARMOUR(ID, "name", ac, evp, prc, res) macro expands to
+      // a body-armour entry: ARM_<ID>_DRAGON_ARMOUR, "<name> dragon
+      // scales", ac, evp, prc, SLOT_BODY_ARMOUR, ... Synthesize the
+      // struct text so the downstream parser handles it like any other
+      // armour entry.
+      const dragonMatch = /^DRAGON_ARMOUR\(\s*([A-Z_]+)\s*,\s*"([^"]+)"\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)/.exec(
+        body.slice(pos),
+      );
+      if (dragonMatch) {
+        const id = dragonMatch[1]!;
+        const name = dragonMatch[2]!;
+        const ac = dragonMatch[3]!;
+        const evp = dragonMatch[4]!;
+        const prc = dragonMatch[5]!;
+        const synthText = ` ARM_${id}_DRAGON_ARMOUR, "${name} dragon scales", ${ac}, ${evp}, ${prc}, SLOT_BODY_ARMOUR, SIZE_LITTLE, SIZE_GIANT, false, 37 `;
+        const lineInBody = body.slice(0, pos).split('\n').length - 1;
+        entries.push({
+          text: synthText,
+          index,
+          legacy: inLegacy,
+          line: lineOffsetInFile + lineInBody,
+        });
+        index++;
+        // Skip past the closing `)` of the macro call (paren-balanced).
+        let depth = 0;
+        let j = pos;
+        while (j < body.length) {
+          if (body[j] === '(') depth++;
+          else if (body[j] === ')') {
+            depth--;
+            if (depth === 0) {
+              j++;
+              break;
+            }
+          }
+          j++;
+        }
+        pos = j;
+        while (pos < body.length && /[\s,]/.test(body[pos]!)) pos++;
+        continue;
+      }
+      // Unrecognized non-struct content; advance to the next `{`.
       const next = body.indexOf('{', pos);
       if (next === -1) break;
       pos = next;

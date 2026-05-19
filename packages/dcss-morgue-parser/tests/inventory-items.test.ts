@@ -156,6 +156,50 @@ describe('end-to-end parsing on real morgues', () => {
   });
 });
 
+describe('enchantment contributions', () => {
+  it('armor +N contributes AC+N', async () => {
+    // The 0.34 reference morgue has "+3 leather armour of fire resistance"
+    // → AC+3 from enchant, plus rF+ from the ego.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    const armor = data.inventoryItems!.find((i) => i.id === 'i');
+    expect(armor).toBeDefined();
+    expect(armor!.category).toBe('armor');
+    expect(armor!.enchant).toBe(3);
+    expect(armor!.contributions.AC).toBe(3);
+    expect(armor!.contributions.rF).toBe(1);
+  });
+
+  it('shield +N contributes SH+N', async () => {
+    // "+3 buckler of protection" → SH+3 from enchant, AC+3 from "protection" ego.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    const shield = data.inventoryItems!.find((i) => i.id === 'Y');
+    expect(shield).toBeDefined();
+    expect(shield!.category).toBe('shield');
+    expect(shield!.enchant).toBe(3);
+    expect(shield!.contributions.SH).toBe(3);
+  });
+
+  it('weapon +N contributes Slay+N', async () => {
+    // The 0.34 morgue has the quarterstaff of Hiorororua at +5
+    // → Slay+5 from enchant, plus the brace contributions.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    const weapon = data.inventoryItems!.find((i) => i.id === 'b');
+    expect(weapon).toBeDefined();
+    expect(weapon!.category).toBe('weapon');
+    expect(weapon!.enchant).toBe(5);
+    expect(weapon!.contributions.Slay).toBe(5);
+  });
+});
+
 describe('item identification edge cases', () => {
   it('handles cursed Ashenzari items (strips "cursed " keyword)', async () => {
     const path = resolve(SAMPLE_DIR, 'morgue-zkxksk0-20241105-160150.txt');

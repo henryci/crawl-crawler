@@ -369,6 +369,156 @@ export const ARMOR_ENTRIES: ExtractedArmorEntry[] = [
         "line": 272
       }
     }
+  },
+  {
+    "enumName": "ARM_STEAM_DRAGON_ARMOUR",
+    "displayName": "steam dragon scales",
+    "baseAC": 5,
+    "evPenalty": 0,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 285
+      }
+    }
+  },
+  {
+    "enumName": "ARM_ACID_DRAGON_ARMOUR",
+    "displayName": "acid dragon scales",
+    "baseAC": 6,
+    "evPenalty": -50,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 287
+      }
+    }
+  },
+  {
+    "enumName": "ARM_QUICKSILVER_DRAGON_ARMOUR",
+    "displayName": "quicksilver dragon scales",
+    "baseAC": 9,
+    "evPenalty": -70,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 289
+      }
+    }
+  },
+  {
+    "enumName": "ARM_SWAMP_DRAGON_ARMOUR",
+    "displayName": "swamp dragon scales",
+    "baseAC": 7,
+    "evPenalty": -70,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 291
+      }
+    }
+  },
+  {
+    "enumName": "ARM_FIRE_DRAGON_ARMOUR",
+    "displayName": "fire dragon scales",
+    "baseAC": 8,
+    "evPenalty": -90,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 293
+      }
+    }
+  },
+  {
+    "enumName": "ARM_ICE_DRAGON_ARMOUR",
+    "displayName": "ice dragon scales",
+    "baseAC": 9,
+    "evPenalty": -110,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 295
+      }
+    }
+  },
+  {
+    "enumName": "ARM_PEARL_DRAGON_ARMOUR",
+    "displayName": "pearl dragon scales",
+    "baseAC": 10,
+    "evPenalty": -110,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 297
+      }
+    }
+  },
+  {
+    "enumName": "ARM_STORM_DRAGON_ARMOUR",
+    "displayName": "storm dragon scales",
+    "baseAC": 10,
+    "evPenalty": -150,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 299
+      }
+    }
+  },
+  {
+    "enumName": "ARM_SHADOW_DRAGON_ARMOUR",
+    "displayName": "shadow dragon scales",
+    "baseAC": 11,
+    "evPenalty": -150,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 301
+      }
+    }
+  },
+  {
+    "enumName": "ARM_GOLDEN_DRAGON_ARMOUR",
+    "displayName": "golden dragon scales",
+    "baseAC": 12,
+    "evPenalty": -230,
+    "slot": "SLOT_BODY_ARMOUR",
+    "isShield": false,
+    "legacy": false,
+    "sources": {
+      "entry": {
+        "file": "item-prop.cc",
+        "line": 303
+      }
+    }
   }
 ];
 

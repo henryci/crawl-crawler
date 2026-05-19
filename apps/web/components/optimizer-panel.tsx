@@ -18,7 +18,7 @@
  * baseline derived from the morgue's defenses block.
  */
 
-import { useMemo, useState, useTransition, useEffect } from "react";
+import { useMemo, useState, useTransition, useEffect, type ReactNode } from "react";
 import type { MorgueData, ParsedItem } from "dcss-morgue-parser";
 import {
   PROPERTIES,
@@ -356,7 +356,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   }, [loadout, rules, baseline]);
 
   if (!inventoryItems) {
-    return <UnsupportedMessage reason="requires-0.33" />;
+    return <UnsupportedMessage reason="missing-inventory-data" />;
   }
   if (!rules) {
     return <UnsupportedMessage reason="unknown-species" race={data.race} />;
@@ -891,10 +891,12 @@ function SlotRow({
   onToggleLock: () => void;
 }) {
   const interactive = item !== null && !locked;
+  const labelClasses =
+    "font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80 leading-none";
   return (
     <div
       className={cn(
-        "w-full px-3 py-2 rounded border transition-colors",
+        "w-full px-3 py-2 rounded border transition-colors flex items-start gap-2",
         item
           ? cn(
               "bg-secondary/30",
@@ -907,73 +909,72 @@ function SlotRow({
           : "bg-secondary/10 border-dashed border-border",
       )}
     >
-      <div className="flex items-center gap-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground w-16 shrink-0">
-          {label}
-        </span>
-        {item ? (
-          <>
-            <button
-              type="button"
-              onClick={interactive ? onRemove : undefined}
-              disabled={!interactive}
-              className={cn(
-                "flex-1 min-w-0 text-left rounded",
-                interactive
-                  ? "hover:bg-red-950/30 cursor-pointer"
-                  : "cursor-not-allowed",
-              )}
-              title={locked ? "Locked — click the lock icon to unlock" : "Click to unequip"}
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-muted-foreground w-4 shrink-0">
-                  {glyphFor(item)}
-                </span>
-                <span className="font-mono text-sm text-foreground flex-1 min-w-0 truncate">
-                  {cleanItemName(item.rawText)}
-                </span>
-                <span className="font-mono text-xs text-muted-foreground w-4 text-right shrink-0">
-                  {item.id}
-                </span>
+      {item ? (
+        <>
+          <button
+            type="button"
+            onClick={interactive ? onRemove : undefined}
+            disabled={!interactive}
+            className={cn(
+              "flex-1 min-w-0 text-left rounded",
+              interactive
+                ? "hover:bg-red-950/30 cursor-pointer"
+                : "cursor-not-allowed",
+            )}
+            title={locked ? "Locked — click the lock icon to unlock" : "Click to unequip"}
+          >
+            <div className={labelClasses}>{label}</div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-muted-foreground w-4 shrink-0">
+                {glyphFor(item)}
+              </span>
+              <span className="font-mono text-sm text-foreground flex-1 min-w-0 truncate">
+                {cleanItemName(item.rawText)}
+              </span>
+              <span className="font-mono text-xs text-muted-foreground w-4 text-right shrink-0">
+                {item.id}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1 mt-1 ml-6">
+              {renderItemTags(item)}
+            </div>
+            {item.slots.length > 1 && (
+              <div className="text-[10px] text-amber-400/80 mt-0.5 ml-6">
+                Multi-slot: {item.slots.map((s) => SLOT_LABEL[s]).join(" + ")}
               </div>
-              <div className="flex flex-wrap gap-1 mt-1 ml-6">
-                {renderItemTags(item)}
-              </div>
-              {item.slots.length > 1 && (
-                <div className="text-[10px] text-amber-400/80 mt-0.5 ml-6">
-                  Multi-slot: {item.slots.map((s) => SLOT_LABEL[s]).join(" + ")}
-                </div>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleLock}
-              className={cn(
-                "shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors",
-                locked
-                  ? "text-amber-400 hover:bg-amber-950/40"
-                  : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/60",
-              )}
-              title={
-                locked
-                  ? "Locked — Compute Best Loadout will keep this item"
-                  : "Lock this item so Compute Best Loadout doesn't change it"
-              }
-              aria-label={locked ? "Unlock item" : "Lock item"}
-            >
-              {locked ? (
-                <Lock className="w-3.5 h-3.5" />
-              ) : (
-                <Unlock className="w-3.5 h-3.5" />
-              )}
-            </button>
-          </>
-        ) : (
-          <span className="font-mono text-xs text-muted-foreground italic">
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleLock}
+            className={cn(
+              "shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5",
+              locked
+                ? "text-amber-400 hover:bg-amber-950/40"
+                : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/60",
+            )}
+            title={
+              locked
+                ? "Locked — Compute Best Loadout will keep this item"
+                : "Lock this item so Compute Best Loadout doesn't change it"
+            }
+            aria-label={locked ? "Unlock item" : "Lock item"}
+          >
+            {locked ? (
+              <Lock className="w-3.5 h-3.5" />
+            ) : (
+              <Unlock className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </>
+      ) : (
+        <div className="flex-1">
+          <div className={labelClasses}>{label}</div>
+          <div className="font-mono text-xs text-muted-foreground italic mt-1">
             empty
-          </span>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1134,6 +1135,7 @@ const TOTALS_PROPS: PropertyKey[] = [
   "Stlth",
 ];
 
+
 function LiveTotals({
   score,
   stats,
@@ -1150,6 +1152,10 @@ function LiveTotals({
       <CardContent className="space-y-3">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
           Live Totals
+        </div>
+        <div className="text-[10px] text-muted-foreground/80 italic leading-snug">
+          Equipment modifiers + non-equipment baseline. Does not include base
+          armor AC, base shield SH, base EV, or skill-derived bonuses.
         </div>
 
         {floors.length > 0 && (
@@ -1450,12 +1456,15 @@ function PipRow({
           </span>
         )}
         {uncapped !== capped && (
-          <span className="text-[9px] text-amber-400/70 font-mono">
+          <span className="text-[10px] text-amber-400/80 font-mono">
             (raw {uncapped})
           </span>
         )}
         {(equipment !== 0 || baseline !== 0) && (
-          <span className="text-[9px] text-muted-foreground font-mono w-20 text-right">
+          <span
+            className="text-[11px] font-mono text-right whitespace-nowrap"
+            title={breakdownTooltip(equipment, baseline)}
+          >
             {formatBreakdown(equipment, baseline)}
           </span>
         )}
@@ -1464,12 +1473,32 @@ function PipRow({
   );
 }
 
-function formatBreakdown(eq: number, base: number): string {
+function formatBreakdown(eq: number, base: number): ReactNode {
   if (eq === 0 && base === 0) return "";
   const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
-  if (eq === 0) return `${fmt(base)} base`;
-  if (base === 0) return `${fmt(eq)} eq`;
-  return `${fmt(eq)}+${fmt(base)}`;
+  if (eq === 0) {
+    return <span className="text-sky-400/80">{fmt(base)} base</span>;
+  }
+  if (base === 0) {
+    return <span className="text-muted-foreground">{fmt(eq)} eq</span>;
+  }
+  return (
+    <>
+      <span className="text-muted-foreground">{fmt(eq)} eq</span>
+      <span className="text-muted-foreground/60"> + </span>
+      <span className="text-sky-400/80">{fmt(base)} base</span>
+    </>
+  );
+}
+
+function breakdownTooltip(eq: number, base: number): string {
+  if (base !== 0 && eq !== 0) {
+    return `${eq} from equipped items + ${base} from non-equipment baseline (species / god / mutations / form, derived from the morgue's defenses block)`;
+  }
+  if (base !== 0) {
+    return `${base} from non-equipment baseline (species / god / mutations / form, derived from the morgue's defenses block)`;
+  }
+  return `${eq} from equipped items`;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -1590,7 +1619,7 @@ function UnsupportedMessage({
   reason,
   race,
 }: {
-  reason: "requires-0.33" | "unknown-species";
+  reason: "missing-inventory-data" | "unknown-species";
   race?: string | null;
 }) {
   return (
@@ -1598,10 +1627,22 @@ function UnsupportedMessage({
       <CardContent className="text-sm text-muted-foreground flex items-start gap-2">
         <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
         <span>
-          {reason === "requires-0.33" ? (
+          {reason === "missing-inventory-data" ? (
             <>
-              The optimizer needs structured inventory data which requires DCSS
-              0.33 or newer. This morgue is from an older version.
+              This morgue doesn&apos;t have the structured inventory data the
+              optimizer needs. Two common causes:
+              <ul className="list-disc list-inside mt-1.5 space-y-1">
+                <li>
+                  The morgue is from DCSS pre-0.33 — older versions use a
+                  different artefact format that isn&apos;t supported.
+                </li>
+                <li>
+                  The morgue was parsed and cached before the optimizer feature
+                  shipped, so the cached data is missing the new fields. Load
+                  the source URL directly (paste it in the URL box above) to
+                  re-parse it.
+                </li>
+              </ul>
             </>
           ) : (
             <>

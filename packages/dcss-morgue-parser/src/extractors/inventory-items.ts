@@ -380,6 +380,7 @@ function parseWeaponItem(
     ? (getMultiSlotOccupation(unrand.enumName) ?? ['weapon'])
     : ['weapon'];
   const contributions = aggregate(baseType, enchant, brand, undefined, artefact);
+  applyEnchantContribution(contributions, enchant, 'weapon');
 
   void articleStripped; // currently unused but kept for symmetry
   return {
@@ -437,6 +438,7 @@ function parseStaffItem(
   const brand = artefact?.brand;
 
   const contributions = aggregate(baseType, enchant, brand, undefined, artefact);
+  applyEnchantContribution(contributions, enchant, 'staff');
 
   return {
     id,
@@ -495,6 +497,7 @@ function parseArmorItem(
     ? (getMultiSlotOccupation(unrand.enumName) ?? baseType.slots)
     : baseType.slots;
   const contributions = aggregate(baseType, enchant, undefined, ego, artefact);
+  applyEnchantContribution(contributions, enchant, category);
 
   return {
     id,
@@ -574,6 +577,41 @@ function parseJewelryItem(
     artefact: artefact ? toParsedArtefact(artefact, unrand) : undefined,
     contributions,
   };
+}
+
+/**
+ * Apply the item's enchantment (`+N` prefix) as a modifier on the
+ * relevant property:
+ *
+ *   - Armor → AC + N
+ *   - Shield → SH + N
+ *   - Weapon → Slay + N (proxy for the per-weapon to-hit/damage bonus)
+ *   - Staff → Slay + N (used as a melee weapon)
+ *   - Jewelry → no implicit contribution (rings of evasion / slaying /
+ *     protection / etc. already model this via `fromEnchant: 'plus'`
+ *     contributions in jewelry.ts; rings whose enchant has no effect
+ *     contribute nothing).
+ */
+function applyEnchantContribution(
+  contributions: ContributionMap,
+  enchant: number,
+  category: ItemCategory,
+): void {
+  if (enchant === 0) return;
+  switch (category) {
+    case 'armor':
+      contributions.AC = (contributions.AC ?? 0) + enchant;
+      break;
+    case 'shield':
+      contributions.SH = (contributions.SH ?? 0) + enchant;
+      break;
+    case 'weapon':
+    case 'staff':
+      contributions.Slay = (contributions.Slay ?? 0) + enchant;
+      break;
+    case 'jewelry':
+      break;
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────
