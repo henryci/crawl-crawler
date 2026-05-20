@@ -221,11 +221,13 @@ function MorgueViewerContent() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [lastLoadedUrl, setLastLoadedUrl] = useState<string | null>(null);
   const [lastLoadedHash, setLastLoadedHash] = useState<string | null>(null);
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
 
   const fetchFromHash = useCallback(async (hash: string) => {
     setLoadingState("loading");
     setError(null);
     setMorgueData(null);
+    setCachedAt(null);
 
     try {
       const response = await fetch(`/api/morgue/${hash}`);
@@ -240,6 +242,7 @@ function MorgueViewerContent() {
       setMorgueData(result.data);
       setLoadingState("success");
       setLastLoadedHash(hash);
+      setCachedAt(response.headers.get("x-crawl-cache-created-at"));
       // Update URL field if the morgue has a source URL
       if (result.data.sourceUrl) {
         setUrl(result.data.sourceUrl);
@@ -259,6 +262,7 @@ function MorgueViewerContent() {
     setLoadingState("loading");
     setError(null);
     setMorgueData(null);
+    setCachedAt(null);
 
     try {
       // Use the proxy route to fetch the morgue file (avoids CORS)
@@ -455,7 +459,7 @@ function MorgueViewerContent() {
       </div>
 
       {/* Parsed Morgue Display */}
-      {morgueData && <MorgueDisplay data={morgueData} />}
+      {morgueData && <MorgueDisplay data={morgueData} cachedAt={cachedAt} />}
 
     </PageWrapper>
   );
@@ -464,7 +468,7 @@ function MorgueViewerContent() {
 /**
  * Main component to display parsed morgue data.
  */
-function MorgueDisplay({ data }: { data: MorgueData }) {
+function MorgueDisplay({ data, cachedAt }: { data: MorgueData; cachedAt: string | null }) {
   return (
     <div className="space-y-6">
       {/* Link to original morgue file */}
@@ -539,7 +543,7 @@ function MorgueDisplay({ data }: { data: MorgueData }) {
         </TabsContent>
 
         <TabsContent value="debug" className="mt-6">
-          <DebugTab data={data} />
+          <DebugTab data={data} cachedAt={cachedAt} />
         </TabsContent>
       </Tabs>
     </div>
@@ -2435,7 +2439,7 @@ function DungeonTab({ data }: { data: MorgueData }) {
 /**
  * Debug tab showing raw JSON data with expand/collapse functionality.
  */
-function DebugTab({ data }: { data: MorgueData }) {
+function DebugTab({ data, cachedAt }: { data: MorgueData; cachedAt: string | null }) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set(["root"]));
 
   const togglePath = useCallback((path: string) => {
@@ -2489,9 +2493,11 @@ function DebugTab({ data }: { data: MorgueData }) {
             </Button>
           </div>
         </div>
-        <CardDescription>
-          Parsed morgue data as JSON. Click on objects and arrays to expand/collapse.
-        </CardDescription>
+        {cachedAt && (
+          <CardDescription>
+            Morgue cached at {new Date(cachedAt).toLocaleString()}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         <div className="font-mono text-sm bg-secondary/50 rounded-lg p-4 overflow-x-auto max-h-[70vh] overflow-y-auto">

@@ -81,6 +81,13 @@ const OBJECTIVE_PRESETS: ObjectivePreset[] = [
   { id: "max-ev", label: "EV", build: () => ({ kind: "maximize", prop: "EV" }) },
   { id: "max-sh", label: "SH", build: () => ({ kind: "maximize", prop: "SH" }) },
   { id: "max-slay", label: "Slaying", build: () => ({ kind: "maximize", prop: "Slay" }) },
+  { id: "max-str", label: "Strength", build: () => ({ kind: "maximize", prop: "Str" }) },
+  { id: "max-int", label: "Intelligence", build: () => ({ kind: "maximize", prop: "Int" }) },
+  { id: "max-dex", label: "Dexterity", build: () => ({ kind: "maximize", prop: "Dex" }) },
+  { id: "max-hp", label: "HP", build: () => ({ kind: "maximize", prop: "HP" }) },
+  { id: "max-mp", label: "MP", build: () => ({ kind: "maximize", prop: "MP" }) },
+  { id: "max-regen", label: "HP Regen", build: () => ({ kind: "maximize", prop: "Regen" }) },
+  { id: "max-regen-mp", label: "MP Regen", build: () => ({ kind: "maximize", prop: "RegenMP" }) },
 ];
 
 /**
@@ -299,6 +306,10 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>(
     OBJECTIVE_PRESETS[0]!.id,
   );
+  const [advancedMode, setAdvancedMode] = useState(false);
+  const [priorityIds, setPriorityIds] = useState<string[]>([
+    OBJECTIVE_PRESETS[0]!.id,
+  ]);
   const [floors, setFloors] = useState<Floor[]>([]);
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
@@ -330,23 +341,34 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   }, [loadoutIds]);
 
   const objective: Objective = useMemo(() => {
+    const floorMap = buildFloorMap(floors);
+
+    if (advancedMode) {
+      const priorities = priorityIds
+        .map((id) => OBJECTIVE_PRESETS.find((p) => p.id === id))
+        .filter((p): p is ObjectivePreset => p !== undefined)
+        .map((p) => presetToPriority(p));
+      if (priorities.length === 0) {
+        priorities.push(presetToPriority(OBJECTIVE_PRESETS[0]!));
+      }
+      return {
+        kind: "priorities",
+        priorities,
+        ...(floorMap ? { floors: floorMap } : {}),
+      };
+    }
+
     const preset = OBJECTIVE_PRESETS.find((p) => p.id === selectedPresetId);
     const base = preset?.build() ?? OBJECTIVE_PRESETS[0]!.build();
-    if (floors.length === 0) return base;
-    const floorMap: Partial<Record<PropertyKey, number>> = {};
-    for (const f of floors) {
-      // If user accidentally added two rows for the same prop, the
-      // larger value wins (more restrictive).
-      const existing = floorMap[f.prop];
-      if (existing === undefined || f.value > existing) {
-        floorMap[f.prop] = f.value;
-      }
-    }
+    if (!floorMap) return base;
     if (base.kind === "maximize" || base.kind === "maximize_with_floor") {
       return { kind: "maximize", prop: base.prop, floors: floorMap };
     }
+    if (base.kind === "priorities") {
+      return { ...base, floors: floorMap };
+    }
     return { ...base, floors: floorMap };
-  }, [selectedPresetId, floors]);
+  }, [advancedMode, priorityIds, selectedPresetId, floors]);
 
   const relevant = useMemo(() => relevantProperties(objective), [objective]);
 
@@ -468,8 +490,24 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
         />
         <div className="space-y-4">
           <ObjectivePanel
+            advancedMode={advancedMode}
+            onToggleAdvanced={() => {
+              if (advancedMode) {
+                // Returning to simple: keep the first priority as the
+                // simple-mode selection.
+                setSelectedPresetId(priorityIds[0] ?? OBJECTIVE_PRESETS[0]!.id);
+                setAdvancedMode(false);
+              } else {
+                // Entering advanced: seed priorities from the simple
+                // selection.
+                setPriorityIds([selectedPresetId]);
+                setAdvancedMode(true);
+              }
+            }}
             presetId={selectedPresetId}
             onPresetChange={setSelectedPresetId}
+            priorityIds={priorityIds}
+            onPriorityIdsChange={setPriorityIds}
             floors={floors}
             onFloorsChange={setFloors}
           />
@@ -988,13 +1026,21 @@ function romanNumeral(n: number): string {
 // ────────────────────────────────────────────────────────────────────────
 
 function ObjectivePanel({
+  advancedMode,
+  onToggleAdvanced,
   presetId,
   onPresetChange,
+  priorityIds,
+  onPriorityIdsChange,
   floors,
   onFloorsChange,
 }: {
+  advancedMode: boolean;
+  onToggleAdvanced: () => void;
   presetId: string;
   onPresetChange: (v: string) => void;
+  priorityIds: string[];
+  onPriorityIdsChange: (next: string[]) => void;
   floors: Floor[];
   onFloorsChange: (next: Floor[]) => void;
 }) {
@@ -1016,26 +1062,104 @@ function ObjectivePanel({
     onFloorsChange(floors.filter((f) => f.id !== id));
   };
 
+  const addPriority = () => {
+    const used = new Set(priorityIds);
+    const candidate =
+      OBJECTIVE_PRESETS.find((p) => !used.has(p.id)) ?? OBJECTIVE_PRESETS[0]!;
+    onPriorityIdsChange([...priorityIds, candidate.id]);
+  };
+
+  const updatePriority = (idx: number, newId: string) => {
+    onPriorityIdsChange(priorityIds.map((id, i) => (i === idx ? newId : id)));
+  };
+
+  const removePriority = (idx: number) => {
+    if (priorityIds.length <= 1) return; // keep at least one
+    onPriorityIdsChange(priorityIds.filter((_, i) => i !== idx));
+  };
+
+  const movePriority = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= priorityIds.length) return;
+    const next = [...priorityIds];
+    [next[idx], next[target]] = [next[target]!, next[idx]!];
+    onPriorityIdsChange(next);
+  };
+
   return (
     <Card className="bg-card border-border py-3 gap-2">
       <CardContent className="space-y-3">
-        <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
-            Maximize
-          </div>
-          <Select value={presetId} onValueChange={onPresetChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {OBJECTIVE_PRESETS.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id}>
-                  {preset.label}
-                </SelectItem>
+        {advancedMode ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Priorities
+              </div>
+              <button
+                type="button"
+                onClick={onToggleAdvanced}
+                className="text-[10px] text-amber-400 hover:text-amber-300"
+              >
+                ← Simple mode
+              </button>
+            </div>
+            <div className="text-xs text-muted-foreground italic">
+              Higher rows dominate lower rows. Each tier only breaks ties on
+              the previous tier — once a tier is maxed (e.g. resistances at
+              cap), the next tier takes over.
+            </div>
+            <div className="space-y-1.5">
+              {priorityIds.map((id, idx) => (
+                <PriorityRow
+                  key={`${idx}-${id}`}
+                  index={idx}
+                  presetId={id}
+                  canRemove={priorityIds.length > 1}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < priorityIds.length - 1}
+                  onChange={(newId) => updatePriority(idx, newId)}
+                  onRemove={() => removePriority(idx)}
+                  onMoveUp={() => movePriority(idx, -1)}
+                  onMoveDown={() => movePriority(idx, 1)}
+                />
               ))}
-            </SelectContent>
-          </Select>
-        </div>
+            </div>
+            <button
+              type="button"
+              onClick={addPriority}
+              className="w-full text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-dashed border-amber-600/40 hover:border-amber-500/70 rounded py-2 transition-colors"
+            >
+              + Add priority
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Maximize
+              </div>
+              <button
+                type="button"
+                onClick={onToggleAdvanced}
+                className="text-[10px] text-amber-400 hover:text-amber-300"
+              >
+                Advanced →
+              </button>
+            </div>
+            <Select value={presetId} onValueChange={onPresetChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OBJECTIVE_PRESETS.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -1118,6 +1242,115 @@ function FloorRow({
       </button>
     </div>
   );
+}
+
+function PriorityRow({
+  index,
+  presetId,
+  canRemove,
+  canMoveUp,
+  canMoveDown,
+  onChange,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+}: {
+  index: number;
+  presetId: string;
+  canRemove: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onChange: (id: string) => void;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="font-mono text-xs text-muted-foreground w-4 text-center shrink-0">
+        {index + 1}.
+      </span>
+      <Select value={presetId} onValueChange={onChange}>
+        <SelectTrigger className="flex-1 h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {OBJECTIVE_PRESETS.map((p) => (
+            <SelectItem key={p.id} value={p.id}>
+              {p.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <button
+        type="button"
+        onClick={onMoveUp}
+        disabled={!canMoveUp}
+        className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
+        aria-label="Move priority up"
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        onClick={onMoveDown}
+        disabled={!canMoveDown}
+        className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
+        aria-label="Move priority down"
+      >
+        ↓
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={!canRemove}
+        className="text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed w-6 h-8 flex items-center justify-center"
+        aria-label="Remove priority"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Convert a Maximize preset into a priority-shape entry that
+ * `evaluateObjective` understands for the `'priorities'` kind.
+ */
+function presetToPriority(
+  preset: ObjectivePreset,
+): { prop: PropertyKey } | { props: PropertyKey[] } {
+  const obj = preset.build();
+  switch (obj.kind) {
+    case "maximize":
+    case "maximize_with_floor":
+      return { prop: obj.prop };
+    case "maximize_sum":
+      return { props: obj.props };
+    case "priorities":
+      // Defensive: presets only build simple kinds, but in case one
+      // ever builds a priorities objective, take its first tier.
+      return obj.priorities[0] ?? { prop: "rF" };
+  }
+}
+
+/**
+ * Collapse the user's floor rows into a single floors map. Returns
+ * undefined when there are no constraints (so we can omit the `floors`
+ * field rather than carry an empty map).
+ */
+function buildFloorMap(
+  floors: Floor[],
+): Partial<Record<PropertyKey, number>> | undefined {
+  if (floors.length === 0) return undefined;
+  const map: Partial<Record<PropertyKey, number>> = {};
+  for (const f of floors) {
+    const existing = map[f.prop];
+    if (existing === undefined || f.value > existing) {
+      map[f.prop] = f.value;
+    }
+  }
+  return map;
 }
 
 // ────────────────────────────────────────────────────────────────────────

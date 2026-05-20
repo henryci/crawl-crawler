@@ -12,6 +12,152 @@ import { makeItem, resetFixtureIds } from './fixtures.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SAMPLE_DIR = resolve(__dirname, '..', '..', 'sample_morgues');
 
+describe('optimize — priorities ladder (advanced mode)', () => {
+  const human = getSpeciesEquipmentRules('Hu');
+
+  it('higher-tier priority dominates even at the cost of lower-tier', () => {
+    // Tier 1: rF. Tier 2: Dex.
+    // Item A: rF+1, Dex+0
+    // Item B: rF+0, Dex+5
+    // For the body slot (cap 1), A must win because rF is the higher tier.
+    const armorRF = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { rF: 1 },
+      displayName: 'rF armor',
+    });
+    const armorDex = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { Dex: 5 },
+      displayName: 'Dex armor',
+    });
+
+    const result = optimize({
+      items: [armorRF, armorDex],
+      rules: human,
+      objective: {
+        kind: 'priorities',
+        priorities: [{ prop: 'rF' }, { prop: 'Dex' }],
+      },
+    });
+
+    expect(result.best.items[0]!.baseType.displayName).toBe('rF armor');
+  });
+
+  it('second priority breaks ties when first is equal', () => {
+    // Two body armors, both contributing rF+1, but one also Dex+3.
+    const armorBoth = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { rF: 1, Dex: 3 },
+      displayName: 'rF + Dex armor',
+    });
+    const armorRF = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { rF: 1 },
+      displayName: 'rF armor',
+    });
+
+    const result = optimize({
+      items: [armorBoth, armorRF],
+      rules: human,
+      objective: {
+        kind: 'priorities',
+        priorities: [{ prop: 'rF' }, { prop: 'Dex' }],
+      },
+    });
+
+    expect(result.best.items[0]!.baseType.displayName).toBe('rF + Dex armor');
+  });
+
+  it('caps the primary tier so redundant items break ties on the secondary', () => {
+    // Capacity 2 rings. Goal: max rF (cap 3 from equipment).
+    // Items: A rF+1, B rF+1, C rF+1, D rF+0 Dex+5
+    // Best loadout: A+B (rF=2, can't reach 3 with cap 2 rings) — but if
+    // A+B fully maxes rF (which it can't since cap is 3 and we only
+    // have 2 ring slots), tiebreak should prefer C if it adds rF, NOT D.
+    // Adjusted test: priorities = [rF, Dex]. With cap=2 rings, best is
+    // A+B (rF=2) — no Dex. If we pick A+D, rF=1 < rF=2, so A+B still
+    // wins.
+    const ringRF1 = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'ring rF 1',
+    });
+    const ringRF2 = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'ring rF 2',
+    });
+    const ringDex = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { Dex: 5 },
+      displayName: 'ring Dex',
+    });
+
+    const result = optimize({
+      items: [ringRF1, ringRF2, ringDex],
+      rules: human,
+      objective: {
+        kind: 'priorities',
+        priorities: [{ prop: 'rF' }, { prop: 'Dex' }],
+      },
+    });
+
+    // Both rF rings selected; Dex ring loses despite having higher fill score.
+    const names = result.best.items.map((i) => i.baseType.displayName);
+    expect(names).toContain('ring rF 1');
+    expect(names).toContain('ring rF 2');
+    expect(names).not.toContain('ring Dex');
+  });
+
+  it('avoids over-stacking a capped primary in favor of the secondary', () => {
+    // Goal: max rF (caps at +3), then max Dex.
+    // Player has 3 rF+ rings AND a Dex+5 ring; baseline rF=2 already (from species).
+    // After equipping 1 rF ring → rF total = 3 (capped). Additional rF rings are wasted.
+    // The optimizer should equip 1 rF ring + 1 Dex ring, not 2 rF rings.
+    const rfRingA = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring A',
+    });
+    const rfRingB = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring B',
+    });
+    const dexRing = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { Dex: 5 },
+      displayName: 'Dex ring',
+    });
+
+    const result = optimize({
+      items: [rfRingA, rfRingB, dexRing],
+      rules: human,
+      objective: {
+        kind: 'priorities',
+        priorities: [{ prop: 'rF' }, { prop: 'Dex' }],
+      },
+      baseline: { rF: 2 },
+    });
+
+    const names = result.best.items.map((i) => i.baseType.displayName);
+    // One rF ring fully maxes rF (2 base + 1 = 3 capped). Second slot
+    // should go to Dex, not redundant rF.
+    expect(names.filter((n) => n.startsWith('rF ring')).length).toBe(1);
+    expect(names).toContain('Dex ring');
+  });
+});
+
 describe('optimize — locked items', () => {
   const human = getSpeciesEquipmentRules('Hu');
 

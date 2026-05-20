@@ -250,6 +250,12 @@ export function relevantProperties(objective: Objective): Set<PropertyKey> {
     case 'maximize_sum':
       for (const p of objective.props) set.add(p);
       break;
+    case 'priorities':
+      for (const priority of objective.priorities) {
+        if ('prop' in priority) set.add(priority.prop);
+        else for (const p of priority.props) set.add(p);
+      }
+      break;
   }
   if ('floors' in objective && objective.floors) {
     for (const p of Object.keys(objective.floors)) set.add(p);

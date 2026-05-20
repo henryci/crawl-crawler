@@ -88,6 +88,25 @@ export type Objective =
       kind: 'maximize_with_floor';
       prop: PropertyKey;
       floors: Partial<Record<PropertyKey, number>>;
+    }
+  | {
+      /**
+       * Lexicographic priority ladder: each entry is strictly more
+       * important than the next. The optimizer first maximizes the
+       * first priority, then breaks ties on the second, and so on. Use
+       * for "max elemental resistances, then max Dex, then max EV"
+       * style objectives.
+       *
+       * Each priority is either a single-property maximize or a sum.
+       * Capped totals are used at each tier — items contributing past
+       * a cap don't break ties.
+       */
+      kind: 'priorities';
+      priorities: Array<
+        | { prop: PropertyKey }
+        | { props: PropertyKey[] }
+      >;
+      floors?: Partial<Record<PropertyKey, number>>;
     };
 
 export interface OptimizerInputs {

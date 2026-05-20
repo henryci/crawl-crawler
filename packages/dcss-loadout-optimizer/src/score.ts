@@ -91,7 +91,40 @@ export function evaluateObjective(
       const tiebreak = sumValues(score.uncappedTotals, objective.props);
       return layeredScore(primary, tiebreak, fillScore);
     }
+
+    case 'priorities':
+      return priorityScore(score, objective.priorities, fillScore);
   }
+}
+
+/**
+ * Lex-order priority scoring. Each priority tier contributes at a
+ * 1e4× larger weight than the next, so a higher tier always dominates.
+ * Uses CAPPED totals so items contributing past a cap don't break ties
+ * — that's the whole point of advanced mode: no wasted "fully redundant"
+ * picks.
+ *
+ * Floats safely represent up to ~15 significant decimal digits, so with
+ * 1e4 separation we have headroom for ~4 priorities before precision
+ * issues arise. The fill tier sits below all priorities at 1e-6.
+ */
+function priorityScore(
+  score: LoadoutScore,
+  priorities: Array<{ prop: PropertyKey } | { props: PropertyKey[] }>,
+  fillScore: number,
+): number {
+  let total = 0;
+  let weight = 1e12;
+  for (const p of priorities) {
+    const value =
+      'prop' in p
+        ? getValue(score.totals, p.prop)
+        : sumValues(score.totals, p.props);
+    total += value * weight;
+    weight /= 1e4;
+    if (weight < 1) break; // safety: stop after the precision floor
+  }
+  return total + fillScore * 1e-6;
 }
 
 function getFloors(
