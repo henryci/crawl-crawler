@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, AlertCircle, Lock, Unlock, Ban } from "lucide-react";
+import { Sparkles, AlertCircle, Lock, Unlock, Ban, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────────────────
@@ -303,10 +303,6 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   }, [inventoryItems]);
 
   const [loadout, setLoadout] = useState<ParsedItem[]>(initialLoadout);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>(
-    OBJECTIVE_PRESETS[0]!.id,
-  );
-  const [advancedMode, setAdvancedMode] = useState(false);
   const [priorityIds, setPriorityIds] = useState<string[]>([
     OBJECTIVE_PRESETS[0]!.id,
   ]);
@@ -342,33 +338,19 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
   const objective: Objective = useMemo(() => {
     const floorMap = buildFloorMap(floors);
-
-    if (advancedMode) {
-      const priorities = priorityIds
-        .map((id) => OBJECTIVE_PRESETS.find((p) => p.id === id))
-        .filter((p): p is ObjectivePreset => p !== undefined)
-        .map((p) => presetToPriority(p));
-      if (priorities.length === 0) {
-        priorities.push(presetToPriority(OBJECTIVE_PRESETS[0]!));
-      }
-      return {
-        kind: "priorities",
-        priorities,
-        ...(floorMap ? { floors: floorMap } : {}),
-      };
+    const priorities = priorityIds
+      .map((id) => OBJECTIVE_PRESETS.find((p) => p.id === id))
+      .filter((p): p is ObjectivePreset => p !== undefined)
+      .map((p) => presetToPriority(p));
+    if (priorities.length === 0) {
+      priorities.push(presetToPriority(OBJECTIVE_PRESETS[0]!));
     }
-
-    const preset = OBJECTIVE_PRESETS.find((p) => p.id === selectedPresetId);
-    const base = preset?.build() ?? OBJECTIVE_PRESETS[0]!.build();
-    if (!floorMap) return base;
-    if (base.kind === "maximize" || base.kind === "maximize_with_floor") {
-      return { kind: "maximize", prop: base.prop, floors: floorMap };
-    }
-    if (base.kind === "priorities") {
-      return { ...base, floors: floorMap };
-    }
-    return { ...base, floors: floorMap };
-  }, [advancedMode, priorityIds, selectedPresetId, floors]);
+    return {
+      kind: "priorities",
+      priorities,
+      ...(floorMap ? { floors: floorMap } : {}),
+    };
+  }, [priorityIds, floors]);
 
   const relevant = useMemo(() => relevantProperties(objective), [objective]);
 
@@ -487,25 +469,10 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
           onToggleLock={toggleLock}
           lockedIds={lockedIds}
           relevant={relevant}
+          pending={pending}
         />
         <div className="space-y-4">
           <ObjectivePanel
-            advancedMode={advancedMode}
-            onToggleAdvanced={() => {
-              if (advancedMode) {
-                // Returning to simple: keep the first priority as the
-                // simple-mode selection.
-                setSelectedPresetId(priorityIds[0] ?? OBJECTIVE_PRESETS[0]!.id);
-                setAdvancedMode(false);
-              } else {
-                // Entering advanced: seed priorities from the simple
-                // selection.
-                setPriorityIds([selectedPresetId]);
-                setAdvancedMode(true);
-              }
-            }}
-            presetId={selectedPresetId}
-            onPresetChange={setSelectedPresetId}
             priorityIds={priorityIds}
             onPriorityIdsChange={setPriorityIds}
             floors={floors}
@@ -575,9 +542,16 @@ function HeaderBar({
           <Button
             onClick={onOptimize}
             disabled={pending}
-            className="bg-amber-500 text-black hover:bg-amber-400"
+            className="bg-amber-500 text-black hover:bg-amber-400 disabled:bg-amber-500/80 disabled:text-black"
           >
-            {pending ? "Optimizing…" : "Optimize"}
+            {pending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Optimizing…
+              </>
+            ) : (
+              "Optimize"
+            )}
           </Button>
         </div>
       </div>
@@ -848,6 +822,7 @@ function WornEquipment({
   onToggleLock,
   lockedIds,
   relevant,
+  pending,
 }: {
   loadout: ParsedItem[];
   rules: SpeciesEquipmentRules;
@@ -855,6 +830,7 @@ function WornEquipment({
   onToggleLock: (item: ParsedItem) => void;
   lockedIds: ReadonlySet<string>;
   relevant: Set<PropertyKey>;
+  pending: boolean;
 }) {
   // Build a list of (slot, capacity, items) rows. For ring with cap > 1,
   // emit one row per ring capacity slot, attributing items in order.
@@ -885,7 +861,7 @@ function WornEquipment({
   }, [loadout, rules]);
 
   return (
-    <Card className="bg-card border-border py-3 gap-2">
+    <Card className="bg-card border-border py-3 gap-2 relative">
       <CardContent className="space-y-2">
         <div className="flex items-baseline justify-between mb-2 gap-3">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -895,7 +871,13 @@ function WornEquipment({
             click to unequip · lock icon pins through optimize
           </span>
         </div>
-        <div className="space-y-1.5">
+        <div
+          className={cn(
+            "space-y-1.5 transition-opacity",
+            pending && "opacity-40 pointer-events-none",
+          )}
+          aria-busy={pending}
+        >
           {rows.map((row, i) => (
             <SlotRow
               key={`${row.slot}-${i}`}
@@ -909,6 +891,16 @@ function WornEquipment({
           ))}
         </div>
       </CardContent>
+      {pending && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="flex items-center gap-2 px-4 py-2 rounded bg-card/95 border border-amber-500/60 shadow-lg">
+            <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+            <span className="text-sm font-medium text-amber-100">
+              Computing best loadout…
+            </span>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -1026,19 +1018,11 @@ function romanNumeral(n: number): string {
 // ────────────────────────────────────────────────────────────────────────
 
 function ObjectivePanel({
-  advancedMode,
-  onToggleAdvanced,
-  presetId,
-  onPresetChange,
   priorityIds,
   onPriorityIdsChange,
   floors,
   onFloorsChange,
 }: {
-  advancedMode: boolean;
-  onToggleAdvanced: () => void;
-  presetId: string;
-  onPresetChange: (v: string) => void;
   priorityIds: string[];
   onPriorityIdsChange: (next: string[]) => void;
   floors: Floor[];
@@ -1086,80 +1070,47 @@ function ObjectivePanel({
     onPriorityIdsChange(next);
   };
 
+  const hasMultiple = priorityIds.length > 1;
+
   return (
     <Card className="bg-card border-border py-3 gap-2">
       <CardContent className="space-y-3">
-        {advancedMode ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Priorities
-              </div>
-              <button
-                type="button"
-                onClick={onToggleAdvanced}
-                className="text-[10px] text-amber-400 hover:text-amber-300"
-              >
-                ← Simple mode
-              </button>
-            </div>
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            Maximize
+          </div>
+          {hasMultiple && (
             <div className="text-xs text-muted-foreground italic">
               Higher rows dominate lower rows. Each tier only breaks ties on
-              the previous tier — once a tier is maxed (e.g. resistances at
+              the previous one — once a tier is maxed (e.g. resistances at
               cap), the next tier takes over.
             </div>
-            <div className="space-y-1.5">
-              {priorityIds.map((id, idx) => (
-                <PriorityRow
-                  key={`${idx}-${id}`}
-                  index={idx}
-                  presetId={id}
-                  canRemove={priorityIds.length > 1}
-                  canMoveUp={idx > 0}
-                  canMoveDown={idx < priorityIds.length - 1}
-                  onChange={(newId) => updatePriority(idx, newId)}
-                  onRemove={() => removePriority(idx)}
-                  onMoveUp={() => movePriority(idx, -1)}
-                  onMoveDown={() => movePriority(idx, 1)}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={addPriority}
-              className="w-full text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-dashed border-amber-600/40 hover:border-amber-500/70 rounded py-2 transition-colors"
-            >
-              + Add priority
-            </button>
+          )}
+          <div className="space-y-1.5">
+            {priorityIds.map((id, idx) => (
+              <PriorityRow
+                key={`${idx}-${id}`}
+                index={idx}
+                presetId={id}
+                showOrdering={hasMultiple}
+                canRemove={hasMultiple}
+                canMoveUp={idx > 0}
+                canMoveDown={idx < priorityIds.length - 1}
+                onChange={(newId) => updatePriority(idx, newId)}
+                onRemove={() => removePriority(idx)}
+                onMoveUp={() => movePriority(idx, -1)}
+                onMoveDown={() => movePriority(idx, 1)}
+              />
+            ))}
           </div>
-        ) : (
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Maximize
-              </div>
-              <button
-                type="button"
-                onClick={onToggleAdvanced}
-                className="text-[10px] text-amber-400 hover:text-amber-300"
-              >
-                Advanced →
-              </button>
-            </div>
-            <Select value={presetId} onValueChange={onPresetChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {OBJECTIVE_PRESETS.map((preset) => (
-                  <SelectItem key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={addPriority}
+            className="w-full text-sm font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-dashed border-amber-600/40 hover:border-amber-500/70 rounded py-2 transition-colors"
+          >
+            + Add priority
+          </button>
+        </div>
 
         <div className="space-y-2">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -1247,6 +1198,7 @@ function FloorRow({
 function PriorityRow({
   index,
   presetId,
+  showOrdering,
   canRemove,
   canMoveUp,
   canMoveDown,
@@ -1257,6 +1209,7 @@ function PriorityRow({
 }: {
   index: number;
   presetId: string;
+  showOrdering: boolean;
   canRemove: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -1267,9 +1220,11 @@ function PriorityRow({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="font-mono text-xs text-muted-foreground w-4 text-center shrink-0">
-        {index + 1}.
-      </span>
+      {showOrdering && (
+        <span className="font-mono text-xs text-muted-foreground w-4 text-center shrink-0">
+          {index + 1}.
+        </span>
+      )}
       <Select value={presetId} onValueChange={onChange}>
         <SelectTrigger className="flex-1 h-8 text-xs">
           <SelectValue />
@@ -1282,33 +1237,37 @@ function PriorityRow({
           ))}
         </SelectContent>
       </Select>
-      <button
-        type="button"
-        onClick={onMoveUp}
-        disabled={!canMoveUp}
-        className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
-        aria-label="Move priority up"
-      >
-        ↑
-      </button>
-      <button
-        type="button"
-        onClick={onMoveDown}
-        disabled={!canMoveDown}
-        className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
-        aria-label="Move priority down"
-      >
-        ↓
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        disabled={!canRemove}
-        className="text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed w-6 h-8 flex items-center justify-center"
-        aria-label="Remove priority"
-      >
-        ×
-      </button>
+      {showOrdering && (
+        <>
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={!canMoveUp}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
+            aria-label="Move priority up"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={!canMoveDown}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed w-5 h-8 flex items-center justify-center"
+            aria-label="Move priority down"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            disabled={!canRemove}
+            className="text-muted-foreground hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed w-6 h-8 flex items-center justify-center"
+            aria-label="Remove priority"
+          >
+            ×
+          </button>
+        </>
+      )}
     </div>
   );
 }
