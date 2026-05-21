@@ -18,7 +18,7 @@
  * baseline derived from the morgue's defenses block.
  */
 
-import { useMemo, useState, useTransition, useEffect, type ReactNode } from "react";
+import { useMemo, useRef, useState, useEffect, type ReactNode } from "react";
 import type { MorgueData, ParsedItem } from "dcss-morgue-parser";
 import {
   PROPERTIES,
@@ -31,12 +31,15 @@ import {
 } from "dcss-game-data";
 import {
   computeBaseline,
-  optimize,
   relevantProperties,
   scoreLoadout,
   type Objective,
   type LoadoutScore,
 } from "dcss-loadout-optimizer";
+import type {
+  OptimizeRequest,
+  OptimizeResponse,
+} from "./optimize-loadout.worker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -312,11 +315,30 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   const [floors, setFloors] = useState<Floor[]>([]);
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
   const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [lastOptimizeStats, setLastOptimizeStats] = useState<{
     evaluated: number;
     elapsedMs: number;
   } | null>(null);
+
+  // Long-lived worker for the optimizer. Reused across clicks so we
+  // pay the spin-up cost once. The activeRequestId guards against
+  // stale results when the user clicks Optimize again mid-run.
+  const workerRef = useRef<Worker | null>(null);
+  const activeRequestIdRef = useRef(0);
+  const nextRequestIdRef = useRef(1);
+
+  useEffect(() => {
+    const worker = new Worker(
+      new URL("./optimize-loadout.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    workerRef.current = worker;
+    return () => {
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, []);
 
   // When morgue changes, reset loadout and clear locks/bans.
   useEffect(() => {
@@ -429,23 +451,49 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   };
 
   const handleOptimize = () => {
+    const worker = workerRef.current;
+    if (!worker) return;
     // Items the user has locked stay equipped through optimization.
     const lockedItems = loadout.filter((i) => lockedIds.has(i.id));
     // Banned items are excluded from the candidate pool entirely.
     const optimizerItems = inventoryItems.filter((i) => !bannedIds.has(i.id));
-    startTransition(() => {
-      const start = performance.now();
-      const out = optimize({
+
+    const requestId = nextRequestIdRef.current++;
+    activeRequestIdRef.current = requestId;
+    setPending(true);
+
+    const handleMessage = (event: MessageEvent<OptimizeResponse>) => {
+      const { requestId: respId, result, elapsedMs } = event.data;
+      if (respId !== activeRequestIdRef.current) return;
+      worker.removeEventListener("message", handleMessage);
+      // Items get structure-cloned across the worker boundary, so the
+      // returned objects are new references. Map them back to the
+      // original ParsedItems by id so reference-equality checks in the
+      // rest of the UI keep working.
+      const byId = new Map(inventoryItems.map((i) => [i.id, i]));
+      const restored = result.best.items
+        .map((i) => byId.get(i.id))
+        .filter((i): i is ParsedItem => i !== undefined);
+      setLoadout(restored);
+      setLastOptimizeStats({
+        evaluated: result.loadoutsEvaluated,
+        elapsedMs,
+      });
+      setPending(false);
+    };
+    worker.addEventListener("message", handleMessage);
+
+    const request: OptimizeRequest = {
+      requestId,
+      inputs: {
         items: optimizerItems,
         rules,
         objective,
         baseline,
         lockedItems,
-      });
-      const elapsedMs = performance.now() - start;
-      setLoadout(out.best.items);
-      setLastOptimizeStats({ evaluated: out.loadoutsEvaluated, elapsedMs });
-    });
+      },
+    };
+    worker.postMessage(request);
   };
 
   return (
