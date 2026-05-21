@@ -51,6 +51,19 @@ describe('character dump player-line pattern', () => {
       expect(m, `failed to match: ${line}`).not.toBeNull();
     }
   });
+
+  it('matches the full-name variant (race + background expanded)', () => {
+    const line =
+      'henryci the Spry (Demonspawn Earth Elementalist)   Turns: 96892, Time: 04:30:49';
+    // Full-name variant deliberately does not match the code-based pattern.
+    expect(PATTERNS.characterDumpPlayer.exec(line)).toBeNull();
+    const m = PATTERNS.characterDumpPlayerFullName.exec(line);
+    expect(m).not.toBeNull();
+    expect(m![1]).toBe('henryci');
+    expect(m![2]).toBe('Spry');
+    expect(m![3]).toBe('Demonspawn Earth Elementalist');
+    expect(m![4]).toBe('96892');
+  });
 });
 
 describe('character dump end-to-end parse', () => {
@@ -65,6 +78,19 @@ describe('character dump end-to-end parse', () => {
     expect(data.characterLevel).toBe(27);
     expect(data.totalTurns).toBe(188192);
     // No score — character dump, not a death morgue.
+    expect(data.score).toBeNull();
+  });
+
+  it('parses race and background from a full-name character dump (ongoing game, no "Began as" line)', async () => {
+    const path = resolve(FIXTURE_DIR, 'henryci-cdump-ongoing-0.34.txt');
+    const data = await parseMorgueData(readFileSync(path, 'utf-8'));
+
+    expect(data.race).toBe('Demonspawn');
+    expect(data.background).toBe('Earth Elementalist');
+    expect(data.playerName).toBe('henryci');
+    expect(data.title).toBe('Spry');
+    expect(data.characterLevel).toBe(24);
+    expect(data.totalTurns).toBe(96892);
     expect(data.score).toBeNull();
   });
 

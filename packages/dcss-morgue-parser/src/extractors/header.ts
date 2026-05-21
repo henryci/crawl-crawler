@@ -11,7 +11,12 @@
  */
 
 import { getBackgroundName, getSpeciesName } from 'dcss-game-data';
-import { PATTERNS, durationToSeconds, parseIntSafe, parseRaceBackground } from '../utils.js';
+import {
+  PATTERNS,
+  durationToSeconds,
+  parseIntSafe,
+  parseRaceBackground,
+} from '../utils.js';
 
 export interface HeaderData {
   version: string | null;
@@ -198,17 +203,32 @@ function extractCharacterDumpPlayer(lines: string[], result: HeaderData): boolea
   for (let i = 0; i < Math.min(40, lines.length); i++) {
     const line = lines[i];
     if (!line) continue;
-    const match = PATTERNS.characterDumpPlayer.exec(line);
-    if (!match) continue;
-
-    result.playerName = match[1] ?? null;
-    result.title = match[2] ?? null;
-    const raceCode = match[3]!;
-    const backgroundCode = match[4]!;
-    // Resolve codes to full names; fall back to the code itself.
-    result.race = getSpeciesName(raceCode, result.version ?? undefined);
-    result.background = getBackgroundName(backgroundCode, result.version ?? undefined);
-    result.totalTurns = parseIntSafe(match[5]);
+    let totalTurns: number | null = null;
+    const codeMatch = PATTERNS.characterDumpPlayer.exec(line);
+    if (codeMatch) {
+      result.playerName = codeMatch[1] ?? null;
+      result.title = codeMatch[2] ?? null;
+      const raceCode = codeMatch[3]!;
+      const backgroundCode = codeMatch[4]!;
+      // Resolve codes to full names; fall back to the code itself.
+      result.race = getSpeciesName(raceCode, result.version ?? undefined);
+      result.background = getBackgroundName(backgroundCode, result.version ?? undefined);
+      totalTurns = parseIntSafe(codeMatch[5]);
+    } else {
+      // Some builds emit the race/background expanded in the parens
+      // (e.g. "(Demonspawn Earth Elementalist)") instead of the 4-char
+      // code. Fall back to that variant before giving up.
+      const fullMatch = PATTERNS.characterDumpPlayerFullName.exec(line);
+      if (!fullMatch) continue;
+      result.playerName = fullMatch[1] ?? null;
+      result.title = fullMatch[2] ?? null;
+      const parsed = parseRaceBackground(fullMatch[3] ?? '');
+      result.race = parsed.race;
+      result.background = parsed.background;
+      result.speciesData = parsed.speciesData ?? null;
+      totalTurns = parseIntSafe(fullMatch[4]);
+    }
+    result.totalTurns = totalTurns;
 
     // Character level isn't in this line — pick it up from the stats
     // block (XL: NN). Look in the next ~10 lines.

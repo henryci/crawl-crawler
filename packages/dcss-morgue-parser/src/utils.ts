@@ -42,6 +42,19 @@ export const PATTERNS = {
   characterDumpPlayer: /^(\S+)\s+the\s+(.+?)\s+\(([A-Z][a-zA-Z])([A-Z][a-zA-Z])\)\s+Turns:\s*(\d+)/,
 
   /**
+   * Character dump player line, full-name variant. Some servers/builds
+   * emit the race+background expanded in the parens instead of the
+   * 4-char code. Example:
+   *   "henryci the Spry (Demonspawn Earth Elementalist)   Turns: 96892, Time: 04:30:49"
+   *
+   * Captures: 1=name, 2=title, 3=race+background string, 4=turns.
+   * The inner content must contain at least two capitalized words so it
+   * does not collide with the 4-char-code variant above.
+   */
+  characterDumpPlayerFullName:
+    /^(\S+)\s+the\s+(.+?)\s+\(([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)\)\s+Turns:\s*(\d+)/,
+
+  /**
    * Began as: "Began as a Demigod Earth Elementalist on Apr 26, 2025."
    * Captures the full "Race Background" string for further parsing.
    */
