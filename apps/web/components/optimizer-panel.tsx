@@ -264,9 +264,12 @@ function chipStyle(prop: PropertyKey): ChipStyle {
   if (PROP_STYLE[prop]) return PROP_STYLE[prop]!;
   const def = PROPERTIES[prop];
   if (def?.category === "downside") {
+    // Dashed border + cool-rose hue + neutral dark background to stay
+    // clearly distinct from rF (solid red) and rCorr (solid amber) on
+    // dark backgrounds, while still reading as a "warning/negative" tag.
     return {
-      chip: "border-orange-700 text-orange-300/80 bg-orange-950/30 italic",
-      label: "text-orange-400/80",
+      chip: "border-dashed border-rose-500/70 text-rose-300 bg-zinc-900/40 italic",
+      label: "text-rose-400",
       pipFill: "",
       pipEmpty: "",
     };
