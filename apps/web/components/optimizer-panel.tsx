@@ -323,16 +323,44 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
   // Long-lived worker for the optimizer. Reused across clicks so we
   // pay the spin-up cost once. The activeRequestId guards against
-  // stale results when the user clicks Optimize again mid-run.
+  // stale results when the user clicks Optimize again mid-run, or
+  // when the morgue changes while a compute is in flight.
   const workerRef = useRef<Worker | null>(null);
   const activeRequestIdRef = useRef(0);
   const nextRequestIdRef = useRef(1);
+  // Keep the latest inventory available to the persistent worker
+  // handler. Without this, the handler would close over the
+  // inventoryItems from the render it was attached on — and since
+  // ParsedItem.id is just an inventory letter, IDs collide across
+  // morgues and a stale result would silently pin wrong items.
+  const inventoryItemsRef = useRef(inventoryItems);
+  inventoryItemsRef.current = inventoryItems;
 
   useEffect(() => {
     const worker = new Worker(
       new URL("./optimize-loadout.worker.ts", import.meta.url),
       { type: "module" },
     );
+    worker.onmessage = (event: MessageEvent<OptimizeResponse>) => {
+      const { requestId, result, elapsedMs } = event.data;
+      if (requestId !== activeRequestIdRef.current) return;
+      const items = inventoryItemsRef.current;
+      if (!items) return;
+      // Items get structure-cloned across the worker boundary, so the
+      // returned objects are new references. Map them back to the
+      // current inventory's ParsedItems by id so reference-equality
+      // checks in the rest of the UI keep working.
+      const byId = new Map(items.map((i) => [i.id, i]));
+      const restored = result.best.items
+        .map((i) => byId.get(i.id))
+        .filter((i): i is ParsedItem => i !== undefined);
+      setLoadout(restored);
+      setLastOptimizeStats({
+        evaluated: result.loadoutsEvaluated,
+        elapsedMs,
+      });
+      setPending(false);
+    };
     workerRef.current = worker;
     return () => {
       worker.terminate();
@@ -340,11 +368,16 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     };
   }, []);
 
-  // When morgue changes, reset loadout and clear locks/bans.
+  // When morgue changes, reset loadout, clear locks/bans, and
+  // invalidate any in-flight optimize so a late result doesn't
+  // overwrite the new morgue's loadout with stale items.
   useEffect(() => {
     setLoadout(initialLoadout);
     setLockedIds(new Set());
     setBannedIds(new Set());
+    activeRequestIdRef.current = nextRequestIdRef.current;
+    setPending(false);
+    setLastOptimizeStats(null);
   }, [initialLoadout]);
 
   // Drop stale lock ids when items get removed from the loadout.
@@ -461,27 +494,6 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     const requestId = nextRequestIdRef.current++;
     activeRequestIdRef.current = requestId;
     setPending(true);
-
-    const handleMessage = (event: MessageEvent<OptimizeResponse>) => {
-      const { requestId: respId, result, elapsedMs } = event.data;
-      if (respId !== activeRequestIdRef.current) return;
-      worker.removeEventListener("message", handleMessage);
-      // Items get structure-cloned across the worker boundary, so the
-      // returned objects are new references. Map them back to the
-      // original ParsedItems by id so reference-equality checks in the
-      // rest of the UI keep working.
-      const byId = new Map(inventoryItems.map((i) => [i.id, i]));
-      const restored = result.best.items
-        .map((i) => byId.get(i.id))
-        .filter((i): i is ParsedItem => i !== undefined);
-      setLoadout(restored);
-      setLastOptimizeStats({
-        evaluated: result.loadoutsEvaluated,
-        elapsedMs,
-      });
-      setPending(false);
-    };
-    worker.addEventListener("message", handleMessage);
 
     const request: OptimizeRequest = {
       requestId,
