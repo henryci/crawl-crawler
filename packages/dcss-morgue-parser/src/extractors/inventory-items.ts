@@ -564,7 +564,13 @@ function parseJewelryItem(
   if (!baseType) return null;
 
   const artefact = braces ? buildArtefact(braces, false, unrand) : undefined;
-  const contributions = aggregate(baseType, enchant, undefined, undefined, artefact);
+  // For randart jewelry, DCSS prints the *total* property values in the
+  // brace (the base ring's innate effect is rolled in), so adding the
+  // base type's innate contributions on top would double-count. Trust
+  // the brace as authoritative when present.
+  const contributions = artefact
+    ? aggregate(baseType, enchant, undefined, undefined, artefact, { skipInnate: true })
+    : aggregate(baseType, enchant, undefined, undefined, undefined);
 
   return {
     id,
@@ -633,12 +639,15 @@ function aggregate(
   brand: string | undefined,
   ego: string | undefined,
   artefact: ArtefactInfo | undefined,
+  options: { skipInnate?: boolean } = {},
 ): ContributionMap {
   const out: ContributionMap = {};
 
   // Base type innate contributions (jewelry, staves, some shields).
-  const innate = baseTypeContributions(baseType);
-  for (const c of innate) addContribution(out, c, enchant);
+  if (!options.skipInnate) {
+    const innate = baseTypeContributions(baseType);
+    for (const c of innate) addContribution(out, c, enchant);
+  }
 
   if (brand && WEAPON_BRANDS[brand]) {
     for (const c of WEAPON_BRANDS[brand]!.contributions) addContribution(out, c, enchant);

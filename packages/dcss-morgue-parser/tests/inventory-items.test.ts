@@ -236,6 +236,27 @@ describe('item identification edge cases', () => {
     expect(cloak!.baseType.displayName).toBe('cloak');
   });
 
+  it('randart jewelry: brace lists totals, not extras on top of innate', async () => {
+    // DCSS prints randart jewelry properties as the *total* effect of
+    // the item, including the base ring's innate contribution. Parser
+    // must not double-count by adding base innate on top of the brace.
+    //
+    // Sample: "c - the ring of Optimism {rPois rF+ rCorr}" with base
+    // "[ring of poison resistance]" (innate rPois+). The brace already
+    // shows the total rPois (1 pip), so rPois must be 1 — not 2.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    const ring = data.inventoryItems!.find((i) => i.id === 'c');
+    expect(ring).toBeDefined();
+    expect(ring!.category).toBe('jewelry');
+    expect(ring!.baseType.displayName).toBe('ring of poison resistance');
+    expect(ring!.contributions.rPois).toBe(1);
+    expect(ring!.contributions.rF).toBe(1);
+    expect(ring!.contributions.rCorr).toBe(1);
+  });
+
   it('identifies a magical staff via [staff of X] marker', async () => {
     const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
     const content = readFileSync(path, 'utf-8');
