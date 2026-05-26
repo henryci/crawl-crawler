@@ -16,8 +16,9 @@
  *   HPRegen 0.52/turn       n - ring of Suspicion {Fly Will+ Dex+5}
  *   MPRegen 0.70/turn
  *
- * For each line: the property name maps to a PropertyKey, and the value
- * is either pip count (# of '+' characters) or a decimal (for regen).
+ * For each pip line: the property name maps to a PropertyKey and the
+ * value is the pip count (# of '+' characters). The HPRegen / MPRegen
+ * rate lines are intentionally skipped (see DISPLAY_NAME_TO_KEY below).
  * Unrecognized lines are skipped. Returns the totals as a sparse
  * ContributionMap matching the property registry's keys.
  *
@@ -44,9 +45,16 @@ const DISPLAY_NAME_TO_KEY: Record<string, PropertyKey> = {
   SInv: 'SInv',
   Will: 'Will',
   Stlth: 'Stlth',
-  HPRegen: 'Regen',
-  MPRegen: 'RegenMP',
 };
+
+// The defenses block also prints `HPRegen X.XX/turn` and `MPRegen X.XX/turn`,
+// but those are absolute regeneration *rates* (present for every character,
+// scaling with pool size / XL / god), not the discrete pip-based `Regen` /
+// `RegenMP` item properties. They are deliberately NOT mapped here: feeding a
+// rate into the pip-based runtimeTotals would let computeBaseline() invent a
+// non-equipment `RegenMP` baseline (e.g. 0.34) for players wearing nothing
+// that grants it. The optimizer treats Regen/RegenMP as equipment-derived
+// pip properties only.
 
 const KNOWN_LINE_PREFIX = new RegExp(
   '^(?:' + Object.keys(DISPLAY_NAME_TO_KEY).join('|') + ')\\b',
@@ -99,12 +107,6 @@ function parseLine(line: string): ParsedLine | null {
 
   const key = DISPLAY_NAME_TO_KEY[displayName];
   if (!key) return null;
-
-  // HPRegen / MPRegen: decimal value followed by /turn
-  const regenMatch = /^([\d.]+)\/turn/.exec(rest);
-  if (regenMatch) {
-    return { key, value: parseFloat(regenMatch[1]!) };
-  }
 
   // Pip format: count '+' characters up to the (N%) percentage or the
   // attribution column (item-letter dash).

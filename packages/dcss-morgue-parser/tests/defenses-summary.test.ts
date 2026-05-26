@@ -18,6 +18,8 @@ describe('extractDefensesSummary', () => {
   it('parses a synthetic block', () => {
     const block = `Some header\n\nrFire   + + +  (20%)\nrCold   + + .  (20%)\nrNeg    . . .  (0%)\nrPois   +      (33%)\nrElec   .      (0%)\nrCorr   .      (0%)\nSInv    +\nWill    +++..\nStlth   +++++\nHPRegen 0.52/turn\nMPRegen 0.70/turn\n\n%: other`;
     const totals = extractDefensesSummary(block);
+    // HPRegen / MPRegen are absolute regen rates, not the pip-based
+    // Regen / RegenMP item properties, so they are intentionally omitted.
     expect(totals).toEqual({
       rF: 3,
       rC: 2,
@@ -28,9 +30,18 @@ describe('extractDefensesSummary', () => {
       SInv: 1,
       Will: 3,
       Stlth: 5,
-      Regen: 0.52,
-      RegenMP: 0.7,
     });
+  });
+
+  it('does not parse the regen-rate lines into Regen / RegenMP', () => {
+    // Regression: a character wearing nothing that grants RegenMP must
+    // not get a phantom non-equipment RegenMP baseline from the always-
+    // present `MPRegen X.XX/turn` rate line.
+    const block = `rFire   .      (0%)\nHPRegen 1.41/turn\nMPRegen 0.34/turn`;
+    const totals = extractDefensesSummary(block);
+    expect(totals).not.toBeNull();
+    expect(totals!.Regen).toBeUndefined();
+    expect(totals!.RegenMP).toBeUndefined();
   });
 
   it('handles tight pip formatting (no spaces between +s)', () => {
@@ -62,9 +73,11 @@ describe('runtimeTotals on real morgues', () => {
     expect(data.runtimeTotals!.rN).toBe(2);
     expect(data.runtimeTotals!.Will).toBe(3);
     expect(data.runtimeTotals!.Stlth).toBe(5);
-    // Regen values are floats: 0.52/turn and 0.70/turn
-    expect(data.runtimeTotals!.Regen).toBeCloseTo(0.52, 2);
-    expect(data.runtimeTotals!.RegenMP).toBeCloseTo(0.7, 2);
+    // The HPRegen / MPRegen rate lines are not pip properties and must
+    // not leak into runtimeTotals (they would create phantom non-
+    // equipment Regen / RegenMP baselines in the optimizer).
+    expect(data.runtimeTotals!.Regen).toBeUndefined();
+    expect(data.runtimeTotals!.RegenMP).toBeUndefined();
   });
 
   it('isEquipped flag is set for items marked (worn) etc.', async () => {
