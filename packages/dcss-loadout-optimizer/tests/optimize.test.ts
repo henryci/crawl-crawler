@@ -611,6 +611,124 @@ describe('optimize — synthetic fixtures', () => {
   });
 });
 
+describe('optimize — slot-granters', () => {
+  const human = getSpeciesEquipmentRules('Hu');
+
+  // The default human ring capacity is 2. The macabre finger necklace
+  // (UNRAND_FINGER_AMULET) is an amulet that grants +1 ring while
+  // equipped, raising the effective ring cap to 3. The auto-search
+  // doesn't grab a contribution-less granter on its own (the granter
+  // has no rF, so the relevance filter excludes it from the primary
+  // pool); the user equips it manually or locks it, and from there the
+  // search budgets rings against the bumped cap.
+
+  it('default species is capped at 2 rings without a granter', () => {
+    // Baseline: three rF+1 rings, no granter. Optimizer can fit 2.
+    const ringA = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring A',
+    });
+    const ringB = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring B',
+    });
+    const ringC = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring C',
+    });
+
+    const result = optimize({
+      items: [ringA, ringB, ringC],
+      rules: human,
+      objective: { kind: 'maximize', prop: 'rF' },
+    });
+
+    expect(result.score.totals.rF).toBe(2);
+    expect(result.best.items.filter((i) => i.slots.includes('ring')).length).toBe(2);
+  });
+
+  it('locked macabre finger necklace bumps ring cap from 2 to 3', () => {
+    // Same three rings + the necklace; with the necklace locked, the
+    // search should fit all three rings (rF = 3).
+    const finger = makeItem({
+      category: 'jewelry',
+      slots: ['amulet'],
+      contributions: {},
+      displayName: 'macabre finger necklace',
+      unrandKey: 'UNRAND_FINGER_AMULET',
+    });
+    const ringA = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring A',
+    });
+    const ringB = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring B',
+    });
+    const ringC = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: { rF: 1 },
+      displayName: 'rF ring C',
+    });
+
+    const result = optimize({
+      items: [finger, ringA, ringB, ringC],
+      rules: human,
+      objective: { kind: 'maximize', prop: 'rF' },
+      lockedItems: [finger],
+    });
+
+    expect(result.score.totals.rF).toBe(3);
+    expect(result.best.items.filter((i) => i.slots.includes('ring')).length).toBe(3);
+    const names = result.best.items.map((i) => i.baseType.displayName);
+    expect(names).toContain('macabre finger necklace');
+  });
+
+  it('legality on a hand-built loadout respects the granter bonus', () => {
+    // checkCapacity should accept 3 rings + finger necklace on a
+    // default-cap species, where bare 3 rings would be illegal.
+    const finger = makeItem({
+      category: 'jewelry',
+      slots: ['amulet'],
+      contributions: {},
+      displayName: 'macabre finger necklace',
+      unrandKey: 'UNRAND_FINGER_AMULET',
+    });
+    const ringA = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: {},
+      displayName: 'ring A',
+    });
+    const ringB = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: {},
+      displayName: 'ring B',
+    });
+    const ringC = makeItem({
+      category: 'jewelry',
+      slots: ['ring'],
+      contributions: {},
+      displayName: 'ring C',
+    });
+
+    expect(scoreLoadout([finger, ringA, ringB, ringC], human).violations).toEqual([]);
+    expect(scoreLoadout([ringA, ringB, ringC], human).violations.length).toBeGreaterThan(0);
+  });
+});
+
 describe('optimize — real morgue inventory', () => {
   it('optimizes rF on the 0.34 reference morgue', async () => {
     const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');

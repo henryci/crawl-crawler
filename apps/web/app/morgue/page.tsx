@@ -388,8 +388,7 @@ function MorgueViewerContent() {
                       chat. On CAO the URL is{" "}
                       <span className="font-mono text-mana">
                         https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt
-                      </span>
-                      .
+                      </span>                      
                     </span>
                   </li>
                 </ul>

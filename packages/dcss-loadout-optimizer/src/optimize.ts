@@ -11,12 +11,13 @@
  * recommendation in the UI).
  */
 
-import type {
-  ContributionMap,
-  ItemSlot,
-  ParsedItem,
-  PropertyKey,
-  SpeciesEquipmentRules,
+import {
+  effectiveCapacity,
+  type ContributionMap,
+  type ItemSlot,
+  type ParsedItem,
+  type PropertyKey,
+  type SpeciesEquipmentRules,
 } from 'dcss-game-data';
 
 import { evaluateObjective, scoreLoadout } from './score.js';
@@ -58,11 +59,15 @@ export function optimize(inputs: OptimizerInputs): OptimizerResult {
   const lockedSet = new Set(lockedItems);
 
   // Reduce the rules' capacity by the locked items' slot occupation
-  // and exclude locked items from the candidate pool.
+  // and exclude locked items from the candidate pool. Locked
+  // slot-granters (e.g. a pinned macabre finger necklace) bump the
+  // base capacity before locked usage is subtracted, so the search
+  // sees the post-locked slot budget the rest of the loadout has to
+  // work with.
   const lockedUsage = computeSlotUsageInternal(lockedItems);
   const adjustedRules: SpeciesEquipmentRules = {
     ...rules,
-    capacity: subtractCapacity(rules.capacity, lockedUsage),
+    capacity: subtractCapacity(effectiveCapacity(rules, lockedItems), lockedUsage),
   };
   const availableItems = items.filter((item) => !lockedSet.has(item));
 
@@ -167,10 +172,16 @@ function greedyFillEmptySlots(
   ];
 
   for (const slot of slotOrder) {
-    const cap = rules.capacity[slot] ?? 0;
-    if (cap === 0) continue;
+    // Recompute effective cap per outer iteration: an earlier slot's
+    // fill may have placed a slot-granter (e.g. macabre finger necklace
+    // in the amulet slot) that bumps a later slot's capacity (rings).
+    if ((effectiveCapacity(rules, loadout)[slot] ?? 0) === 0) continue;
 
-    while (countSlotUsage(loadout, slot) < cap) {
+    // Inner-loop cap also re-reads, since adding a granter mid-fill
+    // for one slot could in principle bump the same slot — currently
+    // no granter targets its own slot, but doing this keeps the loop
+    // self-consistent.
+    while (countSlotUsage(loadout, slot) < (effectiveCapacity(rules, loadout)[slot] ?? 0)) {
       const candidates = allItems.filter(
         (item) =>
           !equipped.has(item) &&

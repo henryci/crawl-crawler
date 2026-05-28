@@ -9,14 +9,18 @@
  *     for each slot in item.slots:
  *       usage[slot] += 1
  *
- * Capacity check: usage[slot] ≤ rules.capacity[slot] for every slot.
+ * Capacity check: usage[slot] ≤ effectiveCapacity(rules, items)[slot]
+ * for every slot. `effectiveCapacity` includes bonuses from any
+ * equipped slot-granting unrands (e.g. macabre finger necklace +1
+ * ring) — see dcss-game-data/equipment/multi-slot.ts.
  */
 
-import type {
-  ItemSlot,
-  ParsedItem,
-  SlotCapacity,
-  SpeciesEquipmentRules,
+import {
+  effectiveCapacity,
+  type ItemSlot,
+  type ParsedItem,
+  type SlotCapacity,
+  type SpeciesEquipmentRules,
 } from 'dcss-game-data';
 
 /**
@@ -34,8 +38,8 @@ export function computeSlotUsage(items: ParsedItem[]): SlotCapacity {
 }
 
 /**
- * Check that no slot's usage exceeds its capacity. Returns a list of
- * human-readable violation messages (empty when legal).
+ * Check that no slot's usage exceeds its effective capacity. Returns a
+ * list of human-readable violation messages (empty when legal).
  */
 export function checkCapacity(
   items: ParsedItem[],
@@ -43,12 +47,13 @@ export function checkCapacity(
 ): string[] {
   const violations: string[] = [];
   const usage = computeSlotUsage(items);
+  const cap = effectiveCapacity(rules, items);
   for (const [slot, used] of Object.entries(usage)) {
     if (used === undefined) continue;
-    const cap = rules.capacity[slot as ItemSlot] ?? 0;
-    if (used > cap) {
+    const slotCap = cap[slot as ItemSlot] ?? 0;
+    if (used > slotCap) {
       violations.push(
-        `Too many items in slot '${slot}': ${used} used, capacity ${cap} for species ${rules.speciesCode}`,
+        `Too many items in slot '${slot}': ${used} used, capacity ${slotCap} for species ${rules.speciesCode}`,
       );
     }
   }
@@ -58,21 +63,26 @@ export function checkCapacity(
 /**
  * Compute remaining capacity after a base usage is subtracted. Used by
  * the search to figure out how many more single-slot items can fit
- * after multi-slot items are placed.
+ * after multi-slot items are placed. Pass the items that should count
+ * toward slot-granter bonuses (typically the subset whose usage is
+ * being subtracted) so that, e.g., a macabre finger necklace in the
+ * subset bumps the available ring count.
  */
 export function remainingCapacity(
   rules: SpeciesEquipmentRules,
   usage: SlotCapacity,
+  items: ParsedItem[] = [],
 ): SlotCapacity {
+  const cap = effectiveCapacity(rules, items);
   const remaining: SlotCapacity = {};
   const allSlots = new Set<ItemSlot>([
-    ...(Object.keys(rules.capacity) as ItemSlot[]),
+    ...(Object.keys(cap) as ItemSlot[]),
     ...(Object.keys(usage) as ItemSlot[]),
   ]);
   for (const slot of allSlots) {
-    const cap = rules.capacity[slot] ?? 0;
+    const slotCap = cap[slot] ?? 0;
     const used = usage[slot] ?? 0;
-    remaining[slot] = Math.max(0, cap - used);
+    remaining[slot] = Math.max(0, slotCap - used);
   }
   return remaining;
 }

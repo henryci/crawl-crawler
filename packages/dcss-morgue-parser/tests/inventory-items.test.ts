@@ -267,9 +267,89 @@ describe('item identification edge cases', () => {
     const staff = data.inventoryItems!.find((i) => i.id === 'a' && i.category === 'staff');
     expect(staff).toBeDefined();
     expect(staff!.baseType.displayName).toBe('staff of cold');
-    // Contributions include the staff's innate Ice + rC PLUS artefact extras
-    expect(staff!.contributions.Ice).toBeGreaterThanOrEqual(1);
-    expect(staff!.contributions.rC).toBeGreaterThanOrEqual(1);
+    // The brace lists *total* property values for randarts — same
+    // convention as randart jewelry. rC+ in the brace means total rC=1
+    // (not innate rC+1 + brace rC+1 = 2). Same for Ice.
+    expect(staff!.contributions.rC).toBe(1);
+    expect(staff!.contributions.Ice).toBe(1);
     expect(staff!.contributions.SInv).toBe(1);
+    expect(staff!.contributions.rCorr).toBe(1);
+  });
+
+  it('randart staves: brace lists totals, not extras on top of innate', async () => {
+    // Regression for the rC/Ice double-count that mirrored the jewelry
+    // bug. A randart `staff of cold {rF++ rC+ Will++ Summ Ice}` must
+    // contribute rC=1 and Ice=1 (brace totals), not rC=2/Ice=2.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'morgue-henryci-equipment-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    const staff = data.inventoryItems!.find((i) => i.category === 'staff');
+    expect(staff).toBeDefined();
+    // staff of cold base would supply innate rC + Ice if double-counted.
+    // Verify the parser trusts the brace as the total.
+    if (staff!.baseType.displayName === 'staff of cold') {
+      expect(staff!.contributions.rC).toBeLessThanOrEqual(
+        (staff!.artefact?.properties.rC ?? 0),
+      );
+      expect(staff!.contributions.Ice).toBeLessThanOrEqual(
+        (staff!.artefact?.properties.Ice ?? 0),
+      );
+    }
+  });
+});
+
+describe('talismans', () => {
+  it('parses the Talismans section as a read-only category', () => {
+    // Synthetic inventory exercising the talisman section. The morgue
+    // format is: Talismans header, then indented item lines with
+    // `[talisman of X]` markers for randarts.
+    const synthetic = [
+      'Inventory:',
+      '',
+      'Talismans',
+      ' l - the death talisman of Poluomn (worn) {rElec rF- Str+6}',
+      '   (You found it in Pandemonium)',
+      '',
+      '   [talisman of death]',
+      '   rElec:     It insulates you from electricity.',
+      '   rF-:       It makes you vulnerable to fire.',
+      '   Str+6:     It affects your strength (+6).',
+      '',
+    ].join('\n');
+
+    const items = extractInventoryItems(synthetic, '0.34');
+    expect(items).not.toBeNull();
+    expect(items!.length).toBe(1);
+
+    const t = items![0]!;
+    expect(t.category).toBe('talisman');
+    expect(t.baseType.displayName).toBe('talisman of death');
+    // slots=[] keeps the talisman out of the slot search math.
+    expect(t.slots).toEqual([]);
+    expect(t.isEquipped).toBe(true);
+    // Brace properties flow into contributions verbatim — no innate
+    // double-counting (talisman base types are intentionally empty).
+    expect(t.contributions.rElec).toBe(1);
+    expect(t.contributions.rF).toBe(-1);
+    expect(t.contributions.Str).toBe(6);
+  });
+
+  it('falls back to a generic display name for unknown forms', () => {
+    // If DCSS adds a new talisman form before we update the registry,
+    // the row must still render — better than silently dropping it.
+    const synthetic = [
+      'Inventory:',
+      '',
+      'Talismans',
+      ' l - a talisman of fnord (worn)',
+      '',
+    ].join('\n');
+
+    const items = extractInventoryItems(synthetic, '0.34');
+    expect(items).not.toBeNull();
+    expect(items!.length).toBe(1);
+    expect(items![0]!.category).toBe('talisman');
+    expect(items![0]!.baseType.displayName).toBe('talisman');
   });
 });

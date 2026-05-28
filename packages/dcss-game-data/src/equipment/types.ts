@@ -218,6 +218,21 @@ export interface StaffBaseType {
   innateContributions: Contribution[];
 }
 
+/**
+ * Talismans (death, dragon, beast, etc.) grant a transformation while
+ * worn. v1 models them as read-only inventory items: the optimizer
+ * doesn't slot them or swap them — they're surfaced in the UI so the
+ * player can see their contributions, but interaction belongs in the
+ * game, not the optimizer. `slots` is empty so they consume no
+ * capacity and don't participate in slot-search math.
+ */
+export interface TalismanBaseType {
+  key: string;
+  displayName: string;
+  slots: [];
+  innateContributions: Contribution[];
+}
+
 /** Per-slot capacity for a species. Slots not listed default to 0. */
 export type SlotCapacity = Partial<Record<ItemSlot, number>>;
 
@@ -245,7 +260,13 @@ export interface MultiSlotUnrand {
 }
 
 /** Top-level category for a parsed equipment item. */
-export type ItemCategory = 'weapon' | 'armor' | 'shield' | 'jewelry' | 'staff';
+export type ItemCategory =
+  | 'weapon'
+  | 'armor'
+  | 'shield'
+  | 'jewelry'
+  | 'staff'
+  | 'talisman';
 
 /**
  * Aggregated property map keyed by morgue-brace abbreviation. Sparse —
@@ -286,7 +307,8 @@ export interface ParsedItem {
     | ArmorBaseType
     | ShieldBaseType
     | JewelryBaseType
-    | StaffBaseType;
+    | StaffBaseType
+    | TalismanBaseType;
   /**
    * Slots occupied when equipped. Copy of baseType.slots for typical
    * items; overridden for multi-slot unrands like Lear's hauberk.

@@ -24,6 +24,8 @@ import {
   ARMORS_BY_DISPLAY_NAME,
   JEWELRY_BY_DISPLAY_NAME,
   STAVES_BY_DISPLAY_NAME,
+  TALISMANS_BY_DISPLAY_NAME,
+  TALISMAN_GENERIC,
   UNRAND_BY_NAME,
   getMultiSlotOccupation,
   PROPERTIES,
@@ -37,6 +39,7 @@ import {
   type ParsedItemArtefact,
   type ShieldBaseType,
   type StaffBaseType,
+  type TalismanBaseType,
   type WeaponBaseType,
 } from 'dcss-game-data';
 
@@ -57,6 +60,7 @@ type RawInventoryCategory =
   | 'Armour'
   | 'Magical Staves'
   | 'Jewellery'
+  | 'Talismans'
   | 'OTHER';
 
 /**
@@ -143,6 +147,7 @@ function recognizeCategory(header: string): RawInventoryCategory {
   if (/^Armour$/i.test(header)) return 'Armour';
   if (/^Magical Staves$/i.test(header)) return 'Magical Staves';
   if (/^Jewellery$/i.test(header)) return 'Jewellery';
+  if (/^Talismans$/i.test(header)) return 'Talismans';
   return 'OTHER';
 }
 
@@ -191,6 +196,8 @@ function parseItemLine(
       return parseArmorItem(id, rawText, stripped, articleStripped, enchant, braces, isArtefact, isEquipped, unrand);
     case 'Jewellery':
       return parseJewelryItem(id, rawText, stripped, articleStripped, enchant, braces, isArtefact, isEquipped, unrand, continuation);
+    case 'Talismans':
+      return parseTalismanItem(id, rawText, stripped, enchant, braces, isEquipped, unrand, continuation);
   }
   return null;
 }
@@ -437,7 +444,15 @@ function parseStaffItem(
   const artefact = braces ? buildArtefact(braces, true, unrand) : undefined;
   const brand = artefact?.brand;
 
-  const contributions = aggregate(baseType, enchant, brand, undefined, artefact);
+  // Randart staves follow the same convention as randart jewelry: the
+  // brace lists *total* property values, including the base staff's
+  // innate (e.g. a randart `staff of cold {... rC+ ... Ice}` shows the
+  // base's rC and Ice as part of the brace). Adding base innate on top
+  // would double-count — see ring of Divine Intervention for the
+  // jewelry analogue. Trust the brace as authoritative when present.
+  const contributions = artefact
+    ? aggregate(baseType, enchant, brand, undefined, artefact, { skipInnate: true })
+    : aggregate(baseType, enchant, brand, undefined, undefined);
   applyEnchantContribution(contributions, enchant, 'staff');
 
   return {
@@ -579,6 +594,80 @@ function parseJewelryItem(
     baseType,
     slots: baseType.slots,
     enchant,
+    isEquipped,
+    artefact: artefact ? toParsedArtefact(artefact, unrand) : undefined,
+    contributions,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Talismans
+// ────────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a talisman line. v1 surfaces the talisman as a read-only item:
+ * the brace properties contribute to LIVE TOTALS so the player can see
+ * the effect, but the optimizer doesn't slot or swap talismans (the
+ * form-changing semantics live in the game, not in this tool). `slots`
+ * is empty so the talisman consumes no capacity. The UI renders it as
+ * a fixed display row in WornEquipment.
+ *
+ * Base type comes from the indented `[talisman of X]` marker on
+ * randarts, or from the rawText itself for plain talismans. Unknown
+ * forms fall back to TALISMAN_GENERIC so the row still renders.
+ */
+function parseTalismanItem(
+  id: string,
+  rawText: string,
+  stripped: string,
+  _enchant: number,
+  braces: string | null,
+  isEquipped: boolean,
+  unrand: ReturnType<typeof UNRAND_BY_NAME.get>,
+  continuation: string[],
+): ParsedItem | null {
+  let baseType: TalismanBaseType | undefined;
+
+  // Randart talismans carry a `[talisman of X]` marker on a description
+  // line — same pattern as randart staves.
+  for (const desc of continuation) {
+    const m = /^\[talisman\s+of\s+(.+?)\]/i.exec(desc);
+    if (m) {
+      const display = `talisman of ${m[1]!.toLowerCase()}`;
+      baseType = TALISMANS_BY_DISPLAY_NAME.get(display);
+      break;
+    }
+  }
+
+  // Plain talismans use the stripped form, e.g. "talisman of beast".
+  if (!baseType) {
+    baseType = TALISMANS_BY_DISPLAY_NAME.get(stripped.toLowerCase());
+  }
+
+  // Last resort: keep the row visible even if we don't recognize the
+  // form. Better to surface "unknown talisman" with correct properties
+  // than to silently drop the line.
+  if (!baseType) baseType = TALISMAN_GENERIC;
+
+  const artefact = braces ? buildArtefact(braces, false, unrand) : undefined;
+  // No base innate to fold in — talisman base types are intentionally
+  // empty (`innateContributions: []`). The brace is the only source.
+  const contributions: ContributionMap = {};
+  if (artefact) {
+    for (const [prop, value] of Object.entries(artefact.properties)) {
+      if (value === undefined) continue;
+      contributions[prop as keyof ContributionMap] =
+        (contributions[prop as keyof ContributionMap] ?? 0) + value;
+    }
+  }
+
+  return {
+    id,
+    rawText,
+    category: 'talisman',
+    baseType,
+    slots: [],
+    enchant: 0,
     isEquipped,
     artefact: artefact ? toParsedArtefact(artefact, unrand) : undefined,
     contributions,

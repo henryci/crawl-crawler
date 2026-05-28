@@ -22,6 +22,7 @@ import { useMemo, useRef, useState, useEffect, type ReactNode } from "react";
 import type { MorgueData, ParsedItem } from "dcss-morgue-parser";
 import {
   PROPERTIES,
+  effectiveCapacity,
   getSpeciesCode,
   getSpeciesEquipmentRules,
   type ContributionMap,
@@ -49,7 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, AlertCircle, Lock, Unlock, Ban, Loader2 } from "lucide-react";
+import { Sparkles, AlertCircle, Lock, Unlock, Ban, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────────────────
@@ -487,7 +488,15 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     const worker = workerRef.current;
     if (!worker) return;
     // Items the user has locked stay equipped through optimization.
-    const lockedItems = loadout.filter((i) => lockedIds.has(i.id));
+    // Talismans are implicitly locked: v1 surfaces them as read-only
+    // (the player swaps forms in-game, not via the optimizer), so any
+    // equipped talisman must survive an optimize pass.
+    const userLocked = loadout.filter((i) => lockedIds.has(i.id));
+    const equippedTalismans = loadout.filter((i) => i.category === "talisman");
+    const lockedItems = [
+      ...userLocked,
+      ...equippedTalismans.filter((t) => !userLocked.includes(t)),
+    ];
     // Banned items are excluded from the candidate pool entirely.
     const optimizerItems = inventoryItems.filter((i) => !bannedIds.has(i.id));
 
@@ -557,6 +566,10 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 // Header bar (title + inventory count + clear + compute)
 // ────────────────────────────────────────────────────────────────────────
 
+// Bump the suffix when the banner content changes meaningfully so
+// previously-dismissed users see the new copy.
+const BETA_WARNING_STORAGE_KEY = "crawl-crawler:optimizer-beta-warning-dismissed:v1";
+
 function HeaderBar({
   onClear,
   onOptimize,
@@ -566,29 +579,86 @@ function HeaderBar({
   onOptimize: () => void;
   pending: boolean;
 }) {
+  // Start hidden on mount and reveal once we've consulted localStorage
+  // — avoids a flash of the banner for users who previously dismissed
+  // it. SSR renders nothing here; the banner appears post-hydration
+  // for first-time visitors.
+  const [warningVisible, setWarningVisible] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(BETA_WARNING_STORAGE_KEY) !== "1") {
+        setWarningVisible(true);
+      }
+    } catch {
+      // localStorage unavailable (private mode, etc.) — show by default.
+      setWarningVisible(true);
+    }
+  }, []);
+  const dismissWarning = () => {
+    setWarningVisible(false);
+    try {
+      localStorage.setItem(BETA_WARNING_STORAGE_KEY, "1");
+    } catch {
+      // Best-effort persistence; if it fails, banner returns on reload.
+    }
+  };
+
   return (
     <div className="space-y-3">
-      <div className="rounded border border-amber-600/60 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-        This is super beta and probably broken. Test it and{" "}
-        <a
-          href="https://www.reddit.com/r/dcss/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-amber-100"
+      {warningVisible && (
+      <div className="relative rounded border border-amber-600/60 bg-amber-950/30 px-3 py-2 pr-8 text-xs text-amber-200 space-y-1.5">
+        <button
+          type="button"
+          onClick={dismissWarning}
+          aria-label="Dismiss known-issues notice"
+          title="Dismiss"
+          className="absolute top-1.5 right-1.5 w-6 h-6 flex items-center justify-center rounded text-amber-300/70 hover:text-amber-100 hover:bg-amber-900/40 transition-colors"
         >
-          provide feedback on Reddit
-        </a>{" "}
-        or{" "}
-        <a
-          href="https://github.com/anthropics/crawl-crawler/issues"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-amber-100"
-        >
-          GitHub
-        </a>
-        !
+          <X className="w-3.5 h-3.5" />
+        </button>
+        <div>
+          This is super beta and probably broken. Test it and{" "}
+          <a
+            href="https://www.reddit.com/r/dcss/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-amber-100"
+          >
+            provide feedback on Reddit
+          </a>{" "}
+          or{" "}
+          <a
+            href="https://github.com/anthropics/crawl-crawler/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-amber-100"
+          >
+            GitHub
+          </a>
+          !
+        </div>
+        <div>
+          <div className="font-semibold uppercase tracking-wider text-[10px] text-amber-300/80 mt-1">
+            Known issues
+          </div>
+          <ul className="list-disc list-outside ml-4 mt-0.5 space-y-0.5 text-amber-200/90">
+            <li>
+              Armor isn&apos;t handled great — armor rating isn&apos;t used yet, so
+              picks that should be obvious on AC grounds may look like ties.
+            </li>
+            <li>
+              Some edge-case items (e.g. the macabre finger necklace) can break
+              assumptions. Sanity-check the result before trusting it.
+            </li>
+            <li>
+              Talismans are read-only. If you had one equipped when you dumped,
+              its properties are included; if you didn&apos;t, they aren&apos;t.
+              Re-dump after swapping forms in-game to see different numbers.
+            </li>
+          </ul>
+        </div>
       </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-gold" />
@@ -642,19 +712,23 @@ function BackpackList({
   onToggleBan: (item: ParsedItem) => void;
 }) {
   const loadoutSet = new Set(loadout);
+  // Talismans are read-only in v1 (player swaps forms in-game), so we
+  // omit them from the interactive backpack list. They're shown in the
+  // worn-equipment column as a fixed display row instead.
+  const visibleItems = items.filter((i) => i.category !== "talisman");
   return (
     <Card className="bg-card border-border py-3 gap-2">
       <CardContent className="space-y-2">
         <div className="flex items-baseline justify-between mb-2 gap-3">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Inventory ({items.length})
+            Inventory ({visibleItems.length})
           </span>
           <span className="text-xs text-muted-foreground">
             click to equip · ban icon excludes from optimize
           </span>
         </div>
         <div className="space-y-1.5">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <BackpackItemRow
               key={item.id}
               item={item}
@@ -769,6 +843,8 @@ function glyphFor(item: ParsedItem): string {
       return item.slots[0] === "amulet" ? '"' : "=";
     case "staff":
       return "/";
+    case "talisman":
+      return "}";
     default:
       return "?";
   }
@@ -908,13 +984,17 @@ function WornEquipment({
       slotItems.get(slot)!.push(item);
     }
     const rows: { slot: ItemSlot; label: string; item: ParsedItem | null }[] = [];
+    // Effective capacity folds in any slot-granters worn in the loadout
+    // (e.g. macabre finger necklace → +1 ring row, crown of Vainglory →
+    // +2 ring rows). Recomputed whenever the loadout changes.
+    const cap = effectiveCapacity(rules, loadout);
     for (const slot of SLOT_ORDER) {
-      const cap = rules.capacity[slot] ?? 0;
-      if (cap === 0) continue;
+      const slotCap = cap[slot] ?? 0;
+      if (slotCap === 0) continue;
       const items = slotItems.get(slot) ?? [];
-      for (let i = 0; i < cap; i++) {
+      for (let i = 0; i < slotCap; i++) {
         const label =
-          cap === 1
+          slotCap === 1
             ? SLOT_LABEL[slot]
             : `${SLOT_LABEL[slot]} ${romanNumeral(i + 1)}`;
         rows.push({ slot, label, item: items[i] ?? null });
@@ -952,6 +1032,14 @@ function WornEquipment({
               onToggleLock={() => row.item && onToggleLock(row.item)}
             />
           ))}
+          {/* Talismans are read-only in v1: surface them as a fixed
+              display row so totals stay correct. Form swapping happens
+              in-game; re-dump to update. */}
+          {loadout
+            .filter((i) => i.category === "talisman")
+            .map((t) => (
+              <TalismanRow key={t.id} item={t} />
+            ))}
         </div>
       </CardContent>
       {pending && (
@@ -1074,6 +1162,45 @@ function SlotRow({
 
 function romanNumeral(n: number): string {
   return ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"][n - 1] ?? String(n);
+}
+
+/**
+ * Read-only display for the currently-worn talisman. Same visual
+ * vocabulary as SlotRow but no remove/lock affordances — the player
+ * changes forms in the game, not here. The badges show the talisman's
+ * contributions so the user can see why LIVE TOTALS look the way they
+ * do (e.g. the death talisman's `rF-` lowering total fire resistance).
+ */
+function TalismanRow({ item }: { item: ParsedItem }) {
+  return (
+    <div
+      className="w-full px-3 py-2 rounded border bg-secondary/20 border-border/70"
+      title="Talismans are equipped in-game; re-run the dump after swapping forms"
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80 leading-none">
+          Talisman
+        </div>
+        <div className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50 leading-none">
+          read-only
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-1">
+        <span className="font-mono text-muted-foreground w-4 shrink-0">
+          {glyphFor(item)}
+        </span>
+        <span className="font-mono text-sm text-foreground flex-1 min-w-0 truncate">
+          {cleanItemName(item.rawText)}
+        </span>
+        <span className="font-mono text-xs text-muted-foreground w-4 text-right shrink-0">
+          {item.id}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1 mt-1 ml-6">
+        {renderItemTags(item)}
+      </div>
+    </div>
+  );
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -1797,8 +1924,12 @@ function addItemToLoadout(
   if (isTwoHander) occupiedSlots.add("offhand");
 
   // Pre-check: any locked item in a slot we'd need to evict? Bail.
+  // Use effective capacity of the post-state (next + item) so a granter
+  // we're about to equip (e.g. macabre finger necklace) is credited
+  // when checking ring availability.
+  const postCap = effectiveCapacity(rules, [...next, item]);
   for (const slot of occupiedSlots) {
-    const cap = rules.capacity[slot] ?? 0;
+    const cap = postCap[slot] ?? 0;
     const inSlot = next.filter((e) => e.slots.includes(slot));
     const lockedInSlot = inSlot.filter(isLocked);
     if (lockedInSlot.length >= cap) return current;
@@ -1836,9 +1967,10 @@ function addItemToLoadout(
   }
 
   // For each slot the item occupies, free up space — prefer to evict
-  // non-locked items first.
+  // non-locked items first. Use post-state effective cap so a granter
+  // we're about to equip gets credit when judging how much to evict.
   for (const slot of occupiedSlots) {
-    const cap = rules.capacity[slot] ?? 0;
+    const cap = postCap[slot] ?? 0;
     const currentInSlot = next.filter((e) => e.slots.includes(slot)).length;
     if (currentInSlot >= cap) {
       const toRemove = currentInSlot - cap + 1;
@@ -1856,6 +1988,33 @@ function addItemToLoadout(
   }
 
   next.push(item);
+
+  // Granter-swap reconciliation: if we just evicted a slot-granter
+  // (e.g. replaced the macabre finger necklace with a different
+  // amulet) the rest of the loadout may now overflow another slot
+  // (the granted ring slot vanished). Evict the oldest non-locked
+  // items in any overflowing slot. If the overflow is entirely
+  // locked items, leave the loadout in an over-capacity state — the
+  // legality check will surface it; we don't silently drop the
+  // user's pinned items.
+  const finalCap = effectiveCapacity(rules, next);
+  const slotsToCheck = new Set<ItemSlot>();
+  for (const e of next) for (const s of e.slots) slotsToCheck.add(s);
+  for (const slot of slotsToCheck) {
+    const cap = finalCap[slot] ?? 0;
+    let used = next.filter((e) => e.slots.includes(slot)).length;
+    if (used <= cap) continue;
+    next = next.filter((e) => {
+      if (used <= cap) return true;
+      if (e === item) return true; // never evict the just-added item
+      if (e.slots.includes(slot) && !isLocked(e)) {
+        used--;
+        return false;
+      }
+      return true;
+    });
+  }
+
   return next;
 }
 

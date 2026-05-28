@@ -27,6 +27,8 @@ export function makeItem(opts: {
   enchant?: number;
   hands?: 1 | 2;
   displayName?: string;
+  /** Mark as an unrand so slot-granter lookup matches (e.g. macabre finger necklace). */
+  unrandKey?: string;
 }): ParsedItem {
   const id = freshId();
   const displayName = opts.displayName ?? `test-${opts.category}-${id}`;
@@ -35,7 +37,7 @@ export function makeItem(opts: {
       ? makeWeaponBase(displayName, opts.hands ?? 1)
       : makeNonWeaponBase(displayName, opts.slots);
 
-  return {
+  const item: ParsedItem = {
     id,
     rawText: displayName,
     category: opts.category,
@@ -45,6 +47,10 @@ export function makeItem(opts: {
     isEquipped: false,
     contributions: opts.contributions,
   };
+  if (opts.unrandKey) {
+    item.artefact = { properties: {}, isUnrand: true, unrandKey: opts.unrandKey };
+  }
+  return item;
 }
 
 function makeWeaponBase(displayName: string, hands: 1 | 2): WeaponBaseType {

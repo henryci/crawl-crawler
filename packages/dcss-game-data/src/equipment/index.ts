@@ -27,6 +27,7 @@ export type {
   ContributionMap,
   ParsedItem,
   ParsedItemArtefact,
+  TalismanBaseType,
 } from './types.js';
 
 export {
@@ -98,6 +99,11 @@ export {
   getCuratedStaffPropertyRefs,
 } from './staves.js';
 export {
+  TALISMAN_BASE_TYPES,
+  TALISMANS_BY_DISPLAY_NAME,
+  TALISMAN_GENERIC,
+} from './talismans.js';
+export {
   SPECIES_EQUIPMENT_RULES,
   DEFAULT_CAPACITY,
   getSpeciesEquipmentRules,
@@ -107,4 +113,6 @@ export {
   MULTI_SLOT_UNRANDS,
   MULTI_SLOT_BY_DISPLAY_NAME,
   getMultiSlotOccupation,
+  getGrantedSlots,
+  effectiveCapacity,
 } from './multi-slot.js';

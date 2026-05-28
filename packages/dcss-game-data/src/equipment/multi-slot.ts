@@ -7,22 +7,31 @@
  *    fills body armor + helmet + gloves + boots simultaneously).
  *
  * 2. Items that GRANT extra slots while equipped (Skull of Zonguldrok
- *    adds a helmet slot, Finger Amulet adds a ring slot, etc.).
+ *    adds a helmet slot, macabre finger necklace adds a ring slot,
+ *    etc.).
  *
- * For v1 we model only mechanic (1) — the parser overrides the item's
- * `slots` to the full occupied set, and the optimizer's capacity check
- * deducts each slot.
+ * Both are modeled here. For mechanic (1) the parser overrides the
+ * item's `slots` to the full occupied set, and the optimizer's
+ * capacity check deducts each slot. For mechanic (2), use
+ * `effectiveCapacity(rules, items)` to derive the per-slot capacity
+ * for the player after applying any equipped slot-granters; callers
+ * that previously read `rules.capacity[slot]` directly should switch
+ * to that helper so granters are honored everywhere.
  *
- * Mechanic (2) (`grantsExtraSlots`) is recorded but not yet consumed by
- * the optimizer. The list below is intended to be exhaustive for the
- * pinned DCSS source; new occupied-multiple-slot unrands need to be
- * added here.
+ * The list below is intended to be exhaustive for the pinned DCSS
+ * source; new entries belong here.
  *
  * Source-of-truth references are in `player-equip.cc::_use_slots(...)`
  * calls and the `BOOL: special` flag in art-data.txt entries.
  */
 
-import type { ItemSlot, MultiSlotUnrand } from './types.js';
+import type {
+  ItemSlot,
+  MultiSlotUnrand,
+  ParsedItem,
+  SlotCapacity,
+  SpeciesEquipmentRules,
+} from './types.js';
 
 interface MultiSlotEntry extends MultiSlotUnrand {
   /**
@@ -56,7 +65,7 @@ export const MULTI_SLOT_UNRANDS: Record<string, MultiSlotEntry> = {
   },
   UNRAND_FINGER_AMULET: {
     unrandKey: 'UNRAND_FINGER_AMULET',
-    displayName: 'amulet of the Finger',
+    displayName: 'macabre finger necklace',
     occupiedSlots: ['amulet'],
     grantsExtraSlots: { slot: 'ring', count: 1 },
   },
@@ -86,4 +95,44 @@ export function getMultiSlotOccupation(unrandKey: string): ItemSlot[] | null {
   const entry = MULTI_SLOT_UNRANDS[unrandKey];
   if (!entry) return null;
   return entry.occupiedSlots;
+}
+
+/**
+ * Slots an unrand grants to its wearer (e.g. macabre finger necklace
+ * grants `{ slot: 'ring', count: 1 }`). Returns null for unrands that
+ * don't grant extra slots and for unknown keys.
+ */
+export function getGrantedSlots(
+  unrandKey: string | undefined,
+): { slot: ItemSlot; count: number } | null {
+  if (!unrandKey) return null;
+  const entry = MULTI_SLOT_UNRANDS[unrandKey];
+  return entry?.grantsExtraSlots ?? null;
+}
+
+/**
+ * Per-slot capacity for a player after applying the bonuses granted by
+ * any equipped slot-granting unrands (macabre finger necklace, crown of
+ * Vainglory, Fisticloak, skull of Zonguldrok, Justicar's Regalia).
+ *
+ * Use this everywhere capacity matters — UI rendering, search pruning,
+ * legality checks — instead of `rules.capacity[slot]` directly. Pass
+ * the items whose granters should count (typically the current loadout
+ * or, in the search, the multi-slot/granter subset being considered).
+ *
+ * The returned map is sparse: only slots present in `rules.capacity`
+ * (i.e. with non-zero base capacity for this species) AND slots a
+ * granter targets are populated.
+ */
+export function effectiveCapacity(
+  rules: SpeciesEquipmentRules,
+  items: ParsedItem[],
+): SlotCapacity {
+  const out: SlotCapacity = { ...rules.capacity };
+  for (const item of items) {
+    const grant = getGrantedSlots(item.artefact?.unrandKey);
+    if (!grant) continue;
+    out[grant.slot] = (out[grant.slot] ?? 0) + grant.count;
+  }
+  return out;
 }

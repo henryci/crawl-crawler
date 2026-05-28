@@ -24,10 +24,13 @@ import {
   UNRAND_BY_NAME,
   MULTI_SLOT_UNRANDS,
   getMultiSlotOccupation,
+  getGrantedSlots,
+  effectiveCapacity,
   getSpeciesEquipmentRules,
   getSlotCapacity,
   DEFAULT_CAPACITY,
 } from '../src/equipment/index.js';
+import type { ParsedItem } from '../src/equipment/index.js';
 
 describe('properties registry', () => {
   it('covers every non-legacy ARTP', () => {
@@ -285,6 +288,72 @@ describe('multi-slot unrands', () => {
     expect(MULTI_SLOT_UNRANDS.UNRAND_LEAR).toBeDefined();
     expect(MULTI_SLOT_UNRANDS.UNRAND_FINGER_AMULET).toBeDefined();
     expect(MULTI_SLOT_UNRANDS.UNRAND_VAINGLORY).toBeDefined();
+  });
+
+  it('finger amulet displayName matches the official unrand name', () => {
+    // The generated unrand-data prints "macabre finger necklace"; keeping
+    // the multi-slot displayName in sync prevents lookup mismatches.
+    expect(MULTI_SLOT_UNRANDS.UNRAND_FINGER_AMULET!.displayName).toBe(
+      'macabre finger necklace',
+    );
+  });
+});
+
+describe('slot granters', () => {
+  // Minimal ParsedItem stub: only the fields effectiveCapacity reads.
+  const granterItem = (unrandKey: string): ParsedItem =>
+    ({
+      id: 'x',
+      rawText: '',
+      category: 'jewelry',
+      baseType: { displayName: 'stub', slots: ['amulet'] } as never,
+      slots: ['amulet'],
+      enchant: 0,
+      isEquipped: true,
+      contributions: {},
+      artefact: { properties: {}, isUnrand: true, unrandKey },
+    }) as ParsedItem;
+
+  it('getGrantedSlots returns the bonus or null', () => {
+    expect(getGrantedSlots('UNRAND_FINGER_AMULET')).toEqual({ slot: 'ring', count: 1 });
+    expect(getGrantedSlots('UNRAND_VAINGLORY')).toEqual({ slot: 'ring', count: 2 });
+    expect(getGrantedSlots('UNRAND_LEAR')).toBeNull();
+    expect(getGrantedSlots('UNRAND_SINGING_SWORD')).toBeNull();
+    expect(getGrantedSlots(undefined)).toBeNull();
+  });
+
+  it('effectiveCapacity matches base capacity with no granters', () => {
+    const human = getSpeciesEquipmentRules('Hu');
+    expect(effectiveCapacity(human, []).ring).toBe(human.capacity.ring);
+  });
+
+  it('macabre finger necklace adds +1 ring', () => {
+    const human = getSpeciesEquipmentRules('Hu');
+    const cap = effectiveCapacity(human, [granterItem('UNRAND_FINGER_AMULET')]);
+    expect(cap.ring).toBe((human.capacity.ring ?? 0) + 1);
+    // Other slots untouched.
+    expect(cap.amulet).toBe(human.capacity.amulet);
+  });
+
+  it('crown of Vainglory adds +2 rings', () => {
+    const human = getSpeciesEquipmentRules('Hu');
+    const cap = effectiveCapacity(human, [granterItem('UNRAND_VAINGLORY')]);
+    expect(cap.ring).toBe((human.capacity.ring ?? 0) + 2);
+  });
+
+  it('multiple granters stack', () => {
+    const human = getSpeciesEquipmentRules('Hu');
+    const cap = effectiveCapacity(human, [
+      granterItem('UNRAND_FINGER_AMULET'),
+      granterItem('UNRAND_VAINGLORY'),
+    ]);
+    expect(cap.ring).toBe((human.capacity.ring ?? 0) + 3);
+  });
+
+  it('non-granter unrands contribute nothing', () => {
+    const human = getSpeciesEquipmentRules('Hu');
+    const cap = effectiveCapacity(human, [granterItem('UNRAND_SINGING_SWORD')]);
+    expect(cap.ring).toBe(human.capacity.ring);
   });
 });
 

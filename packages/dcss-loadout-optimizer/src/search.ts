@@ -2,10 +2,14 @@
  * Brute-force loadout search.
  *
  * Strategy (factors the search space, doesn't enumerate all subsets):
- *   1. Separate items into multi-slot (occupies 2+ slots) and single-slot.
- *   2. For each subset of multi-slot items whose combined occupation
- *      doesn't overflow capacity:
- *      a. Compute remaining per-slot capacity.
+ *   1. Separate items into "slot influencers" (items whose presence
+ *      changes per-slot capacity for the rest of the loadout — i.e.
+ *      multi-slot unrands that occupy 2+ slots, plus slot-granters
+ *      like the macabre finger necklace that add +N to a slot) and
+ *      plain single-slot items.
+ *   2. For each subset of slot-influencers whose combined occupation
+ *      doesn't overflow that subset's effective capacity:
+ *      a. Compute remaining per-slot capacity from the subset.
  *      b. Group remaining single-slot items by their slot.
  *      c. For each slot, enumerate all combinations of items in that
  *         slot, sized 0..remainingCapacity[slot].
@@ -13,7 +17,7 @@
  *      e. For each resulting loadout, score it and track the best.
  *
  * Complexity is roughly:
- *   sum over multi-slot subsets ×
+ *   sum over influencer subsets ×
  *     product over slots of (sum_{k=0..cap} C(N_slot, k))
  *
  * For typical late-game inventories (~30 items) this is in the
@@ -23,7 +27,13 @@
  * the next step. Not yet implemented.
  */
 
-import type { ItemSlot, ParsedItem, SpeciesEquipmentRules } from 'dcss-game-data';
+import {
+  effectiveCapacity,
+  getGrantedSlots,
+  type ItemSlot,
+  type ParsedItem,
+  type SpeciesEquipmentRules,
+} from 'dcss-game-data';
 
 import { computeSlotUsage, remainingCapacity } from './capacity.js';
 
@@ -43,12 +53,14 @@ export function searchLoadouts(
   rules: SpeciesEquipmentRules,
   evaluate: (loadout: ParsedItem[]) => number,
 ): SearchResult {
-  const multiSlot = items.filter((i) => i.slots.length > 1);
-  const singleSlot = items.filter((i) => i.slots.length === 1);
+  // Influencers = anything whose inclusion changes per-slot capacity
+  // for the rest of the loadout (multi-slot occupiers OR slot granters).
+  const influencers = items.filter((i) => isSlotInfluencer(i));
+  const plain = items.filter((i) => !isSlotInfluencer(i));
 
-  // Group single-slot items by their slot.
+  // Group plain single-slot items by their slot.
   const bySlot = new Map<ItemSlot, ParsedItem[]>();
-  for (const item of singleSlot) {
+  for (const item of plain) {
     const slot = item.slots[0]!;
     if (!bySlot.has(slot)) bySlot.set(slot, []);
     bySlot.get(slot)!.push(item);
@@ -58,13 +70,13 @@ export function searchLoadouts(
   let bestScore = Number.NEGATIVE_INFINITY;
   let evaluated = 0;
 
-  // For every subset of multi-slot items...
-  for (const multiSubset of powerSet(multiSlot)) {
+  // For every subset of slot-influencers...
+  for (const multiSubset of powerSet(influencers)) {
     const multiUsage = computeSlotUsage(multiSubset);
-    // Bail if the multi-slot subset already overflows capacity.
-    if (overflowsCapacity(multiUsage, rules)) continue;
+    // Bail if the subset overflows its own effective capacity.
+    if (overflowsCapacity(multiUsage, multiSubset, rules)) continue;
 
-    const remaining = remainingCapacity(rules, multiUsage);
+    const remaining = remainingCapacity(rules, multiUsage, multiSubset);
 
     // For each slot that has remaining capacity > 0 AND single-slot
     // items available, enumerate item combinations.
@@ -101,19 +113,34 @@ export function searchLoadouts(
 }
 
 /**
- * Check if a slot-usage map overflows the rules' capacities. Cheaper
- * than running the full legality check when we just need to prune.
+ * Check if a slot-usage map overflows the rules' effective capacity
+ * (which folds in slot-granter bonuses from `items`). Cheaper than
+ * running the full legality check when we just need to prune.
  */
 function overflowsCapacity(
   usage: Record<string, number | undefined>,
+  items: ParsedItem[],
   rules: SpeciesEquipmentRules,
 ): boolean {
+  const cap = effectiveCapacity(rules, items);
   for (const [slot, used] of Object.entries(usage)) {
     if (used === undefined) continue;
-    const cap = rules.capacity[slot as ItemSlot] ?? 0;
-    if (used > cap) return true;
+    if (used > (cap[slot as ItemSlot] ?? 0)) return true;
   }
   return false;
+}
+
+/**
+ * An item is a "slot influencer" if its presence in a loadout changes
+ * the per-slot capacity available to other items — either by occupying
+ * multiple slots (Lear's hauberk) or by granting an extra slot (macabre
+ * finger necklace, crown of Vainglory, etc.). The search treats these
+ * as a subset-enumeration axis so downstream slot decisions see the
+ * right cap.
+ */
+function isSlotInfluencer(item: ParsedItem): boolean {
+  if (item.slots.length > 1) return true;
+  return getGrantedSlots(item.artefact?.unrandKey) !== null;
 }
 
 /**
