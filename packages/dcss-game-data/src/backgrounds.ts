@@ -7,6 +7,7 @@
  * - Version history
  */
 
+import { isCurrentlyRemoved } from './types.js';
 import type { Background, ReusedCode } from './types.js';
 
 /**
@@ -137,22 +138,24 @@ export const KNOWN_BACKGROUND_NAMES: readonly string[] = [
 ];
 
 /**
- * Codes for backgrounds that have been removed from the game.
+ * Codes for backgrounds that are currently removed from the game.
+ * Excludes backgrounds that were removed and later re-added.
  */
 export const REMOVED_BACKGROUND_CODES: readonly string[] = BACKGROUNDS
-  .filter(b => b.removedInVersion)
+  .filter(isCurrentlyRemoved)
   .map(b => b.code);
 
 /**
- * Names of backgrounds that have been removed from the game (legacy backgrounds).
+ * Names of backgrounds that are currently removed from the game (legacy backgrounds).
+ * Excludes backgrounds that were removed and later re-added.
  */
 export const LEGACY_BACKGROUND_NAMES: readonly string[] = BACKGROUNDS
-  .filter(b => b.removedInVersion)
+  .filter(isCurrentlyRemoved)
   .map(b => b.name);
 
 /**
  * Names of backgrounds that are currently playable (not removed).
  */
 export const CURRENT_BACKGROUND_NAMES: readonly string[] = BACKGROUNDS
-  .filter(b => !b.removedInVersion)
+  .filter(b => !isCurrentlyRemoved(b))
   .map(b => b.name);

@@ -273,15 +273,20 @@ export function buildCommonWhereClause(filters: CommonFilters, options?: { inclu
   }
   
   if (filters.excludeLegacy) {
-    // Exclude legacy species
-    conditions.push(`r.name != ALL($${paramIndex})`);
-    params.push([...LEGACY_SPECIES_NAMES]);
-    paramIndex++;
-    
-    // Exclude legacy backgrounds
-    conditions.push(`b.name != ALL($${paramIndex})`);
-    params.push([...LEGACY_BACKGROUND_NAMES]);
-    paramIndex++;
+    // An explicit species/background selection overrides excludeLegacy for that
+    // dimension; otherwise selecting a legacy species + excludeLegacy would be a
+    // contradiction (`r.name = ANY(...) AND r.name != ALL(legacy)`) yielding 0 rows.
+    if (!filters.races || filters.races.length === 0) {
+      conditions.push(`r.name != ALL($${paramIndex})`);
+      params.push([...LEGACY_SPECIES_NAMES]);
+      paramIndex++;
+    }
+
+    if (!filters.backgrounds || filters.backgrounds.length === 0) {
+      conditions.push(`b.name != ALL($${paramIndex})`);
+      params.push([...LEGACY_BACKGROUND_NAMES]);
+      paramIndex++;
+    }
   }
   
   return {

@@ -171,6 +171,16 @@ export function isSpeciesRemoved(code: string, version?: string): boolean {
     return false;
   }
 
+  // Species removed and later re-added (e.g. Mountain Dwarf: removed 0.10, back in 0.32)
+  // are only "removed" for versions in the gap [removedInVersion, readdedInVersion).
+  const species = SPECIES_BY_CODE.get(code);
+  if (species?.removedInVersion && species.readdedInVersion && version) {
+    return (
+      compareVersions(version, species.removedInVersion) >= 0 &&
+      compareVersions(version, species.readdedInVersion) < 0
+    );
+  }
+
   return REMOVED_SPECIES_CODES.includes(code);
 }
 
@@ -318,6 +328,16 @@ export function isBackgroundRemoved(code: string, version?: string): boolean {
       return reused.oldIsRemoved;
     }
     return false;
+  }
+
+  // Backgrounds removed and later re-added are only "removed" for versions in
+  // the gap [removedInVersion, readdedInVersion).
+  const background = BACKGROUNDS_BY_CODE.get(code);
+  if (background?.removedInVersion && background.readdedInVersion && version) {
+    return (
+      compareVersions(version, background.removedInVersion) >= 0 &&
+      compareVersions(version, background.readdedInVersion) < 0
+    );
   }
 
   return REMOVED_BACKGROUND_CODES.includes(code);

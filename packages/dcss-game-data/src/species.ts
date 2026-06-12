@@ -8,6 +8,7 @@
  * - Version history
  */
 
+import { isCurrentlyRemoved } from './types.js';
 import type { Species, ReusedCode } from './types.js';
 
 /**
@@ -32,6 +33,8 @@ export const SPECIES: Species[] = [
   { code: 'Gt', name: 'Grotesk', addedInVersion: '0.32' },
   { code: 'Hu', name: 'Human' },
   { code: 'Ko', name: 'Kobold' },
+  // Removed in 0.10, then reintroduced in 0.32 (replacing Hill Orc), so currently playable.
+  { code: 'MD', name: 'Mountain Dwarf', removedInVersion: '0.10', readdedInVersion: '0.32' },
   { code: 'Mf', name: 'Merfolk' },
   { code: 'Mi', name: 'Minotaur' },
   { code: 'Mu', name: 'Mummy' },
@@ -58,7 +61,6 @@ export const SPECIES: Species[] = [
   { code: 'HO', name: 'Hill Orc', removedInVersion: '0.27' },
   { code: 'Ke', name: 'Kenku', removedInVersion: '0.10' },
   { code: 'LO', name: 'Lava Orc', addedInVersion: '0.14', removedInVersion: '0.15' },
-  { code: 'MD', name: 'Mountain Dwarf', removedInVersion: '0.10' },
   { code: 'Me', name: 'Meteoran', addedInVersion: '0.30', removedInVersion: '0.32' },
   { code: 'My', name: 'Mayflytaur', addedInVersion: '0.32', removedInVersion: '0.32' }, // Never in stable
   { code: 'Og', name: 'Ogre', removedInVersion: '0.26' },
@@ -175,22 +177,24 @@ export const KNOWN_SPECIES_NAMES: readonly string[] = Array.from(
 ).sort((a, b) => b.length - a.length || a.localeCompare(b));
 
 /**
- * Codes for species that have been removed from the game.
+ * Codes for species that are currently removed from the game.
+ * Excludes species that were removed and later re-added (e.g. Mountain Dwarf).
  */
 export const REMOVED_SPECIES_CODES: readonly string[] = SPECIES
-  .filter(s => s.removedInVersion)
+  .filter(isCurrentlyRemoved)
   .map(s => s.code);
 
 /**
- * Names of species that have been removed from the game (legacy species).
+ * Names of species that are currently removed from the game (legacy species).
+ * Excludes species that were removed and later re-added (e.g. Mountain Dwarf).
  */
 export const LEGACY_SPECIES_NAMES: readonly string[] = SPECIES
-  .filter(s => s.removedInVersion)
+  .filter(isCurrentlyRemoved)
   .map(s => s.name);
 
 /**
  * Names of species that are currently playable (not removed).
  */
 export const CURRENT_SPECIES_NAMES: readonly string[] = SPECIES
-  .filter(s => !s.removedInVersion)
+  .filter(s => !isCurrentlyRemoved(s))
   .map(s => s.name);

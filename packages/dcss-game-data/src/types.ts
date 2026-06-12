@@ -16,6 +16,11 @@ export interface Species {
   addedInVersion?: string;
   /** Version when this species was removed (null if still playable) */
   removedInVersion?: string;
+  /**
+   * Version when this species was re-added after a prior removal (null if never re-added).
+   * When set, the species is considered currently playable despite `removedInVersion`.
+   */
+  readdedInVersion?: string;
   /** If this code was reused from another species, info about the old species */
   previousCode?: {
     /** Name of the species that previously used this code */
@@ -39,6 +44,11 @@ export interface Background {
   addedInVersion?: string;
   /** Version when this background was removed (null if still playable) */
   removedInVersion?: string;
+  /**
+   * Version when this background was re-added after a prior removal (null if never re-added).
+   * When set, the background is considered currently playable despite `removedInVersion`.
+   */
+  readdedInVersion?: string;
   /** If this code was reused from another background, info about the old background */
   previousCode?: {
     /** Name of the background that previously used this code */
@@ -110,6 +120,21 @@ export interface LegacyConfig {
   speciesNames: Record<string, string>;
   /** Human-readable names for background codes */
   backgroundNames: Record<string, string>;
+}
+
+/**
+ * Whether a species/background is currently removed from the game.
+ *
+ * Content that was removed and later re-added (i.e. `readdedInVersion` is set)
+ * is considered currently playable, so this returns false for it. This is what
+ * distinguishes a truly legacy species from one like Mountain Dwarf, which was
+ * removed in 0.10 but reintroduced in 0.32.
+ */
+export function isCurrentlyRemoved(entry: {
+  removedInVersion?: string;
+  readdedInVersion?: string;
+}): boolean {
+  return Boolean(entry.removedInVersion) && !entry.readdedInVersion;
 }
 
 /**
