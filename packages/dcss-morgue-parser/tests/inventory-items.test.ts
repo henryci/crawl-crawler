@@ -185,6 +185,17 @@ describe('enchantment contributions', () => {
     expect(shield!.contributions.SH).toBe(3);
   });
 
+  it('dragon scales contribute their innate resistances', () => {
+    // Golden dragon scales have no braces, but grant rF+/rC+/rPois innately.
+    const content = 'Inventory:\n\nArmour\n k - +0 golden dragon scales (worn)\n';
+    const items = extractInventoryItems(content, '0.34');
+    const armor = items!.find((i) => i.id === 'k');
+    expect(armor).toBeDefined();
+    expect(armor!.category).toBe('armor');
+    expect(armor!.baseType.displayName).toBe('golden dragon scales');
+    expect(armor!.contributions).toMatchObject({ rF: 1, rC: 1, rPois: 1 });
+  });
+
   it('weapon +N contributes Slay+N', async () => {
     // The 0.34 morgue has the quarterstaff of Hiorororua at +5
     // → Slay+5 from enchant, plus the brace contributions.

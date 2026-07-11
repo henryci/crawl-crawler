@@ -187,6 +187,13 @@ export interface ArmorBaseType {
    */
   slots: ItemSlot[];
   baseAC: number;
+  /**
+   * Intrinsic property contributions baked into the base type, before any
+   * ego or artefact. Dragon scales are the main case: golden dragon scales
+   * grant rF+/rC+/rPois, fire dragon scales rF++/rC-, etc. These aren't
+   * shown in morgue braces, so they must be curated (see armors.ts).
+   */
+  innateContributions?: Contribution[];
 }
 
 export interface ShieldBaseType {

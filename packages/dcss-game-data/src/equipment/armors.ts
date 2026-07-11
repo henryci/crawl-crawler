@@ -10,8 +10,42 @@
  * apply a dynamic penalty calculator if needed.
  */
 
-import type { ArmorBaseType, ItemSlot, ShieldBaseType } from './types.js';
+import type { ArmorBaseType, Contribution, ItemSlot, ShieldBaseType } from './types.js';
 import { ARMOR_ENTRIES, type ExtractedArmorEntry } from './generated/armor-type.js';
+
+/**
+ * Intrinsic resistances/properties granted by dragon scale body armours,
+ * keyed by DCSS enum name. These are baked into the base type (the
+ * ARMF_* armflags on each DRAGON_ARMOUR entry in item-prop.cc) and never
+ * appear in morgue braces, so they must be curated here.
+ *
+ * Values mirror the armflags at the pinned DCSS commit (see
+ * generated/armor-type.ts header): a plain ARMF_RES_* is +1, `ard(x, 2)`
+ * is +2, and ARMF_VUL_* is -1. Steam dragon scales grant ARMF_RES_STEAM,
+ * which we don't model as an aggregable property, so its list is empty.
+ */
+const DRAGON_ARMOR_INNATE: Record<string, Contribution[]> = {
+  ARM_STEAM_DRAGON_ARMOUR: [], // ARMF_RES_STEAM — not modeled as a property
+  ARM_ACID_DRAGON_ARMOUR: [{ prop: 'rCorr', value: 1 }],
+  ARM_QUICKSILVER_DRAGON_ARMOUR: [{ prop: 'Will', value: 1 }],
+  ARM_SWAMP_DRAGON_ARMOUR: [{ prop: 'rPois', value: 1 }],
+  ARM_FIRE_DRAGON_ARMOUR: [
+    { prop: 'rF', value: 2 },
+    { prop: 'rC', value: -1 },
+  ],
+  ARM_ICE_DRAGON_ARMOUR: [
+    { prop: 'rC', value: 2 },
+    { prop: 'rF', value: -1 },
+  ],
+  ARM_PEARL_DRAGON_ARMOUR: [{ prop: 'rN', value: 1 }],
+  ARM_STORM_DRAGON_ARMOUR: [{ prop: 'rElec', value: 1 }],
+  ARM_SHADOW_DRAGON_ARMOUR: [{ prop: 'Stlth', value: 1 }],
+  ARM_GOLDEN_DRAGON_ARMOUR: [
+    { prop: 'rF', value: 1 },
+    { prop: 'rC', value: 1 },
+    { prop: 'rPois', value: 1 },
+  ],
+};
 
 /** Map DCSS SLOT_* enum to our ItemSlot type. */
 const SLOT_MAP: Record<string, ItemSlot> = {
@@ -39,11 +73,13 @@ function enumNameToKey(enumName: string): string {
 function buildArmor(extracted: ExtractedArmorEntry): ArmorBaseType | null {
   const slot = mapSlot(extracted.slot);
   if (!slot) return null;
+  const innate = DRAGON_ARMOR_INNATE[extracted.enumName];
   return {
     key: enumNameToKey(extracted.enumName),
     displayName: extracted.displayName,
     slots: [slot],
     baseAC: extracted.baseAC,
+    ...(innate && innate.length > 0 ? { innateContributions: innate } : {}),
   };
 }
 

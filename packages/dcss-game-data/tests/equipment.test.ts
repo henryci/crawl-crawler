@@ -182,6 +182,54 @@ describe('armor & shield base types', () => {
   it('plate_armour has the expected base AC', () => {
     expect(ARMOR_BASE_TYPES.plate_armour?.baseAC).toBe(10);
   });
+
+  it('golden dragon scales grant rF+, rC+, and rPois', () => {
+    const golden = ARMOR_BASE_TYPES.golden_dragon_armour;
+    expect(golden).toBeDefined();
+    expect(golden!.innateContributions).toEqual([
+      { prop: 'rF', value: 1 },
+      { prop: 'rC', value: 1 },
+      { prop: 'rPois', value: 1 },
+    ]);
+  });
+
+  it('fire and ice dragon scales include their cold/fire vulnerability', () => {
+    expect(ARMOR_BASE_TYPES.fire_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rF', value: 2 },
+      { prop: 'rC', value: -1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.ice_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rC', value: 2 },
+      { prop: 'rF', value: -1 },
+    ]);
+  });
+
+  it('other dragon scales carry their single intrinsic resistance', () => {
+    expect(ARMOR_BASE_TYPES.swamp_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rPois', value: 1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.storm_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rElec', value: 1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.acid_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rCorr', value: 1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.pearl_dragon_armour?.innateContributions).toEqual([
+      { prop: 'rN', value: 1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.quicksilver_dragon_armour?.innateContributions).toEqual([
+      { prop: 'Will', value: 1 },
+    ]);
+    expect(ARMOR_BASE_TYPES.shadow_dragon_armour?.innateContributions).toEqual([
+      { prop: 'Stlth', value: 1 },
+    ]);
+  });
+
+  it('non-dragon armor and steam dragon scales have no innate contributions', () => {
+    expect(ARMOR_BASE_TYPES.plate_armour?.innateContributions).toBeUndefined();
+    // Steam dragon scales grant only ARMF_RES_STEAM, which we don't model.
+    expect(ARMOR_BASE_TYPES.steam_dragon_armour?.innateContributions).toBeUndefined();
+  });
 });
 
 describe('jewelry', () => {
