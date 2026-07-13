@@ -314,6 +314,43 @@ describe('optimize — floors on any objective', () => {
     expect(names.some((n) => n.includes('robe'))).toBe(true);
   });
 
+  it('maximize_sum over stats: prefers the higher Str+Int+Dex total', () => {
+    // The user's example: for one body slot, an item worth 3 Str + 2 Dex
+    // (total 5) should lose to one worth 2 Str + 1 Dex + 3 Int (total 6).
+    // This is the objective the "Total Stats (Str+Int+Dex)" preset builds,
+    // wrapped in the priorities ladder exactly as the panel sends it.
+    const strDex = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { Str: 3, Dex: 2 },
+      displayName: 'robe of 5 total',
+    });
+    const strDexInt = makeItem({
+      category: 'armor',
+      slots: ['body_armour'],
+      contributions: { Str: 2, Dex: 1, Int: 3 },
+      displayName: 'robe of 6 total',
+    });
+
+    const result = optimize({
+      items: [strDex, strDexInt],
+      rules: human,
+      objective: {
+        kind: 'priorities',
+        priorities: [{ props: ['Str', 'Int', 'Dex'] }],
+      },
+    });
+
+    const names = result.best.items.map((i) => i.baseType.displayName);
+    expect(names).toContain('robe of 6 total');
+    expect(names).not.toContain('robe of 5 total');
+    const statTotal =
+      (result.score.totals.Str ?? 0) +
+      (result.score.totals.Int ?? 0) +
+      (result.score.totals.Dex ?? 0);
+    expect(statTotal).toBe(6);
+  });
+
   it('floor infeasible: returns empty loadout', () => {
     const rfRobe = makeItem({
       category: 'armor',

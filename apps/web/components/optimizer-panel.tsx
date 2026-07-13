@@ -46,11 +46,25 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, AlertCircle, Lock, Unlock, Ban, Loader2, X } from "lucide-react";
+import {
+  Sparkles,
+  AlertCircle,
+  Lock,
+  Unlock,
+  Ban,
+  Loader2,
+  X,
+  Pencil,
+  Plus,
+  Minus,
+  RotateCcw,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────────────────
@@ -85,6 +99,11 @@ const OBJECTIVE_PRESETS: ObjectivePreset[] = [
   { id: "max-ev", label: "EV", build: () => ({ kind: "maximize", prop: "EV" }) },
   { id: "max-sh", label: "SH", build: () => ({ kind: "maximize", prop: "SH" }) },
   { id: "max-slay", label: "Slaying", build: () => ({ kind: "maximize", prop: "Slay" }) },
+  {
+    id: "max-all-stats",
+    label: "Total Stats (Str+Int+Dex)",
+    build: () => ({ kind: "maximize_sum", props: ["Str", "Int", "Dex"] }),
+  },
   { id: "max-str", label: "Strength", build: () => ({ kind: "maximize", prop: "Str" }) },
   { id: "max-int", label: "Intelligence", build: () => ({ kind: "maximize", prop: "Int" }) },
   { id: "max-dex", label: "Dexterity", build: () => ({ kind: "maximize", prop: "Dex" }) },
@@ -124,6 +143,7 @@ const FLOOR_OPTIONS: FloorOption[] = [
   { prop: "Dex", label: "Dexterity", max: 30 },
   { prop: "SInv", label: "See Invisible (any)", max: 1 },
   { prop: "Fly", label: "Flight (any)", max: 1 },
+  { prop: "Wiz", label: "Wizardry (any)", max: 1 },
 ];
 
 interface Floor {
@@ -294,20 +314,50 @@ function chipStyle(prop: PropertyKey): ChipStyle {
 // ────────────────────────────────────────────────────────────────────────
 
 export function OptimizerPanel({ data }: { data: MorgueData }) {
-  const inventoryItems = data.inventoryItems;
+  const parsedItems = data.inventoryItems;
   const rules = useMemo(() => speciesRulesFor(data), [data]);
 
-  // Compute non-equipment baseline once per morgue load.
+  // Editable copy of the parsed inventory. The parser occasionally mis-tags
+  // an item (misses an innate resist, tokenizes a brace wrong, etc.), so the
+  // user can add/remove property tags on any item via the backpack list.
+  // Edits live here and propagate everywhere — worn column, live totals,
+  // baseline, and the optimizer candidate pool all derive from this state.
+  const [inventoryItems, setInventoryItems] = useState<ParsedItem[] | null>(
+    parsedItems,
+  );
+  // Reset edits whenever a new morgue loads. `parsedItems` identity only
+  // changes on a re-parse; edits swap objects within our own state, so this
+  // never fires for an edit (that's why the reset key is the prop, not the
+  // editable state — see initialLoadout below).
+  useEffect(() => {
+    setInventoryItems(parsedItems);
+  }, [parsedItems]);
+
+  // Original parsed items keyed by id, for the "edited" badge and the
+  // per-item "reset to parsed" action. Rooted on the prop so it always
+  // reflects the untouched parse regardless of edits.
+  const originalById = useMemo(
+    () => new Map((parsedItems ?? []).map((i) => [i.id, i])),
+    [parsedItems],
+  );
+
+  // Compute non-equipment baseline from the (possibly edited) inventory.
+  // Recomputing on edit is deliberate: baseline = runtimeTotals − equipped,
+  // so fixing an equipped item's tags moves a property from the baseline
+  // into equipment without changing the morgue-reported total — and the
+  // optimizer then correctly drops that property when the item is unequipped.
   const baseline = useMemo(() => {
     if (!data.runtimeTotals || !inventoryItems) return undefined;
     const equipped = inventoryItems.filter((i) => i.isEquipped);
     return computeBaseline(data.runtimeTotals, equipped);
   }, [data.runtimeTotals, inventoryItems]);
 
-  // Initial loadout = whatever the player has equipped in the morgue.
+  // Initial loadout = whatever the player has equipped in the morgue. Rooted
+  // on the prop (not the editable state) so an edit doesn't recompute it and
+  // trip the reset effect below, which would wipe the user's loadout/locks.
   const initialLoadout = useMemo(() => {
-    return (inventoryItems ?? []).filter((i) => i.isEquipped);
-  }, [inventoryItems]);
+    return (parsedItems ?? []).filter((i) => i.isEquipped);
+  }, [parsedItems]);
 
   const [loadout, setLoadout] = useState<ParsedItem[]>(initialLoadout);
   const [priorityIds, setPriorityIds] = useState<string[]>([
@@ -413,6 +463,20 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
   const relevant = useMemo(() => relevantProperties(objective), [objective]);
 
+  // Sum-based objective tiers (e.g. "Total Elemental Resistances",
+  // "Total Stats") surfaced as explicit "maximizing" totals in Live
+  // Totals, so the number the optimizer is actually maximizing is
+  // visible instead of scattered across per-property chips. Single-
+  // property goals are omitted — their value already shows as a big
+  // stat, pip row, or Other-Properties chip.
+  const sumGroups = useMemo<PropertyKey[][]>(() => {
+    if (objective.kind !== "priorities") return [];
+    return objective.priorities
+      .filter((p): p is { props: PropertyKey[] } => "props" in p)
+      .map((p) => p.props)
+      .filter((props) => props.length >= 2);
+  }, [objective]);
+
   const score = useMemo<LoadoutScore | null>(() => {
     if (!rules) return null;
     return scoreLoadout(loadout, rules, baseline);
@@ -484,6 +548,22 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     setLastOptimizeStats(null);
   };
 
+  // Apply a tag edit: build a new ParsedItem with the updated contributions
+  // and swap it into both the inventory and (if worn) the loadout by id, so
+  // the two arrays keep sharing the same object reference — the rest of the
+  // UI leans on reference equality between them.
+  const handleEditItem = (item: ParsedItem, contributions: ContributionMap) => {
+    const updated: ParsedItem = { ...item, contributions };
+    setInventoryItems((prev) =>
+      prev ? prev.map((it) => (it.id === item.id ? updated : it)) : prev,
+    );
+    setLoadout((prev) =>
+      prev.some((it) => it.id === item.id)
+        ? prev.map((it) => (it.id === item.id ? updated : it))
+        : prev,
+    );
+  };
+
   const handleOptimize = () => {
     const worker = workerRef.current;
     if (!worker) return;
@@ -531,8 +611,10 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
           loadout={loadout}
           relevant={relevant}
           bannedIds={bannedIds}
+          originalById={originalById}
           onToggle={toggleItem}
           onToggleBan={toggleBan}
+          onEditItem={handleEditItem}
         />
         <WornEquipment
           loadout={loadout}
@@ -555,6 +637,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
             stats={lastOptimizeStats}
             hasBaseline={!!baseline}
             floors={floors}
+            sumGroups={sumGroups}
           />
         </div>
       </div>
@@ -701,16 +784,24 @@ function BackpackList({
   loadout,
   relevant,
   bannedIds,
+  originalById,
   onToggle,
   onToggleBan,
+  onEditItem,
 }: {
   items: ParsedItem[];
   loadout: ParsedItem[];
   relevant: Set<PropertyKey>;
   bannedIds: ReadonlySet<string>;
+  originalById: ReadonlyMap<string, ParsedItem>;
   onToggle: (item: ParsedItem) => void;
   onToggleBan: (item: ParsedItem) => void;
+  onEditItem: (item: ParsedItem, contributions: ContributionMap) => void;
 }) {
+  // Which item's tag editor is expanded. One at a time keeps the list
+  // manageable. Local to the list — editing open/close doesn't affect the
+  // other columns, only the committed tag change (via onEditItem) does.
+  const [editingId, setEditingId] = useState<string | null>(null);
   const loadoutSet = new Set(loadout);
   // Talismans are read-only in v1 (player swaps forms in-game), so we
   // omit them from the interactive backpack list. They're shown in the
@@ -724,21 +815,34 @@ function BackpackList({
             Inventory ({visibleItems.length})
           </span>
           <span className="text-xs text-muted-foreground">
-            click to equip · ban icon excludes from optimize
+            click to equip · pencil edits tags · ban excludes
           </span>
         </div>
         <div className="space-y-1.5">
-          {visibleItems.map((item) => (
-            <BackpackItemRow
-              key={item.id}
-              item={item}
-              equipped={loadoutSet.has(item)}
-              banned={bannedIds.has(item.id)}
-              relevant={itemIsRelevant(item, relevant)}
-              onClick={() => onToggle(item)}
-              onToggleBan={() => onToggleBan(item)}
-            />
-          ))}
+          {visibleItems.map((item) => {
+            const original = originalById.get(item.id);
+            return (
+              <BackpackItemRow
+                key={item.id}
+                item={item}
+                equipped={loadoutSet.has(item)}
+                banned={bannedIds.has(item.id)}
+                relevant={itemIsRelevant(item, relevant)}
+                editing={editingId === item.id}
+                edited={
+                  !!original &&
+                  !sameContributions(original.contributions, item.contributions)
+                }
+                originalContributions={original?.contributions}
+                onClick={() => onToggle(item)}
+                onToggleBan={() => onToggleBan(item)}
+                onToggleEdit={() =>
+                  setEditingId((cur) => (cur === item.id ? null : item.id))
+                }
+                onEdit={(contributions) => onEditItem(item, contributions)}
+              />
+            );
+          })}
         </div>
       </CardContent>
     </Card>
@@ -755,73 +859,120 @@ function BackpackItemRow({
   equipped,
   banned,
   relevant,
+  editing,
+  edited,
+  originalContributions,
   onClick,
   onToggleBan,
+  onToggleEdit,
+  onEdit,
 }: {
   item: ParsedItem;
   equipped: boolean;
   banned: boolean;
   relevant: boolean;
+  editing: boolean;
+  edited: boolean;
+  originalContributions?: ContributionMap;
   onClick: () => void;
   onToggleBan: () => void;
+  onToggleEdit: () => void;
+  onEdit: (contributions: ContributionMap) => void;
 }) {
   return (
     <div
       className={cn(
-        "w-full px-3 py-2 rounded border transition-colors flex items-start gap-2",
+        "w-full px-3 py-2 rounded border transition-colors flex flex-col gap-2",
         "hover:border-foreground/30",
+        // Dim banned rows, but not while editing — the editor needs to read
+        // clearly even for a banned item.
+        banned && !editing && "opacity-50",
         banned
-          ? "bg-secondary/10 border-red-900/50 opacity-50"
-          : equipped
-            ? "bg-amber-950/30 border-amber-600/70"
-            : relevant
-              ? "bg-secondary/30 border-amber-500/50 hover:bg-secondary/60"
-              : "bg-secondary/20 border-border hover:bg-secondary/60",
+          ? "bg-secondary/10 border-red-900/50"
+          : editing
+            ? "bg-secondary/40 border-amber-500/70"
+            : equipped
+              ? "bg-amber-950/30 border-amber-600/70"
+              : relevant
+                ? "bg-secondary/30 border-amber-500/50 hover:bg-secondary/60"
+                : "bg-secondary/20 border-border hover:bg-secondary/60",
       )}
     >
-      <button
-        type="button"
-        onClick={banned ? undefined : onClick}
-        disabled={banned}
-        className={cn(
-          "flex-1 min-w-0 text-left rounded",
-          banned ? "cursor-not-allowed line-through" : "cursor-pointer",
-        )}
-        title={banned ? "Banned — click the ban icon to unban" : "Click to equip / unequip"}
-      >
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-muted-foreground w-4 shrink-0">
-            {glyphFor(item)}
-          </span>
-          <span className="font-mono text-sm text-foreground flex-1 min-w-0 truncate">
-            {cleanItemName(item.rawText)}
-          </span>
-          <span className="font-mono text-xs text-muted-foreground w-4 text-right shrink-0">
-            {item.id}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1 mt-1.5 ml-6">
-          {renderItemTags(item)}
-        </div>
-      </button>
-      <button
-        type="button"
-        onClick={onToggleBan}
-        className={cn(
-          "shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5",
-          banned
-            ? "text-red-400 hover:bg-red-950/30"
-            : "text-muted-foreground/30 hover:text-red-400 hover:bg-red-950/20",
-        )}
-        title={
-          banned
-            ? "Unban this item (the optimizer will consider it again)"
-            : "Ban this item — the optimizer will never equip it"
-        }
-        aria-label={banned ? "Unban item" : "Ban item"}
-      >
-        <Ban className="w-3.5 h-3.5" />
-      </button>
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          onClick={banned ? undefined : onClick}
+          disabled={banned}
+          className={cn(
+            "flex-1 min-w-0 text-left rounded",
+            banned ? "cursor-not-allowed line-through" : "cursor-pointer",
+          )}
+          title={banned ? "Banned — click the ban icon to unban" : "Click to equip / unequip"}
+        >
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-muted-foreground w-4 shrink-0">
+              {glyphFor(item)}
+            </span>
+            <span className="font-mono text-sm text-foreground flex-1 min-w-0 truncate">
+              {cleanItemName(item.rawText)}
+            </span>
+            <span className="font-mono text-xs text-muted-foreground w-4 text-right shrink-0">
+              {item.id}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1 mt-1.5 ml-6">
+            {renderItemTags(item)}
+            {edited && (
+              <span
+                className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-amber-500/50 text-amber-300/90 bg-amber-950/20 italic"
+                title="You've changed this item's tags from what the parser detected"
+              >
+                edited
+              </span>
+            )}
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={onToggleEdit}
+          className={cn(
+            "shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5",
+            editing
+              ? "text-amber-300 bg-amber-950/40"
+              : "text-muted-foreground/40 hover:text-amber-300 hover:bg-amber-950/20",
+          )}
+          title={editing ? "Close tag editor" : "Edit this item's tags"}
+          aria-label={editing ? "Close tag editor" : "Edit tags"}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onToggleBan}
+          className={cn(
+            "shrink-0 w-7 h-7 flex items-center justify-center rounded transition-colors mt-0.5",
+            banned
+              ? "text-red-400 hover:bg-red-950/30"
+              : "text-muted-foreground/30 hover:text-red-400 hover:bg-red-950/20",
+          )}
+          title={
+            banned
+              ? "Unban this item (the optimizer will consider it again)"
+              : "Ban this item — the optimizer will never equip it"
+          }
+          aria-label={banned ? "Unban item" : "Ban item"}
+        >
+          <Ban className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      {editing && (
+        <TagEditPanel
+          item={item}
+          originalContributions={originalContributions}
+          onChange={onEdit}
+          onClose={onToggleEdit}
+        />
+      )}
     </div>
   );
 }
@@ -948,6 +1099,337 @@ function itemIsRelevant(item: ParsedItem, relevant: Set<PropertyKey>): boolean {
     }
   }
   return false;
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Item tag editor
+//
+// Detection is never perfect — an innate resist gets missed, a brace is
+// tokenized wrong, a new ego isn't mapped yet. The editor lets the user
+// fix any item's property tags directly. It edits the item's
+// `contributions` map (the same map that drives the chips, scoring, and the
+// baseline), so a change made here propagates to the worn column and live
+// totals automatically.
+// ────────────────────────────────────────────────────────────────────────
+
+/**
+ * ARTP enums that exist in the registry but aren't real, user-settable
+ * contributions (a brand reference, raw base weapon stats, an internal
+ * flag). Mirrors the `hideFromOptimizer` set in dcss-game-data's
+ * properties.ts — kept here as enum names because those are stable across
+ * DCSS versions while abbreviations occasionally change.
+ */
+const HIDDEN_ARTP_ENUMS: ReadonlySet<string> = new Set([
+  "ARTP_BRAND",
+  "ARTP_BASE_ACC",
+  "ARTP_BASE_DAM",
+  "ARTP_BASE_DELAY",
+  "ARTP_NO_UPGRADE",
+]);
+
+interface AddableProperty {
+  key: PropertyKey;
+  displayName: string;
+  category: string;
+}
+
+/** Every property the user can attach as a tag, minus legacy/internal ones. */
+const ADDABLE_PROPERTIES: AddableProperty[] = Object.values(PROPERTIES)
+  .filter((p) => !p.legacy && !(p.artpEnum && HIDDEN_ARTP_ENUMS.has(p.artpEnum)))
+  .map((p) => ({ key: p.key, displayName: p.displayName, category: p.category }))
+  .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+/** Category grouping/order for the "add a tag" picker (includes defenses). */
+const EDITOR_CATEGORY_ORDER: { category: string; label: string }[] = [
+  { category: "resistance", label: "Resistances" },
+  { category: "defense", label: "Defense" },
+  { category: "stat", label: "Stats" },
+  { category: "offense", label: "Offense" },
+  { category: "pool", label: "Pools" },
+  { category: "regen", label: "Regeneration" },
+  { category: "utility", label: "Utility" },
+  { category: "wizardry", label: "Wizardry" },
+  { category: "spell_school", label: "Spell Schools" },
+  { category: "downside", label: "Downsides" },
+];
+
+interface TagEntry {
+  key: PropertyKey;
+  value: number;
+}
+
+/** True when two contribution maps have the same non-zero values. */
+function sameContributions(a: ContributionMap, b: ContributionMap): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) {
+    if ((a[k] ?? 0) !== (b[k] ?? 0)) return false;
+  }
+  return true;
+}
+
+function contributionsToEntries(c: ContributionMap): TagEntry[] {
+  return (Object.entries(c) as [PropertyKey, number | undefined][])
+    .filter((kv): kv is [PropertyKey, number] => kv[1] !== undefined)
+    .map(([key, value]) => ({ key, value }));
+}
+
+function entriesToContributions(entries: TagEntry[]): ContributionMap {
+  const map: ContributionMap = {};
+  for (const e of entries) {
+    // A zero contributes nothing; drop it so it doesn't render as a chip.
+    if (e.value !== 0) map[e.key] = e.value;
+  }
+  return map;
+}
+
+/**
+ * Inline editor for one item's property tags. Opens under the backpack row.
+ *
+ * Uses a local working list of entries as the source of truth while open
+ * (re-mounts on each open, so it re-syncs with prior edits). Every change
+ * is pushed up via `onChange` so the rest of the UI updates live behind the
+ * editor — the panel never reads its committed value back, which keeps it
+ * free of feedback loops.
+ */
+function TagEditPanel({
+  item,
+  originalContributions,
+  onChange,
+  onClose,
+}: {
+  item: ParsedItem;
+  originalContributions?: ContributionMap;
+  onChange: (contributions: ContributionMap) => void;
+  onClose: () => void;
+}) {
+  const [entries, setEntries] = useState<TagEntry[]>(() =>
+    contributionsToEntries(item.contributions),
+  );
+
+  const commit = (next: TagEntry[]) => {
+    setEntries(next);
+    onChange(entriesToContributions(next));
+  };
+
+  const setValue = (key: PropertyKey, value: number) =>
+    commit(entries.map((e) => (e.key === key ? { ...e, value } : e)));
+  const removeKey = (key: PropertyKey) =>
+    commit(entries.filter((e) => e.key !== key));
+  const addKey = (key: PropertyKey) => {
+    if (entries.some((e) => e.key === key)) return;
+    commit([...entries, { key, value: 1 }]);
+  };
+  const resetToParsed = () => {
+    if (!originalContributions) return;
+    commit(contributionsToEntries(originalContributions));
+  };
+
+  const usedKeys = new Set(entries.map((e) => e.key));
+  const isEdited =
+    originalContributions !== undefined &&
+    !sameContributions(originalContributions, entriesToContributions(entries));
+
+  return (
+    <div className="pt-2 border-t border-border/60 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] uppercase tracking-widest text-muted-foreground">
+          Edit tags
+        </span>
+        <div className="flex items-center gap-1">
+          {isEdited && (
+            <button
+              type="button"
+              onClick={resetToParsed}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-secondary/60 transition-colors"
+              title="Restore the tags the parser originally detected"
+            >
+              <RotateCcw className="w-3 h-3" />
+              reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-secondary/60 transition-colors"
+          >
+            done
+          </button>
+        </div>
+      </div>
+
+      {entries.length === 0 ? (
+        <div className="text-[11px] text-muted-foreground italic">
+          No tags. Add one below.
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {entries.map((e) => (
+            <EditorTagRow
+              key={e.key}
+              entry={e}
+              onValue={(v) => setValue(e.key, v)}
+              onRemove={() => removeKey(e.key)}
+            />
+          ))}
+        </div>
+      )}
+
+      <AddTagPicker usedKeys={usedKeys} onAdd={addKey} />
+    </div>
+  );
+}
+
+/** A small square increment/decrement button used by the tag editor. */
+function StepButton({
+  onClick,
+  disabled,
+  label,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="shrink-0 w-6 h-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-secondary/60 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * One editable tag. Boolean properties (rPois, SInv, Fly, …) are presence-
+ * only, so they show no value control — the × removes them. Pip and integer
+ * properties get a clamped −/＋ stepper plus a typeable value field.
+ */
+function EditorTagRow({
+  entry,
+  onValue,
+  onRemove,
+}: {
+  entry: TagEntry;
+  onValue: (value: number) => void;
+  onRemove: () => void;
+}) {
+  const def = PROPERTIES[entry.key];
+  const style = chipStyle(entry.key);
+  const rendering = def?.rendering ?? "int";
+  const isBool = rendering === "bool";
+  const min = def?.cap?.min ?? (rendering === "pip" ? -6 : -99);
+  const max = def?.cap?.max ?? (rendering === "pip" ? 6 : 99);
+  const clamp = (v: number) => Math.max(min, Math.min(max, v));
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={cn("font-mono text-[11px] w-16 shrink-0 truncate", style.label)}
+        title={def?.displayName ?? entry.key}
+      >
+        {entry.key}
+      </span>
+      {isBool ? (
+        <span className="flex-1 font-mono text-[11px] text-muted-foreground">
+          on
+        </span>
+      ) : (
+        <div className="flex items-center gap-1 flex-1">
+          <StepButton
+            onClick={() => onValue(clamp(entry.value - 1))}
+            disabled={entry.value <= min}
+            label={`Decrease ${entry.key}`}
+          >
+            <Minus className="w-3 h-3" />
+          </StepButton>
+          <input
+            type="number"
+            value={entry.value}
+            min={min}
+            max={max}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              onValue(clamp(Number.isNaN(n) ? 0 : n));
+            }}
+            className="w-12 h-7 text-[11px] font-mono text-center bg-background border border-border rounded"
+            aria-label={`${entry.key} value`}
+          />
+          <StepButton
+            onClick={() => onValue(clamp(entry.value + 1))}
+            disabled={entry.value >= max}
+            label={`Increase ${entry.key}`}
+          >
+            <Plus className="w-3 h-3" />
+          </StepButton>
+        </div>
+      )}
+      <span className="font-mono text-[10px] text-muted-foreground/70 w-12 text-right shrink-0">
+        {formatChipLabel(entry.key, entry.value || (isBool ? 1 : 0))}
+      </span>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/20 transition-colors"
+        aria-label={`Remove ${entry.key}`}
+        title="Remove tag"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * "Add a tag" dropdown. Used as an action menu: the value is pinned empty so
+ * the trigger always reads "Add a tag" and picking the same category twice
+ * still fires. Properties already on the item are filtered out.
+ */
+function AddTagPicker({
+  usedKeys,
+  onAdd,
+}: {
+  usedKeys: ReadonlySet<PropertyKey>;
+  onAdd: (key: PropertyKey) => void;
+}) {
+  const available = ADDABLE_PROPERTIES.filter((p) => !usedKeys.has(p.key));
+  const byCategory = new Map<string, AddableProperty[]>();
+  for (const p of available) {
+    if (!byCategory.has(p.category)) byCategory.set(p.category, []);
+    byCategory.get(p.category)!.push(p);
+  }
+  if (available.length === 0) return null;
+
+  return (
+    <Select value="" onValueChange={(v) => onAdd(v as PropertyKey)}>
+      <SelectTrigger className="w-full h-8 text-xs">
+        <span className="flex items-center gap-1.5 text-amber-400">
+          <Plus className="w-3.5 h-3.5" />
+          Add a tag
+        </span>
+      </SelectTrigger>
+      <SelectContent>
+        {EDITOR_CATEGORY_ORDER.map(({ category, label }) => {
+          const props = byCategory.get(category);
+          if (!props || props.length === 0) return null;
+          return (
+            <SelectGroup key={category}>
+              <SelectLabel>{label}</SelectLabel>
+              {props.map((p) => (
+                <SelectItem key={p.key} value={p.key}>
+                  {p.displayName} ({p.key})
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -1523,11 +2005,13 @@ function LiveTotals({
   stats,
   hasBaseline,
   floors,
+  sumGroups,
 }: {
   score: LoadoutScore | null;
   stats: { evaluated: number; elapsedMs: number } | null;
   hasBaseline: boolean;
   floors: Floor[];
+  sumGroups: PropertyKey[][];
 }) {
   return (
     <Card className="bg-card border-border py-3 gap-2">
@@ -1539,6 +2023,10 @@ function LiveTotals({
           Equipment modifiers + non-equipment baseline. Does not include base
           armor AC, base shield SH, base EV, or skill-derived bonuses.
         </div>
+
+        {sumGroups.length > 0 && (
+          <ObjectiveTotals sumGroups={sumGroups} score={score} />
+        )}
 
         {floors.length > 0 && (
           <ConstraintStatus floors={floors} score={score} />
@@ -1713,6 +2201,71 @@ function formatPropertyTooltip(
   if (eq !== 0) return `${prop}: ${value} (from equipment)`;
   if (base !== 0) return `${prop}: ${value} (from baseline)`;
   return `${prop}: ${value}`;
+}
+
+/**
+ * Explicit readout of each sum-based objective tier's running total — the
+ * number the optimizer is actually maximizing (e.g. "Str+3 Int+1 Dex+2 = 6").
+ * Without this the total is invisible: its components are scattered across
+ * pip rows (resistances) or the Other-Properties chips (stats).
+ *
+ * Uses capped totals to match the optimizer's own scoring; when the raw
+ * (pre-cap) sum differs — e.g. a resistance pushed past its cap — the raw
+ * sum is shown alongside, mirroring the pip rows. Stats are uncapped, so
+ * for the "Total Stats" goal capped and raw always agree.
+ */
+function ObjectiveTotals({
+  sumGroups,
+  score,
+}: {
+  sumGroups: PropertyKey[][];
+  score: LoadoutScore | null;
+}) {
+  return (
+    <div className="space-y-1.5 border-t border-border pt-3">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+        Maximizing
+      </div>
+      {sumGroups.map((props, i) => {
+        const capped = props.reduce((n, p) => n + (score?.totals[p] ?? 0), 0);
+        const uncapped = props.reduce(
+          (n, p) => n + (score?.uncappedTotals[p] ?? 0),
+          0,
+        );
+        return (
+          <div
+            key={i}
+            className="flex items-center justify-between gap-2 flex-wrap"
+          >
+            <div className="flex flex-wrap items-center gap-1">
+              {props.map((p) => (
+                <span
+                  key={p}
+                  className={cn(
+                    "font-mono text-[10px] px-1.5 py-0.5 rounded border",
+                    chipStyle(p).chip,
+                  )}
+                >
+                  {formatChipLabel(p, score?.totals[p] ?? 0)}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-baseline gap-1 shrink-0">
+              <span className="text-xs text-muted-foreground">=</span>
+              <span className="font-mono text-lg font-semibold text-foreground tabular-nums">
+                {capped}
+              </span>
+              {uncapped !== capped && (
+                <span className="text-[10px] text-amber-400/80 font-mono">
+                  (raw {uncapped})
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function ConstraintStatus({
