@@ -32,15 +32,28 @@ import {
 } from "dcss-game-data";
 import {
   computeBaseline,
+  computeStatBaseline,
+  itemIsRelevant,
   relevantProperties,
   scoreLoadout,
+  type FrontierPoint,
+  type GroupFloor,
   type Objective,
   type LoadoutScore,
 } from "dcss-loadout-optimizer";
 import type {
-  OptimizeRequest,
-  OptimizeResponse,
+  WorkerRequest,
+  WorkerResponse,
 } from "./optimize-loadout.worker";
+import {
+  StatExplorer,
+  STAT_PROPS,
+  STATS_TOTAL_SORT_KEY,
+  type ExplorerDim,
+  type FrontierView,
+  type StatProp,
+} from "./stat-explorer";
+import { cleanItemName } from "@/lib/item-name";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,6 +87,8 @@ import { cn } from "@/lib/utils";
 interface ObjectivePreset {
   id: string;
   label: string;
+  /** Compact name for Stat Explorer rows/columns. Defaults to the prop key. */
+  shortLabel?: string;
   /** Build the Objective WITHOUT floors. Floors are layered on at use. */
   build: () => Objective;
 }
@@ -82,6 +97,7 @@ const OBJECTIVE_PRESETS: ObjectivePreset[] = [
   {
     id: "max-all-resist",
     label: "Total Elemental Resistances",
+    shortLabel: "Resists",
     build: () => ({
       kind: "maximize_sum",
       props: ["rF", "rC", "rN", "rPois", "rElec", "rCorr"],
@@ -138,9 +154,11 @@ const FLOOR_OPTIONS: FloorOption[] = [
   { prop: "EV", label: "EV", max: 50 },
   { prop: "SH", label: "SH", max: 30 },
   { prop: "Slay", label: "Slaying", max: 20 },
-  { prop: "Str", label: "Strength", max: 30 },
-  { prop: "Int", label: "Intelligence", max: 30 },
-  { prop: "Dex", label: "Dexterity", max: 30 },
+  // Stat floors are absolute values (base + equipment) when the morgue
+  // reports base stats, so allow late-game magnitudes.
+  { prop: "Str", label: "Strength", max: 50 },
+  { prop: "Int", label: "Intelligence", max: 50 },
+  { prop: "Dex", label: "Dexterity", max: 50 },
   { prop: "SInv", label: "See Invisible (any)", max: 1 },
   { prop: "Fly", label: "Flight (any)", max: 1 },
   { prop: "Wiz", label: "Wizardry (any)", max: 1 },
@@ -155,6 +173,76 @@ interface Floor {
 let nextFloorId = 1;
 function makeFloor(prop: PropertyKey, value: number): Floor {
   return { id: nextFloorId++, prop, value };
+}
+
+const STAT_PROP_SET: ReadonlySet<PropertyKey> = new Set(STAT_PROPS);
+
+function isStatProp(prop: PropertyKey): prop is StatProp {
+  return STAT_PROP_SET.has(prop);
+}
+
+/**
+ * Assemble the optimizer objective from the user's priority rows and
+ * floor rows. Kept as a plain function (not just the memo below) so
+ * handlers that change floors and optimize in the same tick can build
+ * the objective from the NEW floors instead of the stale render's.
+ * `groupFloors` pins capped-sum requirements (used by the Stat
+ * Explorer's equip flow to hold objective dims at a row's exact
+ * values).
+ */
+function buildObjective(
+  priorityIds: string[],
+  floors: Floor[],
+  groupFloors?: GroupFloor[],
+): Objective {
+  const floorMap = buildFloorMap(floors);
+  const priorities = priorityIds
+    .map((id) => OBJECTIVE_PRESETS.find((p) => p.id === id))
+    .filter((p): p is ObjectivePreset => p !== undefined)
+    .map((p) => presetToPriority(p));
+  if (priorities.length === 0) {
+    priorities.push(presetToPriority(OBJECTIVE_PRESETS[0]!));
+  }
+  return {
+    kind: "priorities",
+    priorities,
+    ...(floorMap ? { floors: floorMap } : {}),
+    ...(groupFloors && groupFloors.length > 0 ? { groupFloors } : {}),
+  };
+}
+
+/**
+ * The Stat Explorer's trade-off dimensions: the user's non-stat
+ * objective tiers (ladder order) followed by Str/Int/Dex. Pure-stat
+ * tiers are skipped — the three stats are always dimensions of their
+ * own. Including the objective tiers is what keeps the explorer honest:
+ * without them, demanding stats silently trades away whatever the user
+ * is actually optimizing for.
+ */
+function buildFrontierDims(priorityIds: string[]): ExplorerDim[] {
+  const dims: ExplorerDim[] = [];
+  const seen = new Set<string>();
+  for (const id of priorityIds) {
+    const preset = OBJECTIVE_PRESETS.find((p) => p.id === id);
+    if (!preset) continue;
+    const tier = presetToPriority(preset);
+    const props = "prop" in tier ? [tier.prop] : tier.props;
+    if (props.every((p) => STAT_PROP_SET.has(p))) continue;
+    const key = props.join("+");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    dims.push({
+      key,
+      label: preset.label,
+      short: preset.shortLabel ?? props[0]!,
+      props,
+      kind: "objective",
+    });
+  }
+  for (const prop of STAT_PROPS) {
+    dims.push({ key: prop, label: prop, short: prop, props: [prop], kind: "stat" });
+  }
+  return dims;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -346,11 +434,28 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   // so fixing an equipped item's tags moves a property from the baseline
   // into equipment without changing the morgue-reported total — and the
   // optimizer then correctly drops that property when the item is unequipped.
-  const baseline = useMemo(() => {
-    if (!data.runtimeTotals || !inventoryItems) return undefined;
+  //
+  // Base Str/Int/Dex come from the header stats (endingStats) the same
+  // way — final stat minus equipped stat contributions — so stat totals
+  // and stat floors are in absolute, player-visible units everywhere
+  // (Live Totals, the Stat Explorer, and floor checks all agree).
+  const statBaseline = useMemo(() => {
+    if (!data.endingStats || !inventoryItems) return null;
     const equipped = inventoryItems.filter((i) => i.isEquipped);
-    return computeBaseline(data.runtimeTotals, equipped);
-  }, [data.runtimeTotals, inventoryItems]);
+    return computeStatBaseline(data.endingStats, equipped);
+  }, [data.endingStats, inventoryItems]);
+
+  const baseline = useMemo(() => {
+    if (!inventoryItems) return undefined;
+    const fromRuntime = data.runtimeTotals
+      ? computeBaseline(
+          data.runtimeTotals,
+          inventoryItems.filter((i) => i.isEquipped),
+        )
+      : null;
+    if (!fromRuntime && !statBaseline) return undefined;
+    return { ...(fromRuntime ?? {}), ...(statBaseline ?? {}) };
+  }, [data.runtimeTotals, inventoryItems, statBaseline]);
 
   // Initial loadout = whatever the player has equipped in the morgue. Rooted
   // on the prop (not the editable state) so an edit doesn't recompute it and
@@ -371,14 +476,56 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     evaluated: number;
     elapsedMs: number;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<"equipment" | "stats">("equipment");
+  const [frontierView, setFrontierView] = useState<FrontierView | null>(null);
+  const [frontierPending, setFrontierPending] = useState(false);
+  const [frontierElapsedMs, setFrontierElapsedMs] = useState<number | null>(
+    null,
+  );
+  // Set when the last optimize couldn't satisfy the floors — the worn
+  // loadout is left untouched and a notice explains why.
+  const [optimizeInfeasible, setOptimizeInfeasible] = useState(false);
+  // Set when the worker crashed; it is respawned automatically and the
+  // next request clears this.
+  const [workerError, setWorkerError] = useState<string | null>(null);
+  // Stat Explorer view state, hoisted so flipping to the Equipment view
+  // and back doesn't silently reset the user's objective minimums or
+  // table sort (the explorer unmounts on every toggle).
+  const [explorerObjMins, setExplorerObjMins] = useState<Record<string, number>>({});
+  const [explorerSortKey, setExplorerSortKey] = useState<string>(
+    STATS_TOTAL_SORT_KEY,
+  );
 
   // Long-lived worker for the optimizer. Reused across clicks so we
-  // pay the spin-up cost once. The activeRequestId guards against
-  // stale results when the user clicks Optimize again mid-run, or
-  // when the morgue changes while a compute is in flight.
+  // pay the spin-up cost once. Each request kind tracks its own active
+  // requestId so stale results are ignored when a newer request of the
+  // same kind is issued mid-run, or when the morgue changes while a
+  // compute is in flight.
   const workerRef = useRef<Worker | null>(null);
   const activeRequestIdRef = useRef(0);
+  const activeFrontierRequestIdRef = useRef(0);
   const nextRequestIdRef = useRef(1);
+  // Dim metadata for the in-flight frontier request, echoed into
+  // frontierView when its response arrives so points and dims can
+  // never disagree (the user may reorder priorities mid-compute).
+  const pendingFrontierDimsRef = useRef<ExplorerDim[]>([]);
+  // Pending flags mirrored into refs so the frontier effect and worker
+  // lifecycle can consult them without depending on render state.
+  const optimizePendingRef = useRef(false);
+  const frontierPendingRef = useRef(false);
+  // Inputs of the last POSTED frontier request. When the effect fires
+  // with identical inputs (e.g. a view toggle), the previous result —
+  // delivered or still in flight — already covers it, so no new
+  // compute is queued.
+  const lastFrontierRequestRef = useRef<{
+    items: ParsedItem[];
+    rules: SpeciesEquipmentRules;
+    baseline: ContributionMap | undefined;
+    nonStatFloorsKey: string;
+    pinnedKey: string;
+    bannedKey: string;
+    dimsKey: string;
+  } | null>(null);
   // Keep the latest inventory available to the persistent worker
   // handler. Without this, the handler would close over the
   // inventoryItems from the render it was attached on — and since
@@ -386,15 +533,25 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
   // morgues and a stale result would silently pin wrong items.
   const inventoryItemsRef = useRef(inventoryItems);
   inventoryItemsRef.current = inventoryItems;
+  // Latest loadout for effects that must read it at fire time without
+  // re-firing on every loadout change (the frontier compute cares about
+  // pinned items, not the loadout identity).
+  const loadoutRef = useRef(loadout);
+  loadoutRef.current = loadout;
 
-  useEffect(() => {
+  // (Re)create the worker. Called on mount and whenever the current
+  // worker must be replaced — after a crash, or to kill a superseded
+  // multi-second frontier compute so new requests don't queue behind
+  // it on the serial worker. Handlers only touch refs and state
+  // setters, so the closures never go stale.
+  const spawnWorker = () => {
+    workerRef.current?.terminate();
     const worker = new Worker(
       new URL("./optimize-loadout.worker.ts", import.meta.url),
       { type: "module" },
     );
-    worker.onmessage = (event: MessageEvent<OptimizeResponse>) => {
-      const { requestId, result, elapsedMs } = event.data;
-      if (requestId !== activeRequestIdRef.current) return;
+    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      const response = event.data;
       const items = inventoryItemsRef.current;
       if (!items) return;
       // Items get structure-cloned across the worker boundary, so the
@@ -402,33 +559,98 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
       // current inventory's ParsedItems by id so reference-equality
       // checks in the rest of the UI keep working.
       const byId = new Map(items.map((i) => [i.id, i]));
-      const restored = result.best.items
-        .map((i) => byId.get(i.id))
-        .filter((i): i is ParsedItem => i !== undefined);
-      setLoadout(restored);
-      setLastOptimizeStats({
-        evaluated: result.loadoutsEvaluated,
-        elapsedMs,
-      });
+      const restore = (workerItems: ParsedItem[]): ParsedItem[] =>
+        workerItems
+          .map((i) => byId.get(i.id))
+          .filter((i): i is ParsedItem => i !== undefined);
+
+      if (response.kind === "optimize") {
+        if (response.requestId !== activeRequestIdRef.current) return;
+        optimizePendingRef.current = false;
+        setPending(false);
+        setLastOptimizeStats({
+          evaluated: response.result.loadoutsEvaluated,
+          elapsedMs: response.elapsedMs,
+        });
+        // Infeasible: the floors can't be met, and best.items is just
+        // the locked items — applying it would strip the player's worn
+        // gear. Keep the loadout and explain instead.
+        if (!response.result.feasible) {
+          setOptimizeInfeasible(true);
+          return;
+        }
+        setOptimizeInfeasible(false);
+        setLoadout(restore(response.result.best.items));
+      } else {
+        if (response.requestId !== activeFrontierRequestIdRef.current) return;
+        frontierPendingRef.current = false;
+        setFrontierView({
+          points: response.result.points.map((p) => ({
+            values: p.values,
+            items: restore(p.items),
+          })),
+          loadoutsEvaluated: response.result.loadoutsEvaluated,
+          dims: pendingFrontierDimsRef.current,
+        });
+        setFrontierElapsedMs(response.elapsedMs);
+        setFrontierPending(false);
+      }
+    };
+    const fail = (detail: string) => {
+      // Invalidate anything in flight, surface the error, and respawn
+      // so the next request isn't posted into a dead worker. Without
+      // this, a crash leaves the spinners on forever and every later
+      // request silently vanishes.
+      activeRequestIdRef.current = nextRequestIdRef.current;
+      activeFrontierRequestIdRef.current = nextRequestIdRef.current;
+      lastFrontierRequestRef.current = null;
+      optimizePendingRef.current = false;
+      frontierPendingRef.current = false;
       setPending(false);
+      setFrontierPending(false);
+      setWorkerError(detail);
+      spawnWorker();
+    };
+    worker.onerror = (event) => {
+      fail(event.message || "the optimizer worker crashed");
+    };
+    worker.onmessageerror = () => {
+      fail("the optimizer worker sent an unreadable response");
     };
     workerRef.current = worker;
+  };
+
+  useEffect(() => {
+    spawnWorker();
     return () => {
-      worker.terminate();
+      workerRef.current?.terminate();
       workerRef.current = null;
     };
+    // spawnWorker reads only refs and state setters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When morgue changes, reset loadout, clear locks/bans, and
-  // invalidate any in-flight optimize so a late result doesn't
-  // overwrite the new morgue's loadout with stale items.
+  // invalidate any in-flight optimize/frontier so a late result doesn't
+  // overwrite the new morgue's state with stale items.
   useEffect(() => {
     setLoadout(initialLoadout);
     setLockedIds(new Set());
     setBannedIds(new Set());
     activeRequestIdRef.current = nextRequestIdRef.current;
+    activeFrontierRequestIdRef.current = nextRequestIdRef.current;
+    lastFrontierRequestRef.current = null;
+    optimizePendingRef.current = false;
+    frontierPendingRef.current = false;
     setPending(false);
     setLastOptimizeStats(null);
+    setFrontierView(null);
+    setFrontierElapsedMs(null);
+    setFrontierPending(false);
+    setOptimizeInfeasible(false);
+    setWorkerError(null);
+    setExplorerObjMins({});
+    setExplorerSortKey(STATS_TOTAL_SORT_KEY);
   }, [initialLoadout]);
 
   // Drop stale lock ids when items get removed from the loadout.
@@ -445,23 +667,115 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     });
   }, [loadoutIds]);
 
-  const objective: Objective = useMemo(() => {
-    const floorMap = buildFloorMap(floors);
-    const priorities = priorityIds
-      .map((id) => OBJECTIVE_PRESETS.find((p) => p.id === id))
-      .filter((p): p is ObjectivePreset => p !== undefined)
-      .map((p) => presetToPriority(p));
-    if (priorities.length === 0) {
-      priorities.push(presetToPriority(OBJECTIVE_PRESETS[0]!));
-    }
-    return {
-      kind: "priorities",
-      priorities,
-      ...(floorMap ? { floors: floorMap } : {}),
-    };
-  }, [priorityIds, floors]);
+  const objective: Objective = useMemo(
+    () => buildObjective(priorityIds, floors),
+    [priorityIds, floors],
+  );
 
   const relevant = useMemo(() => relevantProperties(objective), [objective]);
+
+  // ─── Stat Explorer inputs ─────────────────────────────────────────
+  //
+  // The frontier only depends on: the candidate pool (inventory minus
+  // bans), pinned items (locks + talismans), species rules, baseline,
+  // and NON-stat floors. Stat floors are the sliders themselves — they
+  // filter the computed frontier client-side and must not trigger a
+  // recompute. String keys keep the effect from re-firing on
+  // same-content identity churn (e.g. loadout swaps that don't change
+  // the pinned set).
+  const nonStatFloorsKey = useMemo(
+    () =>
+      JSON.stringify(
+        buildFloorMap(floors.filter((f) => !isStatProp(f.prop))) ?? null,
+      ),
+    [floors],
+  );
+  const nonStatFloors = useMemo(
+    () =>
+      (JSON.parse(nonStatFloorsKey) ?? undefined) as
+        | Partial<Record<PropertyKey, number>>
+        | undefined,
+    [nonStatFloorsKey],
+  );
+  const pinnedIds = useMemo(
+    () =>
+      new Set(
+        loadout
+          .filter((i) => lockedIds.has(i.id) || i.category === "talisman")
+          .map((i) => i.id),
+      ),
+    [loadout, lockedIds],
+  );
+  const pinnedKey = useMemo(() => [...pinnedIds].sort().join(","), [pinnedIds]);
+  const bannedKey = useMemo(() => [...bannedIds].sort().join(","), [bannedIds]);
+  const frontierDims = useMemo(() => buildFrontierDims(priorityIds), [priorityIds]);
+  const frontierDimsKey = useMemo(
+    () => frontierDims.map((d) => d.key).join(";"),
+    [frontierDims],
+  );
+
+  useEffect(() => {
+    if (viewMode !== "stats") return;
+    if (!workerRef.current || !rules || !inventoryItems) return;
+    // Identical inputs to the last posted request mean the result is
+    // either already displayed or still in flight — recomputing would
+    // just burn a multi-second search (view toggles hit this path).
+    const last = lastFrontierRequestRef.current;
+    if (
+      last !== null &&
+      last.items === inventoryItems &&
+      last.rules === rules &&
+      last.baseline === baseline &&
+      last.nonStatFloorsKey === nonStatFloorsKey &&
+      last.pinnedKey === pinnedKey &&
+      last.bannedKey === bannedKey &&
+      last.dimsKey === frontierDimsKey
+    ) {
+      return;
+    }
+    // A superseded frontier compute in flight would hold the serial
+    // worker hostage; kill and respawn — unless an optimize is also
+    // outstanding (never sacrifice the user-facing spinner).
+    if (frontierPendingRef.current && !optimizePendingRef.current) {
+      spawnWorker();
+    }
+    const pinned = loadoutRef.current.filter(
+      (i) => lockedIds.has(i.id) || i.category === "talisman",
+    );
+    const requestId = nextRequestIdRef.current++;
+    activeFrontierRequestIdRef.current = requestId;
+    pendingFrontierDimsRef.current = frontierDims;
+    lastFrontierRequestRef.current = {
+      items: inventoryItems,
+      rules,
+      baseline,
+      nonStatFloorsKey,
+      pinnedKey,
+      bannedKey,
+      dimsKey: frontierDimsKey,
+    };
+    frontierPendingRef.current = true;
+    setFrontierPending(true);
+    setWorkerError(null);
+    const request: WorkerRequest = {
+      kind: "frontier",
+      requestId,
+      inputs: {
+        items: inventoryItems.filter((i) => !bannedIds.has(i.id)),
+        rules,
+        dims: frontierDims.map((d) => d.props),
+        floors: nonStatFloors,
+        baseline,
+        lockedItems: pinned,
+      },
+    };
+    workerRef.current.postMessage(request);
+    // pinnedKey/bannedKey/frontierDimsKey/nonStatFloorsKey stand in for
+    // the pinned/banned sets', dims', and floors' contents; lockedIds/
+    // bannedIds/frontierDims/loadoutRef/spawnWorker are read fresh
+    // inside and only touch refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, inventoryItems, rules, baseline, nonStatFloorsKey, pinnedKey, bannedKey, frontierDimsKey]);
 
   // Sum-based objective tiers (e.g. "Total Elemental Resistances",
   // "Total Stats") surfaced as explicit "maximizing" totals in Live
@@ -481,6 +795,21 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     if (!rules) return null;
     return scoreLoadout(loadout, rules, baseline);
   }, [loadout, rules, baseline]);
+
+  const statFloorsForExplorer = useMemo(() => {
+    const out: Partial<Record<StatProp, number>> = {};
+    for (const f of floors) {
+      if (!isStatProp(f.prop)) continue;
+      const existing = out[f.prop];
+      if (existing === undefined || f.value > existing) out[f.prop] = f.value;
+    }
+    return out;
+  }, [floors]);
+
+  const honoredFloors = useMemo(
+    () => Object.entries(nonStatFloors ?? {}) as [PropertyKey, number][],
+    [nonStatFloors],
+  );
 
   if (!inventoryItems) {
     return <UnsupportedMessage reason="missing-inventory-data" />;
@@ -546,6 +875,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     setLockedIds(new Set());
     setBannedIds(new Set());
     setLastOptimizeStats(null);
+    setOptimizeInfeasible(false);
   };
 
   // Apply a tag edit: build a new ParsedItem with the updated contributions
@@ -564,7 +894,10 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     );
   };
 
-  const handleOptimize = () => {
+  const runOptimize = (
+    objectiveToUse: Objective,
+    lockedOverride?: ParsedItem[],
+  ) => {
     const worker = workerRef.current;
     if (!worker) return;
     // Items the user has locked stay equipped through optimization.
@@ -573,7 +906,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     // equipped talisman must survive an optimize pass.
     const userLocked = loadout.filter((i) => lockedIds.has(i.id));
     const equippedTalismans = loadout.filter((i) => i.category === "talisman");
-    const lockedItems = [
+    const lockedItems = lockedOverride ?? [
       ...userLocked,
       ...equippedTalismans.filter((t) => !userLocked.includes(t)),
     ];
@@ -582,19 +915,88 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
     const requestId = nextRequestIdRef.current++;
     activeRequestIdRef.current = requestId;
+    optimizePendingRef.current = true;
     setPending(true);
+    setOptimizeInfeasible(false);
+    setWorkerError(null);
 
-    const request: OptimizeRequest = {
+    const request: WorkerRequest = {
+      kind: "optimize",
       requestId,
       inputs: {
         items: optimizerItems,
         rules,
-        objective,
+        objective: objectiveToUse,
         baseline,
         lockedItems,
       },
     };
     worker.postMessage(request);
+  };
+
+  const handleOptimize = () => runOptimize(objective);
+
+  // ─── Stat Explorer handlers ───────────────────────────────────────
+
+  // Sliders edit the shared Str/Int/Dex floors. `null` clears a stat's
+  // minimum; a value replaces any existing floors on that stat so the
+  // slider and the "Require at least" rows never disagree.
+  const setStatFloor = (prop: StatProp, value: number | null) => {
+    setFloors((prev) => {
+      const rest = prev.filter((f) => f.prop !== prop);
+      if (value === null) {
+        return rest.length === prev.length ? prev : rest;
+      }
+      const only = prev.length === rest.length + 1 && prev.find((f) => f.prop === prop);
+      if (only && only.value === value) return prev;
+      return [...rest, makeFloor(prop, value)];
+    });
+  };
+
+  const resetStatFloors = () => {
+    setFloors((prev) => prev.filter((f) => !isStatProp(f.prop)));
+  };
+
+  // Equip a frontier point: pin its exact values — stat floors for the
+  // stat dims, capped-sum group floors for the objective dims — and
+  // optimize with the point's own gear locked in. Pareto-optimality
+  // makes those constraints force the row's numbers exactly; without
+  // the group floors, a ladder with two or more non-stat tiers could
+  // legally raise tier 1 in a free slot at tier 2's expense and land
+  // on a different row than the one clicked. Locking the
+  // representative gear (which already includes the user's pinned
+  // items) keeps the pass to greedy-filling the leftover slots instead
+  // of re-searching the full inventory, so equip is instant even on
+  // inventories where a cold optimize takes many seconds.
+  const applyFrontierPoint = (point: FrontierPoint) => {
+    const view = frontierView;
+    if (!view) return;
+    const statFloors: Floor[] = [];
+    const groupFloors: GroupFloor[] = [];
+    view.dims.forEach((dim, i) => {
+      const value = point.values[i] ?? 0;
+      if (dim.kind === "stat" && isStatProp(dim.props[0]!)) {
+        statFloors.push(makeFloor(dim.props[0]!, value));
+      } else if (dim.kind === "objective") {
+        groupFloors.push({ props: dim.props, min: value });
+      }
+    });
+    const nextFloors = [
+      ...floors.filter((f) => !isStatProp(f.prop)),
+      ...statFloors,
+    ];
+    setFloors(nextFloors);
+    // Re-map the point's gear to the CURRENT inventory objects by id: a
+    // tag edit that raced the frontier recompute would otherwise lock
+    // stale item copies while their edited twins stay in the candidate
+    // pool. Banned items are dropped for the same reason — a ban that
+    // raced the recompute must never be pinned into the loadout.
+    const byId = new Map(inventoryItems.map((it) => [it.id, it]));
+    const lockedGear = point.items
+      .map((it) => byId.get(it.id))
+      .filter((it): it is ParsedItem => it !== undefined)
+      .filter((it) => !bannedIds.has(it.id));
+    runOptimize(buildObjective(priorityIds, nextFloors, groupFloors), lockedGear);
   };
 
   return (
@@ -603,19 +1005,57 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
         onClear={handleClear}
         onOptimize={handleOptimize}
         pending={pending}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <BackpackList
-          items={inventoryItems}
-          loadout={loadout}
-          relevant={relevant}
-          bannedIds={bannedIds}
-          originalById={originalById}
-          onToggle={toggleItem}
-          onToggleBan={toggleBan}
-          onEditItem={handleEditItem}
-        />
+      {workerError && (
+        <div className="rounded border border-red-900/60 bg-red-950/20 px-3 py-2 text-xs text-red-300">
+          The optimizer hit an error and was restarted ({workerError}). Try
+          the action again — if it keeps happening, the inventory may be too
+          large for this browser.
+        </div>
+      )}
+
+      <div
+        className={cn(
+          "grid gap-4",
+          viewMode === "equipment"
+            ? "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)_minmax(0,0.9fr)]"
+            : "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.9fr)]",
+        )}
+      >
+        {viewMode === "equipment" ? (
+          <BackpackList
+            items={inventoryItems}
+            loadout={loadout}
+            relevant={relevant}
+            bannedIds={bannedIds}
+            originalById={originalById}
+            onToggle={toggleItem}
+            onToggleBan={toggleBan}
+            onEditItem={handleEditItem}
+          />
+        ) : (
+          <StatExplorer
+            frontier={frontierView}
+            pending={frontierPending}
+            optimizePending={pending}
+            hasAbsoluteStats={statBaseline !== null}
+            statFloors={statFloorsForExplorer}
+            onStatFloorChange={setStatFloor}
+            onResetStatFloors={resetStatFloors}
+            onApplyPoint={applyFrontierPoint}
+            currentTotals={score?.totals ?? null}
+            honoredFloors={honoredFloors}
+            pinnedIds={pinnedIds}
+            frontierElapsedMs={frontierElapsedMs}
+            objMinOverrides={explorerObjMins}
+            onObjMinOverridesChange={setExplorerObjMins}
+            sortKey={explorerSortKey}
+            onSortKeyChange={setExplorerSortKey}
+          />
+        )}
         <WornEquipment
           loadout={loadout}
           rules={rules}
@@ -638,6 +1078,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
             hasBaseline={!!baseline}
             floors={floors}
             sumGroups={sumGroups}
+            optimizeInfeasible={optimizeInfeasible}
           />
         </div>
       </div>
@@ -657,10 +1098,14 @@ function HeaderBar({
   onClear,
   onOptimize,
   pending,
+  viewMode,
+  onViewModeChange,
 }: {
   onClear: () => void;
   onOptimize: () => void;
   pending: boolean;
+  viewMode: "equipment" | "stats";
+  onViewModeChange: (mode: "equipment" | "stats") => void;
 }) {
   // Start hidden on mount and reveal once we've consulted localStorage
   // — avoids a flash of the banner for users who previously dismissed
@@ -748,6 +1193,40 @@ function HeaderBar({
           Equipment Optimizer
         </h2>
         <div className="flex items-end gap-3">
+          <div
+            className="flex rounded border border-border overflow-hidden"
+            role="tablist"
+            aria-label="Optimizer view"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "equipment"}
+              onClick={() => onViewModeChange("equipment")}
+              className={cn(
+                "px-3 py-1.5 text-sm transition-colors",
+                viewMode === "equipment"
+                  ? "bg-secondary/60 text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/30",
+              )}
+            >
+              Equipment
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "stats"}
+              onClick={() => onViewModeChange("stats")}
+              className={cn(
+                "px-3 py-1.5 text-sm transition-colors border-l border-border",
+                viewMode === "stats"
+                  ? "bg-secondary/60 text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/30",
+              )}
+            >
+              Stat Explorer
+            </button>
+          </div>
           <Button
             variant="ghost"
             onClick={onClear}
@@ -1002,20 +1481,6 @@ function glyphFor(item: ParsedItem): string {
 }
 
 /**
- * Strip the leading article and trailing slot marker from the raw text
- * for cleaner display. Keep the enchantment and item name.
- */
-function cleanItemName(raw: string): string {
-  return raw
-    .replace(/^the\s+/i, "")
-    .replace(/^a\s+/i, "")
-    .replace(/^an\s+/i, "")
-    .replace(/^cursed\s+/i, "")
-    .replace(/\s*\([^)]+\)\s*$/g, "")
-    .trim();
-}
-
-/**
  * Render the contribution chips for a single item: brand/ego as italic
  * gray, properties with their color palette.
  */
@@ -1089,16 +1554,6 @@ function formatChipLabel(prop: PropertyKey, value: number): string {
     return `${prop}${sym.repeat(Math.min(Math.abs(value), 5))}`;
   }
   return `${prop}${value >= 0 ? "+" : ""}${value}`;
-}
-
-function itemIsRelevant(item: ParsedItem, relevant: Set<PropertyKey>): boolean {
-  for (const prop of Object.keys(item.contributions)) {
-    if (relevant.has(prop)) {
-      const v = item.contributions[prop];
-      if (v !== undefined && v !== 0) return true;
-    }
-  }
-  return false;
 }
 
 // ────────────────────────────────────────────────────────────────────────
@@ -2006,12 +2461,14 @@ function LiveTotals({
   hasBaseline,
   floors,
   sumGroups,
+  optimizeInfeasible,
 }: {
   score: LoadoutScore | null;
   stats: { evaluated: number; elapsedMs: number } | null;
   hasBaseline: boolean;
   floors: Floor[];
   sumGroups: PropertyKey[][];
+  optimizeInfeasible: boolean;
 }) {
   return (
     <Card className="bg-card border-border py-3 gap-2">
@@ -2019,6 +2476,14 @@ function LiveTotals({
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
           Live Totals
         </div>
+
+        {optimizeInfeasible && (
+          <div className="rounded border border-red-900/60 bg-red-950/20 px-2 py-1.5 text-xs text-red-300">
+            No loadout can meet every &quot;require at least&quot; constraint,
+            so the worn equipment was left unchanged. Relax a constraint and
+            optimize again.
+          </div>
+        )}
         <div className="text-[10px] text-muted-foreground/80 italic leading-snug">
           Equipment modifiers + non-equipment baseline. Does not include base
           armor AC, base shield SH, base EV, or skill-derived bonuses.
@@ -2050,6 +2515,27 @@ function LiveTotals({
             value={score?.totals.SH ?? 0}
             equipment={score?.equipmentTotals.SH ?? 0}
             baseline={score?.baseline.SH ?? 0}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <BigStat
+            label="Str"
+            value={score?.totals.Str ?? 0}
+            equipment={score?.equipmentTotals.Str ?? 0}
+            baseline={score?.baseline.Str ?? 0}
+          />
+          <BigStat
+            label="Int"
+            value={score?.totals.Int ?? 0}
+            equipment={score?.equipmentTotals.Int ?? 0}
+            baseline={score?.baseline.Int ?? 0}
+          />
+          <BigStat
+            label="Dex"
+            value={score?.totals.Dex ?? 0}
+            equipment={score?.equipmentTotals.Dex ?? 0}
+            baseline={score?.baseline.Dex ?? 0}
           />
         </div>
 
@@ -2110,6 +2596,9 @@ const ALREADY_SHOWN_IN_TOTALS = new Set<PropertyKey>([
   "AC",
   "EV",
   "SH",
+  "Str",
+  "Int",
+  "Dex",
   ...TOTALS_PROPS,
 ]);
 
@@ -2581,6 +3070,7 @@ function speciesRulesFor(data: MorgueData): SpeciesEquipmentRules | null {
   if (!code) return null;
   return getSpeciesEquipmentRules(code);
 }
+
 
 function UnsupportedMessage({
   reason,
