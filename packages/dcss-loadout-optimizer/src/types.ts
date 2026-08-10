@@ -61,6 +61,18 @@ export interface LoadoutScore {
 }
 
 /**
+ * A floor on the SUM of several properties' post-cap totals (e.g.
+ * "total elemental resistances ≥ 10"). Complements per-property
+ * `floors`, which can't express sum requirements. Matches how
+ * sum-based objectives and frontier dimensions are valued: each
+ * property is capped first, then summed.
+ */
+export interface GroupFloor {
+  props: PropertyKey[];
+  min: number;
+}
+
+/**
  * Optimizer objective.
  *
  *   - `maximize`:     maximize a single property's total.
@@ -70,24 +82,28 @@ export interface LoadoutScore {
  *                            use `maximize` and set `floors` directly.
  *
  * Any kind can attach optional `floors`: a constraint that requires
- * `totals[prop] >= value` for each entry. A loadout that fails any
- * floor is treated as illegal (score = -Infinity).
+ * `totals[prop] >= value` for each entry, and optional `groupFloors`:
+ * constraints on capped-sum totals of property groups. A loadout that
+ * fails any floor is treated as illegal (score = -Infinity).
  */
 export type Objective =
   | {
       kind: 'maximize';
       prop: PropertyKey;
       floors?: Partial<Record<PropertyKey, number>>;
+      groupFloors?: GroupFloor[];
     }
   | {
       kind: 'maximize_sum';
       props: PropertyKey[];
       floors?: Partial<Record<PropertyKey, number>>;
+      groupFloors?: GroupFloor[];
     }
   | {
       kind: 'maximize_with_floor';
       prop: PropertyKey;
       floors: Partial<Record<PropertyKey, number>>;
+      groupFloors?: GroupFloor[];
     }
   | {
       /**
@@ -107,6 +123,7 @@ export type Objective =
         | { props: PropertyKey[] }
       >;
       floors?: Partial<Record<PropertyKey, number>>;
+      groupFloors?: GroupFloor[];
     };
 
 export interface OptimizerInputs {
@@ -162,4 +179,12 @@ export interface OptimizerResult {
    * pruning.
    */
   loadoutsEvaluated: number;
+  /**
+   * False when no legal loadout satisfies the objective's floors. In
+   * that case `best.items` contains ONLY the locked items (never an
+   * empty list that would silently strip a player's pinned gear) and
+   * `score` reflects that locked-only loadout. Callers should treat
+   * the result as "nothing to apply" rather than equipping it.
+   */
+  feasible: boolean;
 }

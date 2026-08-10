@@ -61,6 +61,39 @@ export function checkCapacity(
 }
 
 /**
+ * Rules as seen by a search that must fit around a set of locked items:
+ * capacity = effectiveCapacity(rules, lockedItems) − locked items' own
+ * slot usage. Locked slot-granters (e.g. a pinned macabre finger
+ * necklace) bump the base capacity before locked usage is subtracted,
+ * so the search sees the post-locked slot budget the rest of the
+ * loadout has to work with.
+ *
+ * A slot may come out NEGATIVE: locked items can overfill their base
+ * capacity when the granter that justified them is not itself locked
+ * (lock three rings worn via a macabre finger necklace, then unequip
+ * the necklace). The deficit must be carried, not clamped to zero —
+ * a slot-granter from the candidate pool has to pay it off before the
+ * slot has room again (`remainingCapacity` clamps at zero only after
+ * granter bonuses are applied). Clamping here would let the search
+ * enumerate combinations that can never be legal, which the frontier's
+ * dominance pruning then prefers over the legal ones.
+ */
+export function rulesWithLockedItems(
+  rules: SpeciesEquipmentRules,
+  lockedItems: ParsedItem[],
+): SpeciesEquipmentRules {
+  if (lockedItems.length === 0) return rules;
+  const usage = computeSlotUsage(lockedItems);
+  const capacity: SlotCapacity = { ...effectiveCapacity(rules, lockedItems) };
+  for (const [slot, used] of Object.entries(usage)) {
+    if (used === undefined) continue;
+    const key = slot as ItemSlot;
+    capacity[key] = (capacity[key] ?? 0) - used;
+  }
+  return { ...rules, capacity };
+}
+
+/**
  * Compute remaining capacity after a base usage is subtracted. Used by
  * the search to figure out how many more single-slot items can fit
  * after multi-slot items are placed. Pass the items that should count

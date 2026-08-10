@@ -18,7 +18,7 @@ import type { ContributionMap, ParsedItem, PropertyKey, SpeciesEquipmentRules } 
 
 import { applyCaps, sumContributions } from './aggregate.js';
 import { checkLegality } from './legality.js';
-import type { LoadoutScore, Objective } from './types.js';
+import type { GroupFloor, LoadoutScore, Objective } from './types.js';
 
 /**
  * Score a loadout against species rules, optionally adding a
@@ -74,6 +74,7 @@ export function evaluateObjective(
 ): number {
   if (score.violations.length > 0) return Number.NEGATIVE_INFINITY;
   if (!checkFloors(score, getFloors(objective))) return Number.NEGATIVE_INFINITY;
+  if (!checkGroupFloors(score, objective.groupFloors)) return Number.NEGATIVE_INFINITY;
 
   const fillScore = sumValues(score.totals, fillProps);
 
@@ -141,6 +142,22 @@ function checkFloors(
   for (const [prop, floor] of Object.entries(floors)) {
     if (floor === undefined) continue;
     if (getValue(score.totals, prop) < floor) return false;
+  }
+  return true;
+}
+
+/**
+ * Group floors compare the SUM of each group's post-cap totals against
+ * its minimum — the same valuation a sum objective or frontier
+ * dimension uses.
+ */
+function checkGroupFloors(
+  score: LoadoutScore,
+  groupFloors: GroupFloor[] | undefined,
+): boolean {
+  if (!groupFloors) return true;
+  for (const { props, min } of groupFloors) {
+    if (sumValues(score.totals, props) < min) return false;
   }
   return true;
 }

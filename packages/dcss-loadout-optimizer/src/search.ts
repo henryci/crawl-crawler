@@ -43,6 +43,19 @@ export interface SearchResult {
   evaluated: number;
 }
 
+export interface SearchOptions {
+  /**
+   * Optional per-slot reduction of the enumerated item combinations,
+   * applied before the cartesian product across slots. Callers whose
+   * evaluate function only depends on additive item properties (e.g.
+   * the frontier) can drop combinations that are provably redundant —
+   * shrinking the product multiplicatively. The returned arrays must
+   * be a subset of the given ones. Called once per slot per
+   * slot-influencer subset (capacity differs between subsets).
+   */
+  reduceSlotChoices?: (slot: ItemSlot, choices: ParsedItem[][]) => ParsedItem[][];
+}
+
 /**
  * Enumerate every legal loadout and return the one maximizing
  * `evaluate(loadout)`. Returns -Infinity score if no legal loadout
@@ -52,6 +65,7 @@ export function searchLoadouts(
   items: ParsedItem[],
   rules: SpeciesEquipmentRules,
   evaluate: (loadout: ParsedItem[]) => number,
+  options?: SearchOptions,
 ): SearchResult {
   // Influencers = anything whose inclusion changes per-slot capacity
   // for the rest of the loadout (multi-slot occupiers OR slot granters).
@@ -87,7 +101,12 @@ export function searchLoadouts(
       if (cap === 0) {
         slotOptions.push([[]]); // only the empty selection is legal here
       } else {
-        slotOptions.push(combinationsUpToSize(slotItems, cap));
+        const choices = combinationsUpToSize(slotItems, cap);
+        slotOptions.push(
+          options?.reduceSlotChoices
+            ? options.reduceSlotChoices(slot, choices)
+            : choices,
+        );
       }
       slots.push(slot);
     }

@@ -51,3 +51,46 @@ export function computeBaseline(
   }
   return baseline;
 }
+
+/**
+ * Final Str/Int/Dex as a morgue header reports them (nullable when the
+ * header is missing a value). Structurally compatible with the morgue
+ * parser's `CharacterStats` — declared here so this package doesn't
+ * depend on the parser.
+ */
+export interface StatSnapshot {
+  str: number | null;
+  int: number | null;
+  dex: number | null;
+}
+
+/**
+ * Derive base Str/Int/Dex (species + level growth + mutations) from
+ * the morgue's final stats by subtracting the equipped items' stat
+ * contributions — the stat analogue of `computeBaseline`.
+ *
+ * Unlike `computeBaseline` this is NOT clamped at zero: a heavily
+ * drained stat genuinely can sit below the equipment's contribution,
+ * and clamping would misreport every loadout's totals by the drained
+ * amount.
+ *
+ * Returns null when the snapshot has no usable values, in which case
+ * callers fall back to equipment-only stat deltas.
+ */
+export function computeStatBaseline(
+  endingStats: StatSnapshot,
+  equippedItems: ParsedItem[],
+): ContributionMap | null {
+  const fromEquipment = sumContributions(equippedItems);
+  const out: ContributionMap = {};
+  const pairs: [string, number | null][] = [
+    ['Str', endingStats.str],
+    ['Int', endingStats.int],
+    ['Dex', endingStats.dex],
+  ];
+  for (const [prop, value] of pairs) {
+    if (value === null) continue;
+    out[prop] = value - (fromEquipment[prop] ?? 0);
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}

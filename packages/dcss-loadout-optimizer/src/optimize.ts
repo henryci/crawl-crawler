@@ -13,6 +13,7 @@
 
 import {
   effectiveCapacity,
+  getGrantedSlots,
   type ContributionMap,
   type ItemSlot,
   type ParsedItem,
@@ -20,6 +21,7 @@ import {
   type SpeciesEquipmentRules,
 } from 'dcss-game-data';
 
+import { rulesWithLockedItems } from './capacity.js';
 import { evaluateObjective, scoreLoadout } from './score.js';
 import { searchLoadouts } from './search.js';
 import type { Objective, OptimizerInputs, OptimizerResult } from './types.js';
@@ -59,16 +61,8 @@ export function optimize(inputs: OptimizerInputs): OptimizerResult {
   const lockedSet = new Set(lockedItems);
 
   // Reduce the rules' capacity by the locked items' slot occupation
-  // and exclude locked items from the candidate pool. Locked
-  // slot-granters (e.g. a pinned macabre finger necklace) bump the
-  // base capacity before locked usage is subtracted, so the search
-  // sees the post-locked slot budget the rest of the loadout has to
-  // work with.
-  const lockedUsage = computeSlotUsageInternal(lockedItems);
-  const adjustedRules: SpeciesEquipmentRules = {
-    ...rules,
-    capacity: subtractCapacity(effectiveCapacity(rules, lockedItems), lockedUsage),
-  };
+  // and exclude locked items from the candidate pool.
+  const adjustedRules = rulesWithLockedItems(rules, lockedItems);
   const availableItems = items.filter((item) => !lockedSet.has(item));
 
   // ─── Phase 1: optimize for the primary objective only ──────────────
@@ -90,8 +84,13 @@ export function optimize(inputs: OptimizerInputs): OptimizerResult {
     return evaluateObjective(score, objective, []);
   });
 
-  let phase1Loadout: ParsedItem[] =
-    bestScore === Number.NEGATIVE_INFINITY ? [] : [...lockedItems, ...best];
+  // Infeasible (no legal loadout meets the floors): return the locked
+  // items untouched and flag it, so callers never interpret the result
+  // as "the best loadout is to strip everything the player pinned".
+  const feasible = bestScore !== Number.NEGATIVE_INFINITY;
+  const phase1Loadout: ParsedItem[] = feasible
+    ? [...lockedItems, ...best]
+    : [...lockedItems];
 
   // ─── Phase 2: greedy-fill empty slots with helpful items ───────────
   //
@@ -103,9 +102,10 @@ export function optimize(inputs: OptimizerInputs): OptimizerResult {
   //
   // Locked items already in the loadout are respected automatically —
   // greedyFillEmptySlots counts them when computing remaining slot
-  // capacity.
+  // capacity. Skipped when infeasible: fill must not decorate a result
+  // the caller is being told not to apply.
   const finalLoadout =
-    fillProps.length > 0
+    feasible && fillProps.length > 0
       ? greedyFillEmptySlots(phase1Loadout, availableItems, rules, baseline, objective, fillProps)
       : phase1Loadout;
 
@@ -115,30 +115,8 @@ export function optimize(inputs: OptimizerInputs): OptimizerResult {
     best: { items: finalLoadout },
     score: finalScore,
     loadoutsEvaluated: evaluated,
+    feasible,
   };
-}
-
-function computeSlotUsageInternal(items: ParsedItem[]): Record<string, number> {
-  const usage: Record<string, number> = {};
-  for (const item of items) {
-    for (const slot of item.slots) {
-      usage[slot] = (usage[slot] ?? 0) + 1;
-    }
-  }
-  return usage;
-}
-
-function subtractCapacity(
-  base: SpeciesEquipmentRules['capacity'],
-  usage: Record<string, number>,
-): SpeciesEquipmentRules['capacity'] {
-  const out: SpeciesEquipmentRules['capacity'] = { ...base };
-  for (const [slot, used] of Object.entries(usage)) {
-    const key = slot as keyof typeof base;
-    const current = out[key] ?? 0;
-    out[key] = Math.max(0, current - used);
-  }
-  return out;
 }
 
 /**
@@ -193,9 +171,9 @@ function greedyFillEmptySlots(
 
       const currentScore = scoreLoadout(loadout, rules, baseline);
       const currentPrimary = evaluateObjective(currentScore, objective, []);
-      // If the current loadout can't satisfy the primary objective
-      // (e.g., a floor it can't reach), don't pollute it with fill —
-      // the caller will see an empty loadout indicating "infeasible".
+      // Safety net: optimize() skips fill entirely when infeasible, but
+      // if a caller hands us a floor-violating base loadout directly,
+      // don't decorate it with fill.
       if (currentPrimary === Number.NEGATIVE_INFINITY) return loadout;
 
       let bestItem: ParsedItem | null = null;
@@ -271,10 +249,20 @@ export function relevantProperties(objective: Objective): Set<PropertyKey> {
   if ('floors' in objective && objective.floors) {
     for (const p of Object.keys(objective.floors)) set.add(p);
   }
+  if (objective.groupFloors) {
+    for (const group of objective.groupFloors) {
+      for (const p of group.props) set.add(p);
+    }
+  }
   return set;
 }
 
-function itemIsRelevant(item: ParsedItem, relevant: Set<PropertyKey>): boolean {
+/**
+ * Whether the search must consider `item` when optimizing for the
+ * given set of relevant properties. Items this returns false for are
+ * equivalent to an empty slot as far as the objective is concerned.
+ */
+export function itemIsRelevant(item: ParsedItem, relevant: Set<PropertyKey>): boolean {
   // Always retain 2h weapons — they block offhand and might still be
   // chosen if the alternative (1h + shield) doesn't beat them on the
   // objective, but the search needs to consider them.
@@ -284,6 +272,10 @@ function itemIsRelevant(item: ParsedItem, relevant: Set<PropertyKey>): boolean {
   // Multi-slot items occupy multiple slots; retain so legality still
   // sees them even if they don't contribute to the objective directly.
   if (item.slots.length > 1) return true;
+  // Slot granters change capacity for every other item (macabre finger
+  // necklace adds a ring slot, etc.) — retain even with no relevant
+  // contribution of their own, or the search never sees the extra slot.
+  if (getGrantedSlots(item.artefact?.unrandKey) !== null) return true;
   for (const prop of Object.keys(item.contributions)) {
     if (relevant.has(prop)) {
       const value = item.contributions[prop];

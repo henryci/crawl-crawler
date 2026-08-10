@@ -27,6 +27,7 @@
  */
 
 export type {
+  GroupFloor,
   Loadout,
   LoadoutScore,
   Objective,
@@ -34,10 +35,21 @@ export type {
   OptimizerResult,
 } from './types.js';
 
-export { optimize, relevantProperties, DEFAULT_FILL_PROPS } from './optimize.js';
+export { optimize, relevantProperties, itemIsRelevant, DEFAULT_FILL_PROPS } from './optimize.js';
 export { scoreLoadout, evaluateObjective } from './score.js';
 export { checkLegality } from './legality.js';
 export { sumContributions, applyCaps } from './aggregate.js';
-export { computeSlotUsage, checkCapacity, remainingCapacity } from './capacity.js';
+export {
+  computeSlotUsage,
+  checkCapacity,
+  remainingCapacity,
+  rulesWithLockedItems,
+} from './capacity.js';
 export { searchLoadouts, type SearchResult } from './search.js';
-export { computeBaseline } from './baseline.js';
+export { computeBaseline, computeStatBaseline, type StatSnapshot } from './baseline.js';
+export {
+  computeFrontier,
+  type FrontierInputs,
+  type FrontierPoint,
+  type FrontierResult,
+} from './frontier.js';
