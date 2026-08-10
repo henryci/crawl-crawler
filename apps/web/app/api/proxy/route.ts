@@ -14,6 +14,7 @@ const ALLOWED_HOSTS = [
   'crawl.project357.org',
   'lazy-life.ddo.jp',
   'crawl.develz.org',
+  'nemelex.cards',
 ];
 
 const UNDERHOUND_HOST = 'underhound.eu';

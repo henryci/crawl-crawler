@@ -308,6 +308,34 @@ describe('item identification edge cases', () => {
       );
     }
   });
+
+  it('identifies a randart amulet of wildshape (base marker has no "the")', async () => {
+    // Regression: DCSS's `[amulet of wildshape]` base marker has no
+    // article, but the registry once stored 'amulet of the wildshape'.
+    // The mismatch made base-type lookup fail, so parseJewelryItem
+    // returned null and the whole amulet was silently dropped — its
+    // resistances then leaked into the optimizer's non-equipment baseline
+    // (e.g. a phantom rN+ that wasn't in any worn item). The amulet must
+    // parse and carry its brace resistances as item contributions.
+    const path = resolve(SAMPLE_DIR, 'equipment_dumps', 'henryci-cdump-0.34.txt');
+    const content = readFileSync(path, 'utf-8');
+    const data = await parseMorgueData(content);
+
+    // "y - the amulet 'Ofafaq' {Wildshape rF- rN+++}", base [amulet of wildshape]
+    const amulet = data.inventoryItems!.find((i) => i.id === 'y');
+    expect(amulet).toBeDefined();
+    expect(amulet!.category).toBe('jewelry');
+    expect(amulet!.baseType.displayName).toBe('amulet of wildshape');
+    expect(amulet!.contributions.rN).toBe(3);
+    expect(amulet!.contributions.rF).toBe(-1);
+
+    // "X - the amulet of Ymyxul Kude {Wildshape rN+}" — same base type,
+    // resolved via the "of NAME" randart form rather than a quoted name.
+    const amulet2 = data.inventoryItems!.find((i) => i.id === 'X');
+    expect(amulet2).toBeDefined();
+    expect(amulet2!.baseType.displayName).toBe('amulet of wildshape');
+    expect(amulet2!.contributions.rN).toBe(1);
+  });
 });
 
 describe('talismans', () => {

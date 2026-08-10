@@ -131,7 +131,7 @@ const CURATED_JEWELRY: Record<string, CuratedJewelryMeta> = {
     innateContributions: [{ prop: 'Regen', value: 1 }],
   },
   AMU_WILDSHAPE: {
-    displayName: 'amulet of the wildshape',
+    displayName: 'amulet of wildshape',
     innateContributions: [],
     notes: 'Form/transformation related. No aggregable property.',
   },

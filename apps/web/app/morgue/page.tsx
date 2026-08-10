@@ -365,8 +365,8 @@ function MorgueViewerContent() {
                     <span>
                       <span className="text-foreground font-medium">Morgue file</span>{" "}
                       — written automatically when your character dies. Look
-                      for {" "}
-                      <span className="font-mono text-mana">
+                      for{" "}
+                      <span className="font-mono text-mana select-all">
                         morgue-USERNAME-DATE.txt
                       </span>{" "}
                       under your server&apos;s{" "}
@@ -386,9 +386,9 @@ function MorgueViewerContent() {
                       </span>{" "}
                       in-game to write a dump. On WebTiles the path appears in
                       chat. On CAO the URL is{" "}
-                      <span className="font-mono text-mana">
+                      <span className="font-mono text-mana select-all">
                         https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt
-                      </span>                      
+                      </span>
                     </span>
                   </li>
                 </ul>
