@@ -20,7 +20,8 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
   },
   "keywords": [
     "dcss",
@@ -41,4 +42,3 @@
     "node": ">=18.0.0"
   }
 }
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, Compass } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
   Dialog,
@@ -16,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { QuestionList } from "@/components/question-list";
+import type { Question } from "@/lib/questions";
 
 type ColorVariant = "health" | "gold" | "mana" | "special";
 
@@ -31,6 +33,8 @@ interface PageGuideProps {
   icon: LucideIcon;
   variant?: ColorVariant;
   sections: GuideSection[];
+  /** Example questions this page answers; rendered as links above the sections. */
+  questions?: Question[];
 }
 
 const variantButtonStyles: Record<ColorVariant, string> = {
@@ -60,6 +64,7 @@ export function PageGuide({
   icon: Icon,
   variant = "health",
   sections,
+  questions = [],
 }: PageGuideProps) {
   const [open, setOpen] = useState(false);
 
@@ -96,6 +101,17 @@ export function PageGuide({
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <div className="space-y-5 mt-2">
+            {questions.length > 0 && (
+              <div>
+                <h3
+                  className={`text-sm font-semibold mb-1.5 flex items-center gap-1.5 ${variantAccentStyles[variant]}`}
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  Try one of these
+                </h3>
+                <QuestionList questions={questions} onNavigate={() => setOpen(false)} />
+              </div>
+            )}
             {sections.map((section) => (
               <div key={section.title}>
                 <h3

@@ -20,6 +20,7 @@ import {
   Target,
   Lightbulb,
   AlertTriangle,
+  Shield,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,12 +44,26 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageWrapper } from "@/components/page-wrapper";
-import { analyticsTabTooltips } from "@/lib/tooltips";
+import { useQueryStateSync } from "@/hooks/use-query-state-sync";
+import { analyticsTabTooltips, analyticsControlTooltips, tabHints } from "@/lib/tooltips";
+import { questionsForPage } from "@/lib/questions";
+import {
+  parseBreakdownParams,
+  parseTrendsParams,
+  breakdownToParams,
+  trendsToParams,
+  type BreakdownConfig,
+  type TrendsConfig,
+} from "@/lib/links";
 import { PageHeader } from "@/components/page-header";
 import { PageGuide } from "@/components/page-guide";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { FirstVisitHint } from "@/components/first-visit-hint";
+import { HelpTip } from "@/components/help-tip";
 import { SortIcon } from "@/components/sort-icon";
 import { SkillsHeatmap } from "@/components/analytics/skills-heatmap";
 import { SpellsChart } from "@/components/analytics/spells-chart";
+import { EquipmentPanel } from "@/components/analytics/equipment-panel";
 import { AggregationBuilder } from "@/components/analytics/aggregation-builder";
 import { TrendsChart } from "@/components/analytics/trends-chart";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -244,9 +259,15 @@ function filtersToQueryParams(filters: Filters): URLSearchParams {
 }
 
 /**
- * Convert filters to URL search params string (includes tab and preset)
+ * Convert filters to URL search params string (includes tab, preset, and
+ * the per-tab settings owned by Breakdown and Trends)
  */
-function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "clear" | null): string {
+function filtersToUrlParams(
+  filters: Filters,
+  tab: string,
+  preset: "default" | "clear" | null,
+  tabParams: Record<string, string>,
+): string {
   const params = filtersToQueryParams(filters);
   
   // If clear preset is active, add a marker so we know not to reset to defaults
@@ -255,6 +276,7 @@ function filtersToUrlParams(filters: Filters, tab: string, preset: "default" | "
   }
   
   if (tab !== "games") params.set("tab", tab);
+  for (const [key, value] of Object.entries(tabParams)) params.set(key, value);
   
   return params.toString();
 }
@@ -297,24 +319,25 @@ const analyticsGuide = (
     description="Browse and filter game data from tracked DCSS win streaks."
     icon={BarChart3}
     variant="mana"
+    questions={questionsForPage("analytics")}
     sections={[
       {
         icon: BookOpen,
         title: "What is this?",
         content:
-          "This dashboard contains data from every game in tracked win streaks of 2 or more consecutive wins. My hope is that focusing on streaks makes these games more consistent and educational.",
+          "Every game from tracked win streaks of two or more consecutive wins, plus the game that ended each streak. Focusing on streaks keeps the sample to consistent, high-level play.",
       },
       {
         icon: Target,
         title: "How to use it",
         content:
-          "Use the filter panel to narrow results by species, background, god, or game version. Switch between tabs to view insights about those results.",
+          "Narrow the filters first (species, background, god, version, final skill levels), then pick a tab: Games lists matching runs, Breakdown groups them, Trends follows them across versions, Skills and Spells show what those characters trained and cast, and Equipment shows what they were wearing at the end.",
       },
       {
         icon: Lightbulb,
         title: "Tips",
         content:
-          "The Aggregation tab lets you group and pivot data by multiple dimensions — try grouping by species + god to find popular pairings. The Trends tab reveals how the meta shifts across versions. Skills shows training patterns as a heatmap. Combine filters to drill into specific strategies.",
+          "To compare two things at once, pick exactly two dimensions in Breakdown and switch to Pivot. To describe a build rather than a combo, use the skill filters (e.g. Fighting ≥ 20 and Spellcasting < 5). Everything you set is in the page URL, so Copy link shares the exact view.",
       },
       {
         icon: AlertTriangle,
@@ -355,7 +378,6 @@ function AnalyticsLoading() {
 }
 
 function AnalyticsContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   
   // Initialize state from URL params
@@ -369,11 +391,24 @@ function AnalyticsContent() {
   }, []); // Only run once on mount
   
   const initialTab = searchParams.get('tab') ?? "games";
+
+  // Per-tab settings. The tabs own the controls; the page owns persistence
+  // so the settings survive tab switches (inactive tabs unmount) and live
+  // in the URL alongside the filters.
+  const [breakdownConfig, setBreakdownConfig] = useState<BreakdownConfig>(() =>
+    parseBreakdownParams(searchParams),
+  );
+  const [trendsConfig, setTrendsConfig] = useState<TrendsConfig>(() =>
+    parseTrendsParams(searchParams),
+  );
+  const tabParams = useMemo(
+    () => ({ ...breakdownToParams(breakdownConfig), ...trendsToParams(trendsConfig) }),
+    [breakdownConfig, trendsConfig],
+  );
   
   const [lookups, setLookups] = useState<Lookups | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [totalGamesCount, setTotalGamesCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [activePreset, setActivePreset] = useState<"default" | "clear" | null>(() => {
@@ -387,9 +422,9 @@ function AnalyticsContent() {
     return null;
   });
   const [activeTab, setActiveTab] = useState(initialTab);
-  
-  // Track if this is the initial load to avoid double-updating URL
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  // Breakdown and Trends read their config only when they mount; bumping
+  // this remounts them after the URL changes from outside.
+  const [tabConfigEpoch, setTabConfigEpoch] = useState(0);
 
   // Load lookups on mount
   useEffect(() => {
@@ -406,49 +441,38 @@ function AnalyticsContent() {
     loadLookups();
   }, []);
   
-  // Sync filters and tab to URL when they change
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-      return;
-    }
-    
-    const newUrlParams = filtersToUrlParams(filters, activeTab, activePreset);
-    const currentParams = searchParams.toString();
-    
-    // Only update URL if params actually changed
-    if (newUrlParams !== currentParams) {
-      const newUrl = newUrlParams ? `/analytics?${newUrlParams}` : '/analytics';
-      router.replace(newUrl, { scroll: false });
-    }
-  }, [filters, activeTab, activePreset, isInitialLoad, router, searchParams]);
-  
-  // Handle browser back/forward navigation
-  useEffect(() => {
-    const urlFilters = parseFiltersFromUrl(searchParams);
-    const urlTab = searchParams.get('tab') ?? "games";
-    const urlPreset = searchParams.get('preset');
-    
-    // Update tab if it changed
-    if (urlTab !== activeTab) {
-      setActiveTab(urlTab);
-    }
-    
-    // Check if the URL explicitly requests the clear preset
-    if (urlPreset === "clear") {
-      if (!filtersEqual(filters, clearFilters)) {
-        setFilters(clearFilters);
-      }
-      if (activePreset !== "clear") {
+  // Keep filters, tab and tab settings in the URL, and adopt the URL when it
+  // changes from outside (browser back/forward, the guide's question links).
+  useQueryStateSync(
+    "/analytics",
+    filtersToUrlParams(filters, activeTab, activePreset, tabParams),
+    (params) => {
+      setActiveTab(params.get('tab') ?? "games");
+      setBreakdownConfig(parseBreakdownParams(params));
+      setTrendsConfig(parseTrendsParams(params));
+      setTabConfigEpoch((epoch) => epoch + 1);
+
+      // Check if the URL explicitly requests the clear preset
+      if (params.get('preset') === "clear") {
+        if (!filtersEqual(filters, clearFilters)) {
+          setFilters(clearFilters);
+        }
         setActivePreset("clear");
+        return;
       }
-      return;
-    }
-    
-    // Update filters if they changed (and URL has filter params)
-    if (urlFilters && !filtersEqual(urlFilters, filters)) {
-      setFilters(urlFilters);
-      // Update preset indicator
+
+      const urlFilters = parseFiltersFromUrl(params);
+      if (!urlFilters) {
+        // URL has no filter params, reset to defaults
+        if (!filtersEqual(filters, defaultFilters)) {
+          setFilters(defaultFilters);
+        }
+        setActivePreset("default");
+        return;
+      }
+      if (!filtersEqual(urlFilters, filters)) {
+        setFilters(urlFilters);
+      }
       if (filtersEqual(urlFilters, defaultFilters)) {
         setActivePreset("default");
       } else if (filtersEqual(urlFilters, clearFilters)) {
@@ -456,12 +480,8 @@ function AnalyticsContent() {
       } else {
         setActivePreset(null);
       }
-    } else if (!urlFilters && !filtersEqual(filters, defaultFilters)) {
-      // URL has no filter params, reset to defaults
-      setFilters(defaultFilters);
-      setActivePreset("default");
-    }
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+    },
+  );
 
   // Build query string from filters (reuse shared function)
   const queryString = useMemo(() => {
@@ -471,7 +491,6 @@ function AnalyticsContent() {
   // Load counts when filters change
   useEffect(() => {
     async function loadCounts() {
-      setLoading(true);
       try {
         // Fetch with limit=0 to just get counts without game data
         const response = await fetch(`/api/analytics?${queryString}&limit=0`);
@@ -482,8 +501,6 @@ function AnalyticsContent() {
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
       }
     }
     loadCounts();
@@ -595,6 +612,7 @@ function AnalyticsContent() {
           <span className="text-sm font-medium text-foreground">Filters</span>
         </div>
         <div className="flex items-center gap-1">
+          <HelpTip text={analyticsControlTooltips.presets} className="mr-1" />
           <Button
             variant={activePreset === "default" ? "secondary" : "ghost"}
             size="sm"
@@ -792,6 +810,7 @@ function AnalyticsContent() {
                 >
                   Exclude legacy species & backgrounds
                 </label>
+                <HelpTip text={analyticsControlTooltips.excludeLegacy} />
               </div>
             </div>
 
@@ -799,7 +818,10 @@ function AnalyticsContent() {
               <div className="space-y-2">
                 <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_9rem]">
                   <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Skill</label>
+                    <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      Skill
+                      <HelpTip text={analyticsControlTooltips.skillFilter} />
+                    </label>
                     <Select
                       value={filters.skillName || "all"}
                       onValueChange={(v) => updateFilters(prev => ({
@@ -1049,20 +1071,40 @@ function AnalyticsContent() {
                 </TooltipTrigger>
                 <TooltipContent>{analyticsTabTooltips.spells}</TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <TabsTrigger
+                      value="equipment"
+                      className="flex-none border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Equipment
+                    </TabsTrigger>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{analyticsTabTooltips.equipment}</TooltipContent>
+              </Tooltip>
             </TabsList>
           </TooltipProvider>
 
-          {/* Results Count */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-mana/10 border border-mana/30 rounded-lg">
-            <Gamepad2 className="w-5 h-5 text-mana" />
-            <span className="text-2xl font-bold text-mana font-mono">{totalCount.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground">
-              {totalGamesCount > 0 && totalCount !== totalGamesCount ? (
-                <>matches out of <span className="font-mono text-foreground">{totalGamesCount.toLocaleString()}</span> total</>
-              ) : (
-                "games in database"
-              )}
-            </span>
+          {/* Results Count + share */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-mana/10 border border-mana/30 rounded-lg">
+              <Gamepad2 className="w-5 h-5 text-mana" />
+              <span className="text-2xl font-bold text-mana font-mono">{totalCount.toLocaleString()}</span>
+              <span className="text-sm text-muted-foreground">
+                {totalGamesCount > 0 && totalCount !== totalGamesCount ? (
+                  <>matches out of <span className="font-mono text-foreground">{totalGamesCount.toLocaleString()}</span> total</>
+                ) : (
+                  "games in database"
+                )}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <CopyLinkButton />
+              <HelpTip text={analyticsControlTooltips.shareLink} />
+            </div>
           </div>
         </div>
 
@@ -1071,7 +1113,13 @@ function AnalyticsContent() {
         </TabsContent>
 
         <TabsContent value="breakdown">
-          <AggregationBuilder queryString={queryString} />
+          <FirstVisitHint id="analytics-breakdown">{tabHints.analyticsBreakdown}</FirstVisitHint>
+          <AggregationBuilder
+            key={tabConfigEpoch}
+            queryString={queryString}
+            initialConfig={breakdownConfig}
+            onConfigChange={setBreakdownConfig}
+          />
         </TabsContent>
 
         <TabsContent value="trends">
@@ -1079,16 +1127,29 @@ function AnalyticsContent() {
             <AlertCircle className="w-4 h-4 text-mana flex-shrink-0" />
             <span>I am still figuring out how to make this feature usable. It contains good data but it is difficult to visualize.</span>
           </div>
-          <TrendsChart queryString={queryString} />
+          <FirstVisitHint id="analytics-trends">{tabHints.analyticsTrends}</FirstVisitHint>
+          <TrendsChart
+            key={tabConfigEpoch}
+            queryString={queryString}
+            initialConfig={trendsConfig}
+            onConfigChange={setTrendsConfig}
+          />
         </TabsContent>
 
 
         <TabsContent value="skills">
+          <FirstVisitHint id="analytics-skills">{tabHints.analyticsSkills}</FirstVisitHint>
           <SkillsHeatmap queryString={queryString} />
         </TabsContent>
 
         <TabsContent value="spells">
+          <FirstVisitHint id="analytics-spells">{tabHints.analyticsSpells}</FirstVisitHint>
           <SpellsChart queryString={queryString} />
+        </TabsContent>
+
+        <TabsContent value="equipment">
+          <FirstVisitHint id="analytics-equipment">{tabHints.analyticsEquipment}</FirstVisitHint>
+          <EquipmentPanel queryString={queryString} />
         </TabsContent>
       </Tabs>
     </PageWrapper>

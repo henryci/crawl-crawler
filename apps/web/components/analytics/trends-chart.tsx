@@ -36,6 +36,7 @@ import {
   type DimensionKey,
   type MetricKey,
 } from "@/lib/analytics-types";
+import { DEFAULT_TRENDS, type TrendsConfig, type TrackDimension } from "@/lib/links";
 
 // Build options from shared config
 const TRACK_OPTIONS = TRACK_DIMENSIONS.map((key) => ({
@@ -65,6 +66,10 @@ interface TrendsResponse {
 
 interface TrendsChartProps {
   queryString: string;
+  /** Starting configuration; the parent owns persistence (URL). */
+  initialConfig?: TrendsConfig;
+  /** Called with the full configuration whenever any part of it changes. */
+  onConfigChange?: (config: TrendsConfig) => void;
 }
 
 // Distinct colors for each series
@@ -130,11 +135,22 @@ const MARKERS = {
 
 const MARKER_TYPES = Object.keys(MARKERS) as (keyof typeof MARKERS)[];
 
-export function TrendsChart({ queryString }: TrendsChartProps) {
-  const [track, setTrack] = useState<DimensionKey>("species");
+const TOP_N_PRESETS = [3, 5, 10];
+
+export function TrendsChart({
+  queryString,
+  initialConfig = DEFAULT_TRENDS,
+  onConfigChange,
+}: TrendsChartProps) {
+  const [track, setTrack] = useState<TrackDimension>(initialConfig.track);
   const over: DimensionKey = "version";
-  const [metric, setMetric] = useState<MetricKey>("count");
-  const [topN, setTopN] = useState(5);
+  const [metric, setMetric] = useState<MetricKey>(initialConfig.metric);
+  const [topN, setTopN] = useState(initialConfig.topN);
+  // A linked view can ask for a count the presets don't include; list it
+  // too so the select shows it instead of rendering blank.
+  const topNOptions = TOP_N_PRESETS.includes(topN)
+    ? TOP_N_PRESETS
+    : [...TOP_N_PRESETS, topN].sort((a, b) => a - b);
 
   const [data, setData] = useState<TrendsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -142,7 +158,14 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
 
   const [hoveredSeries, setHoveredSeries] = useState<string | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<{ series: string; over: string; value: number; rank: number } | null>(null);
-  const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
+  const [viewMode, setViewMode] = useState<"chart" | "table">(initialConfig.view);
+
+  // Report configuration upward so it can be persisted in the URL.
+  const onConfigChangeRef = useRef(onConfigChange);
+  onConfigChangeRef.current = onConfigChange;
+  useEffect(() => {
+    onConfigChangeRef.current?.({ track, metric, topN, view: viewMode });
+  }, [track, metric, topN, viewMode]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1000); // Start with reasonable default
@@ -279,7 +302,7 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">Track</span>
-              <Select value={track} onValueChange={(v) => setTrack(v as DimensionKey)}>
+              <Select value={track} onValueChange={(v) => setTrack(v as TrackDimension)}>
                 <SelectTrigger className="h-8 w-[140px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -318,9 +341,11 @@ export function TrendsChart({ queryString }: TrendsChartProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="3" className="text-xs">3</SelectItem>
-                  <SelectItem value="5" className="text-xs">5</SelectItem>
-                  <SelectItem value="10" className="text-xs">10</SelectItem>
+                  {topNOptions.map((n) => (
+                    <SelectItem key={n} value={String(n)} className="text-xs">
+                      {n}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

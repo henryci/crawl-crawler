@@ -15,6 +15,7 @@ const navigation = [
   { name: "Combo Records", href: "/records", tooltipKey: "records" as const, secondary: false },
   { name: "Player Summary", href: "/player", tooltipKey: "playerSummary" as const, secondary: false },
   { name: "Morgue Summary", href: "/morgue", tooltipKey: "morgueViewer" as const, secondary: false },
+  { name: "Blog", href: "/blog", tooltipKey: "blog" as const, secondary: false },
   { name: "About", href: "/about", tooltipKey: "about" as const, secondary: true },
   { name: "Appeal", href: "/appeal", tooltipKey: "appeal" as const, secondary: true },
 ]

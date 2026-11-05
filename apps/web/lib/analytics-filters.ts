@@ -166,7 +166,7 @@ export function parseCommonFilters(searchParams: URLSearchParams): CommonFilters
  * - gods god ON g.god_id = god.id
  * - game_versions v ON g.version_id = v.id (if using version filters)
  */
-export function buildCommonWhereClause(filters: CommonFilters, options?: { includeVersionJoin?: boolean }): { where: string; params: unknown[] } {
+export function buildCommonWhereClause(filters: CommonFilters): { where: string; params: unknown[] } {
   const conditions: string[] = [];
   const params: unknown[] = [];
   let paramIndex = 1;

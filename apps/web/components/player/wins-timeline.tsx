@@ -88,9 +88,6 @@ export function WinsTimeline({ wins }: WinsTimelineProps) {
   );
 }
 
-/** Month names for labels */
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 /** Data structure for a time bucket */
 interface TimeBucket {
   key: string;

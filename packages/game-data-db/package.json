@@ -17,7 +17,8 @@
     "migrate": "tsx src/migrate.ts",
     "migrate:down": "tsx src/migrate.ts down",
     "migrate:reset": "tsx src/migrate.ts reset",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "lint": "eslint src"
   },
   "dependencies": {
     "pg": "^8.13.1"

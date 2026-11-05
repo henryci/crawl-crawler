@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Trophy,
@@ -36,6 +37,15 @@ import {
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
 import { PageGuide } from "@/components/page-guide";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { useQueryStateSync } from "@/hooks/use-query-state-sync";
+import { questionsForPage } from "@/lib/questions";
+import {
+  DEFAULT_RECORDS_FILTERS,
+  parseRecordsParams,
+  recordsFiltersToParams,
+  type RecordsFilters,
+} from "@/lib/links";
 import { SortIcon } from "@/components/sort-icon";
 import { useSortable } from "@/hooks/use-sortable";
 import type {
@@ -98,18 +108,19 @@ const recordsGuide = (
     description="High scores for every species + background combination in DCSS."
     icon={Trophy}
     variant="gold"
+    questions={questionsForPage("records")}
     sections={[
       {
         icon: BookOpen,
         title: "What is this?",
         content:
-          "A dynamic view of the CAO Combo High scores.",
+          "A sortable, filterable view of the CAO combo high scores: the best game ever recorded for each species and background pairing.",
       },
       {
         icon: Target,
         title: "How to use it",
         content:
-          'Use the filters and column sorting to find relevant records. Click into them to view details about those games.',
+          "Filter by species, background or player, sort any column, and click a record to open its morgue. Filters live in the URL, so Copy link shares the exact table.",
       },
       {
         icon: Lightbulb,
@@ -128,6 +139,14 @@ const recordsGuide = (
 );
 
 export default function RecordsPage() {
+  return (
+    <Suspense fallback={null}>
+      <RecordsContent />
+    </Suspense>
+  );
+}
+
+function RecordsContent() {
   const [data, setData] = useState<ComboRecordsWithAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,13 +248,16 @@ export default function RecordsPage() {
 }
 
 function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
-  const [filters, setFilters] = useState({
-    search: "",
-    player: "",
-    species: "all",
-    background: "all",
-    hideLegacy: true,
-  });
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<RecordsFilters>(() => parseRecordsParams(searchParams));
+
+  // Keep the filters in the URL so a filtered table can be shared, and
+  // adopt the URL when it changes from outside (guide links, back/forward).
+  useQueryStateSync(
+    "/records",
+    new URLSearchParams(recordsFiltersToParams(filters)).toString(),
+    (params) => setFilters(parseRecordsParams(params)),
+  );
 
   const filteredRecords = useMemo(() => {
     let result = [...data.records];
@@ -322,26 +344,21 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
                 ? `All ${data.records.length} Records`
                 : `${sortedData.length} of ${data.records.length} Records`}
           </CardTitle>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setFilters({
-                    search: "",
-                    player: "",
-                    species: "all",
-                    background: "all",
-                    hideLegacy: true,
-                  })
-                }
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Reset filters
-              </Button>
-            )}
-              </div>
+            <div className="flex items-center gap-2">
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFilters(DEFAULT_RECORDS_FILTERS)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Reset filters
+                </Button>
+              )}
+              <CopyLinkButton />
+            </div>
+          </div>
 
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[180px] max-w-[280px]">

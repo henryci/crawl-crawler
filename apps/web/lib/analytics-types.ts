@@ -355,6 +355,6 @@ export function isValidOverDimension(value: string): boolean {
 /**
  * Check if a metric is valid for trends.
  */
-export function isValidTrendMetric(value: string): boolean {
+export function isValidTrendMetric(value: string): value is MetricKey {
   return TREND_METRICS.includes(value as MetricKey);
 }

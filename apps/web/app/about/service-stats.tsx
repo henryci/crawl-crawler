@@ -50,7 +50,7 @@ export function ServiceStats() {
           loading: false,
           error: null,
         });
-      } catch (err) {
+      } catch {
         setData((prev) => ({
           ...prev,
           loading: false,

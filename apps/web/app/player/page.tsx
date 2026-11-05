@@ -26,6 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageWrapper } from "@/components/page-wrapper";
 import { PageHeader } from "@/components/page-header";
 import { PageGuide } from "@/components/page-guide";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { questionsForPage } from "@/lib/questions";
 import {
   OverallStatsSection,
   HighscoresSection,
@@ -61,6 +63,7 @@ const playerGuide = (
     description="Look up any DCSS player's stats from their public scoring page."
     icon={Search}
     variant="health"
+    questions={questionsForPage("player")}
     sections={[
       {
         icon: BookOpen,
@@ -156,8 +159,8 @@ function PlayerSummaryContent() {
     try {
       // Dynamically import the parser
       if (!parsePlayerPage) {
-        const module = await import("dcss-player-parser");
-        parsePlayerPage = module.parsePlayerPage;
+        const parserModule = await import("dcss-player-parser");
+        parsePlayerPage = parserModule.parsePlayerPage;
       }
 
       // Use our own API route to proxy the request (avoids CORS issues)
@@ -238,14 +241,17 @@ function PlayerSummaryContent() {
                   Look Up Player
                 </CardTitle>
                 {playerData && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchExpanded(false)}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <CopyLinkButton />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchExpanded(false)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>

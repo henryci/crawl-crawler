@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -53,6 +53,7 @@ import {
   type DimensionKey,
   type MetricKey,
 } from "@/lib/analytics-types";
+import { DEFAULT_BREAKDOWN, type BreakdownConfig } from "@/lib/links";
 
 // Dimension options split into logical rows for the UI
 const allDimOptions = (Object.keys(DIMENSIONS) as DimensionKey[]).map((key) => ({
@@ -82,15 +83,23 @@ interface AggregationResult {
 
 interface AggregationBuilderProps {
   queryString: string;
+  /** Starting configuration; the parent owns persistence (URL). */
+  initialConfig?: BreakdownConfig;
+  /** Called with the full configuration whenever any part of it changes. */
+  onConfigChange?: (config: BreakdownConfig) => void;
 }
 
-export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
+export function AggregationBuilder({
+  queryString,
+  initialConfig = DEFAULT_BREAKDOWN,
+  onConfigChange,
+}: AggregationBuilderProps) {
   // Query configuration state
-  const [selectedDimensions, setSelectedDimensions] = useState<DimensionKey[]>(["species"]);
-  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(["count", "win_rate"]);
-  const [sortBy, setSortBy] = useState<string>("count");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [limit, setLimit] = useState<number>(25);
+  const [selectedDimensions, setSelectedDimensions] = useState<DimensionKey[]>(initialConfig.groupBy);
+  const [selectedMetrics, setSelectedMetrics] = useState<MetricKey[]>(initialConfig.metrics);
+  const [sortBy, setSortBy] = useState<string>(initialConfig.sortBy);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(initialConfig.sortDir);
+  const [limit, setLimit] = useState<number>(initialConfig.limit);
   
   // Results state
   const [results, setResults] = useState<AggregationResult[]>([]);
@@ -99,10 +108,26 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
   const [totalGroups, setTotalGroups] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"table" | "chart" | "pivot">("table");
+  const [viewMode, setViewMode] = useState<"table" | "chart" | "pivot">(initialConfig.view);
   const [page, setPage] = useState(0);
   
   const totalPages = Math.ceil(totalGroups / limit);
+
+  // Report configuration upward so it can be persisted in the URL. The
+  // callback lives in a ref so a new function identity from the parent
+  // doesn't re-fire the effect.
+  const onConfigChangeRef = useRef(onConfigChange);
+  onConfigChangeRef.current = onConfigChange;
+  useEffect(() => {
+    onConfigChangeRef.current?.({
+      groupBy: selectedDimensions,
+      metrics: selectedMetrics,
+      sortBy,
+      sortDir,
+      limit,
+      view: viewMode,
+    });
+  }, [selectedDimensions, selectedMetrics, sortBy, sortDir, limit, viewMode]);
 
   // Build the aggregation query string
   const aggregateQueryString = useMemo(() => {
@@ -179,6 +204,11 @@ export function AggregationBuilder({ queryString }: AggregationBuilderProps) {
 
   // Handle dimension toggle
   const toggleDimension = (dim: DimensionKey) => {
+    // Removing the dimension the table is sorted by: fall back to a metric,
+    // since the API only sorts by a selected column.
+    if (dim === sortBy && selectedDimensions.includes(dim)) {
+      setSortBy(selectedMetrics[0] ?? "count");
+    }
     setSelectedDimensions(prev => {
       if (prev.includes(dim)) {
         return prev.filter(d => d !== dim);

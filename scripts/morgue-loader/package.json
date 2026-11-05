@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "load": "tsx load.ts",
-    "generate-csv": "tsx generate-csv.ts"
+    "generate-csv": "tsx generate-csv.ts",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@crawl-crawler/game-data-db": "workspace:*",

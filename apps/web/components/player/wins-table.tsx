@@ -68,7 +68,7 @@ export function WinsTable({ wins }: WinsTableProps) {
     return result;
   }, [wins, filters]);
 
-  const { sortedData, sortField, sortDir, handleSort, isSortedBy } = useSortable(
+  const { sortedData, sortDir, handleSort, isSortedBy } = useSortable(
     filteredWins,
     { initialField: "rank" as keyof Win, initialDirection: "asc" }
   );

@@ -1,0 +1,70 @@
+import { ViewLink } from "@/components/view-link";
+import { analyticsLink, morgueLink, recordsLink, playerLink } from "@/lib/links";
+
+export const meta = {
+  title: "Welcome to Crawl Crawler",
+  description:
+    "What this site is, where the data comes from, and the fastest way to get something useful out of it.",
+  date: "2026-09-21",
+  tag: "Start here",
+  cover: { glyphs: "@>$?!_?$<", accent: "gold" },
+  banner: "entrance",
+};
+
+Dungeon Crawl Stone Soup is turn-based, and every finished game writes a morgue file that records
+the whole run: the character, every skill level, every spell, every branch and when it was entered,
+every item picked up. Most games throw that kind of detail away. Crawl has decades of it sitting on
+public servers. Crawl Crawler is a proof of concept for what you can do with it.
+
+## The data
+
+The core dataset is win streaks. I crawled every game listed on
+[CAO's streak page](https://crawl.akrasiac.org/scoring/streaks.html), fetched the morgues that were still
+available, and parsed them into a database: just over 40,000 games, every one of them either a win
+inside a streak of two or more, or the game that ended one. That selection is the point. Streakers
+are consistent, high-level players, so their games are unusually good at showing how winning
+characters are actually built. The streak-breaking losses are just as instructive, because they show
+where strong players still die.
+
+Two warnings. Parsing morgue files is genuinely hard, the format has changed across fifteen years of
+versions, and the parser is far from perfect, so expect data errors, especially before 0.20. And
+this is a hobby project on a small deployment: it may be slow, and it may be down.
+
+## The five tools
+
+**Streak Analytics** is the main event. Filter the games by species, background, god, version, rune
+count, or final skill levels, then look at the result five ways: as a list of games, as a grouped
+breakdown you can pivot, as trends across versions, as a skill-training heatmap, or as a spell list.
+For instance, here are the skills Minotaur Berserkers trained and when. <ViewLink href={analyticsLink({ tab: "skills", species: ["Minotaur"], backgrounds: ["Berserker"] })}>Minotaur Berserker skills</ViewLink>
+
+**Morgue / Character Viewer** parses any morgue or in-progress character dump from a supported server
+and lays it out: overview, skills over time, equipment, and dungeon progression. Here is the
+highest-scoring win in the streak set, a 15-rune Gnoll Air Elementalist of Cheibriados. <ViewLink href={morgueLink({ hash: "d8543b11c493462cc13f3d5c55ebba84973ac9972fe1a7451d808ece5c93fb74", tab: "skills" })}>Open that morgue</ViewLink>
+
+**Combo Records** is the CAO combo high-score table made sortable and filterable, with removed
+species and backgrounds marked. <ViewLink href={recordsLink({ species: "Mi", background: "Be" })}>The Minotaur Berserker record</ViewLink>
+
+**Player Summary** reads a player's public scoring page and shows their wins over time, streaks and
+combo coverage. <ViewLink href={playerLink("Sergey")}>The most prolific streaker</ViewLink>
+
+**The Appeal** is three proposals for the DCSS developer community about making this kind of data
+easier to work with. If you only read one page besides this one, make it [that one](/appeal).
+
+## How to use it
+
+Start from a question, not a page. The home page and every page's guide (the pulsing question mark
+in the header) open with example questions, each linked to the view that answers it. Click one,
+then change the filters until it answers your question instead.
+
+Everything you set is in the page URL: the filters, the tab, the grouping. The **Copy link** button on each page hands that exact view to someone else, or to
+future you. A finding is a link.
+
+If something looks wrong, it may well be. Open an
+[issue on GitHub](https://github.com/henryci/crawl-crawler/issues/new/choose) with the link, and the
+morgue URL if there is one. The parser gets better one broken morgue at a time.
+
+## What this blog is for
+
+Short posts that each answer one question with the tool, every number linked to the live view that
+produced it, so you can check the claim and push it further. The first one is about what winning
+characters are wearing when they win.

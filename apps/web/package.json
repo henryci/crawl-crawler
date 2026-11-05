@@ -9,7 +9,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@crawl-crawler/game-data-db": "workspace:*",
     "@hookform/resolvers": "^3.10.0",
+    "@mdx-js/loader": "^3.1.1",
+    "@mdx-js/react": "^3.1.1",
+    "@next/mdx": "16.0.10",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -43,10 +47,8 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
-    "@crawl-crawler/game-data-db": "workspace:*",
-    "dcss-game-data": "workspace:*",
-    "pg": "^8.13.1",
     "dcss-combo-records-parser": "workspace:*",
+    "dcss-game-data": "workspace:*",
     "dcss-loadout-optimizer": "workspace:*",
     "dcss-morgue-parser": "workspace:*",
     "dcss-player-parser": "workspace:*",
@@ -55,12 +57,14 @@
     "lucide-react": "^0.454.0",
     "next": "16.0.10",
     "next-themes": "^0.4.6",
+    "pg": "^8.13.1",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.4",
+    "remark-gfm": "^4.0.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
@@ -69,6 +73,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
+    "@types/mdx": "^2.0.14",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -78,4 +83,3 @@
     "typescript": "^5"
   }
 }
-

@@ -1,0 +1,175 @@
+import { ViewLink } from "@/components/view-link";
+import { analyticsLink } from "@/lib/links";
+import { ShareBarChart, BarPanelsChart, NestedBarChart, PairedBarChart, BarListChart } from "@/components/blog/charts";
+
+export const meta = {
+  title: "What winners are wearing",
+  description:
+    "Nearly 10,000 streak wins since 0.30, slot by slot: the shield almost everyone carries, the armour each species ends up in, and the resistances winners finished with.",
+  date: "2026-10-26",
+  tag: "Findings",
+  cover: { glyphs: ')[="|[(=")[', accent: "mana" },
+  banner: { items: ["robe1", "staff", "kite_shield1", "broad_axe1", "golden_dragon_armour", "tower_shield1", "plate1", "troll_leather_armour", "orb"] },
+};
+
+export const since = { minVersion: "0.30" };
+
+Every morgue records what the character was wearing when the game ended. Across the 9,787 streak
+wins on 0.30 or later, that is a large enough sample to ask a practical question: what does a winning character look like at the finish line, and how far does
+it vary by species and background?
+
+Everything below comes from the new **Equipment** tab on Streak Analytics. Each link opens it with
+the filters already set, and every view can be narrowed to any species or background. <ViewLink href={analyticsLink({ tab: "equipment", ...since })}>All wins since 0.30</ViewLink>
+
+I checked every figure against later cutoffs too. Restricting to 0.32 or 0.33 barely moves any
+number, so nothing here depends on the choice of version; where 0.34 alone starts to look
+different, I say so.
+
+## Almost everyone carries a shield
+
+At the end of a winning game, 73% of characters have a shield in their off-hand, 4% an orb, and
+only 23% nothing. Tower shields are the most common single item (28%), ahead of kite shields (25%)
+and bucklers (11%).
+
+That holds well beyond the obvious combos. Fighters finish with a shield 90% of the time, but so do
+79% of Conjurers, with another 10% holding an orb, which leaves just 11% of winning Conjurers with an
+empty off-hand. Winning casters train Shields to a median of 15. <ViewLink href={analyticsLink({ tab: "equipment", backgrounds: ["Conjurer"], ...since })}>Conjurer kit</ViewLink> <ViewLink href={analyticsLink({ tab: "skills", backgrounds: ["Conjurer"], ...since })}>Conjurer skills</ViewLink>
+
+<ShareBarChart
+  title="Off-hand at the end of winning games, by background"
+  subtitle="Share of wins on 0.30+, sorted by shield use. Hover a segment for its value."
+  series={["Shield", "Orb", "Empty"]}
+  rows={[
+    { label: "Fighter", parts: [90, 1, 9] },
+    { label: "Gladiator", parts: [79, 1, 20] },
+    { label: "Conjurer", parts: [79, 10, 11] },
+    { label: "Earth Elementalist", parts: [79, 9, 12] },
+    { label: "Fire Elementalist", parts: [78, 10, 12] },
+    { label: "Ice Elementalist", parts: [77, 6, 17] },
+    { label: "Necromancer", parts: [73, 5, 22] },
+    { label: "Warper", parts: [70, 4, 27] },
+    { label: "Enchanter", parts: [66, 19, 15] },
+    { label: "Monk", parts: [65, 2, 33] },
+    { label: "Berserker", parts: [58, 0, 41] },
+    { label: "Hunter", parts: [45, 1, 54] },
+  ]}
+/>
+
+The backgrounds that skip it are the ones whose weapon wants both hands. Hunters finish shieldless
+54% of the time, Berserkers 41%, and Monks, who are often fighting unarmed, 33%. Species matters at
+least as much: Formicids finish with a shield 99% of the time, Minotaurs 91%, Gnolls 88%, Deep Elves
+74% plus 13% orbs, and only Spriggans fall below 70%. <ViewLink href={analyticsLink({ tab: "equipment", species: ["Formicid"], ...since })}>Formicid kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", backgrounds: ["Hunter"], ...since })}>Hunter kit</ViewLink>
+
+Orbs are the one thing moving. On 0.34 alone they are in 9% of winning off-hands overall and about
+a fifth of Conjurer and Deep Elf ones, and Berserkers go shieldless 65% of the time. The trend is
+towards "something in the off-hand", not towards nothing.
+
+## Body armour: gold dragon scales if you can, robe if you can't
+
+Across all wins, gold dragon scales are the most common body armour (13%), followed by the robe
+(10%). That split is really two populations.
+
+<BarPanelsChart
+  title="Most common body armour at the end, by species or background"
+  subtitle="Share of wins on 0.30+ ending in each armour. Three panels on one scale."
+  panels={[
+    { title: "Minotaur", items: [
+      { label: "Gold dragon scales", value: 52 },
+      { label: "Plate armour", value: 13 },
+      { label: "Crystal plate", value: 9 },
+    ]},
+    { title: "Fighter (any species)", items: [
+      { label: "Gold dragon scales", value: 41 },
+      { label: "Plate armour", value: 10 },
+      { label: "Crystal plate", value: 9 },
+    ]},
+    { title: "Deep Elf", items: [
+      { label: "Robe", value: 34 },
+      { label: "Leather armour", value: 11 },
+      { label: "Troll leather", value: 9 },
+    ]},
+  ]}
+  max={60}
+/>
+
+<ViewLink href={analyticsLink({ tab: "equipment", species: ["Minotaur"], ...since })}>Minotaur kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", backgrounds: ["Fighter"], ...since })}>Fighter kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", species: ["Deep Elf"], ...since })}>Deep Elf kit</ViewLink>
+
+## Weapons: the broad axe is the Minotaur's whole personality
+
+Half of winning Minotaurs (51%) are holding a broad axe at the end; for Minotaur Berserkers it is
+66%, with a tower shield in the other hand 72% of the time. Fighters across every species pick the
+broad axe 32% of the time, with the demon trident and eveningstar next at 7% each. Hunters have
+moved to the hand cannon (28%) ahead of the triple crossbow and longbow (15% each). Casters
+finish with a staff, usually an enhancer staff for their school. <ViewLink href={analyticsLink({ tab: "equipment", species: ["Minotaur"], backgrounds: ["Berserker"], ...since })}>Minotaur Berserker kit</ViewLink>
+
+## The resistances winners actually have
+
+The parser records the character's resistance totals at the end of the game. For the 7,876 wins that
+stopped at three or four runes, this is what the finished character had. <ViewLink href={analyticsLink({ tab: "equipment", maxRunes: 4, ...since })}>3- and 4-rune wins</ViewLink>
+
+<NestedBarChart
+  title="What 3- and 4-rune winners finished with"
+  subtitle="Share of 7,876 wins on 0.30+ at or above each level. Electric, corrosion and see invisible have a single level."
+  outerLabel="At least +"
+  innerLabel="At least ++"
+  rows={[
+    { label: "Willpower", outer: 100, inner: 97 },
+    { label: "Fire resistance", outer: 97, inner: 68 },
+    { label: "Cold resistance", outer: 91, inner: 52 },
+    { label: "Negative energy", outer: 78, inner: 43 },
+    { label: "Electric resistance", outer: 86 },
+    { label: "See invisible", outer: 70 },
+    { label: "Corrosion resistance", outer: 63 },
+  ]}
+/>
+
+Nearly every winner finished with rF+, rC+, rElec and Will++, and most had pushed fire to rF++.
+Corrosion resistance and see invisible sit at about two thirds.
+
+Extended changes the list. Among 15-rune wins, 75% finished with rN+++ and about three quarters
+had rF++, with as many at rC++. <ViewLink href={analyticsLink({ tab: "equipment", minRunes: 15, ...since })}>15-rune wins</ViewLink>
+
+<PairedBarChart
+  title="Where extended raises the bar"
+  subtitle="Share of wins on 0.30+ at or above each level: 7,876 wins with 3 or 4 runes against 912 with all 15."
+  seriesA="3 or 4 runes"
+  seriesB="15 runes"
+  rows={[
+    { label: "rF++", a: 68, b: 78 },
+    { label: "rC++", a: 52, b: 75 },
+    { label: "rN++", a: 43, b: 87 },
+    { label: "rN+++", a: 22, b: 75 },
+  ]}
+/>
+
+## Melee winners mostly don't cast
+
+Of the winning Fighters, Gladiators, Berserkers and Monks on 0.30+, 57% had no spell memorised at
+the end of the game. Those who did mostly learned movement and reach spells. <ViewLink href={analyticsLink({ tab: "spells", backgrounds: ["Fighter", "Gladiator", "Berserker", "Monk"], ...since })}>Melee winners' spells</ViewLink>
+
+<BarListChart
+  title="Spells memorised by melee winners"
+  subtitle="Share of 2,575 Fighter, Gladiator, Berserker and Monk wins on 0.30+ with the spell known at the end."
+  items={[
+    { label: "Blink", value: 28 },
+    { label: "Apportation", value: 21 },
+    { label: "Lesser Beckoning", value: 16 },
+    { label: "Vhi's Electric Charge", value: 15 },
+    { label: "Passage of Golubria", value: 14 },
+    { label: "Manifold Assault", value: 11 },
+    { label: "Gell's Gavotte", value: 9 },
+  ]}
+  max={50}
+/>
+
+Manifold Assault, a multiplier on melee attacks, is the only attack spell in the top seven.
+
+## For extended, winners change gods
+
+On 0.30+, 33% of 15-rune wins switched god at least once, against 10% of other wins, and the
+destination is usually the same: the Shining One takes 62% of all second gods, most often
+from Trog, then Okawaru. That is why TSO tops the god table for 15-rune wins even though almost nobody starts
+there. <ViewLink href={analyticsLink({ tab: "breakdown", minRunes: 15, breakdown: { groupBy: ["god"], metrics: ["count", "median_turns"] }, ...since })}>Gods of 15-rune wins</ViewLink>
+
+Every number above is one filter away from your own species and background: open any link, change
+the filters, and the URL in the address bar is the new view.

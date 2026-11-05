@@ -389,9 +389,6 @@ function parseStatTables(doc: Document): {
   const speciesStatsMap = new Map<string, SpeciesStats>();
   const backgroundStatsMap = new Map<string, BackgroundStats>();
 
-  // Find all stat-table tables
-  const statTables = doc.querySelectorAll('table.stat-table');
-
   // We need to correlate three tables: Winning Characters, Games Played, Best Character Levels
   // They all have the same structure with species as rows and backgrounds as columns
 

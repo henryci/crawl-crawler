@@ -19,6 +19,7 @@
  */
 
 import { useMemo, useRef, useState, useEffect, type ReactNode } from "react";
+import Link from "next/link";
 import type { MorgueData, ParsedItem } from "dcss-morgue-parser";
 import {
   PROPERTIES,
@@ -54,6 +55,15 @@ import {
   type StatProp,
 } from "./stat-explorer";
 import { cleanItemName } from "@/lib/item-name";
+import {
+  SAMPLE_CHARACTER_URL,
+  morgueLink,
+  type OptimizerLinkState,
+} from "@/lib/links";
+import { optimizerTooltips, tabHints } from "@/lib/tooltips";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { HelpTip } from "@/components/help-tip";
+import { FirstVisitHint } from "@/components/first-visit-hint";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -401,8 +411,82 @@ function chipStyle(prop: PropertyKey): ChipStyle {
 // Top-level component
 // ────────────────────────────────────────────────────────────────────────
 
-export function OptimizerPanel({ data }: { data: MorgueData }) {
+interface OptimizerSeed {
+  priorityIds: string[];
+  /** The link named an objective (possibly the default one). */
+  priorityFromLink: boolean;
+  floors: Floor[];
+  lockedIds: Set<string>;
+  bannedIds: Set<string>;
+  loadout: ParsedItem[];
+  viewMode: "equipment" | "stats";
+}
+
+/**
+ * Turn URL-carried optimizer state into validated initial component
+ * state. Unknown presets, properties and item ids are dropped; locks
+ * only apply to items worn in the morgue; banned items are unequipped.
+ */
+function resolveSeed(
+  initial: OptimizerLinkState | undefined,
+  parsedItems: ParsedItem[] | null,
+): OptimizerSeed {
+  const worn = (parsedItems ?? []).filter((i) => i.isEquipped);
+  const knownIds = new Set((parsedItems ?? []).map((i) => i.id));
+  const presetIds = new Set(OBJECTIVE_PRESETS.map((p) => p.id));
+  const priorityIds = (initial?.priorities ?? []).filter((id) => presetIds.has(id));
+
+  const floorByProp = new Map<PropertyKey, number>();
+  for (const f of initial?.floors ?? []) {
+    const option = FLOOR_OPTIONS.find((o) => o.prop === f.prop);
+    if (!option) continue;
+    const value = Math.min(option.max, Math.max(1, Math.floor(f.value)));
+    const existing = floorByProp.get(option.prop);
+    if (existing === undefined || value > existing) floorByProp.set(option.prop, value);
+  }
+  const floors = [...floorByProp].map(([prop, value]) => makeFloor(prop, value));
+
+  const bannedIds = new Set((initial?.ban ?? []).filter((id) => knownIds.has(id)));
+  const wornIds = new Set(worn.map((i) => i.id));
+  const lockedIds = new Set(
+    (initial?.lock ?? []).filter((id) => wornIds.has(id) && !bannedIds.has(id)),
+  );
+  return {
+    priorityIds: priorityIds.length > 0 ? priorityIds : [OBJECTIVE_PRESETS[0]!.id],
+    priorityFromLink: priorityIds.length > 0,
+    floors,
+    lockedIds,
+    bannedIds,
+    loadout: worn.filter((i) => !bannedIds.has(i.id)),
+    viewMode: initial?.view === "stats" ? "stats" : "equipment",
+  };
+}
+
+const DEFAULT_PRIORITY_IDS = [OBJECTIVE_PRESETS[0]!.id];
+
+export interface OptimizerPanelProps {
+  data: MorgueData;
+  /** Settings restored from the URL on load. */
+  initialState?: OptimizerLinkState;
+  /** Run one optimize pass as soon as the worker is ready. */
+  autoRun?: boolean;
+  /** Called with the current settings whenever they change. */
+  onStateChange?: (state: OptimizerLinkState) => void;
+  /** Called once the auto-run request has been posted. */
+  onAutoRunStarted?: () => void;
+}
+
+export function OptimizerPanel({
+  data,
+  initialState,
+  autoRun = false,
+  onStateChange,
+  onAutoRunStarted,
+}: OptimizerPanelProps) {
   const parsedItems = data.inventoryItems;
+  // Resolved once per mount: the URL state describes the morgue the panel
+  // mounted with. A later morgue swap goes through the reset effect.
+  const [seed] = useState(() => resolveSeed(initialState, parsedItems));
   const rules = useMemo(() => speciesRulesFor(data), [data]);
 
   // Editable copy of the parsed inventory. The parser occasionally mis-tags
@@ -464,19 +548,17 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     return (parsedItems ?? []).filter((i) => i.isEquipped);
   }, [parsedItems]);
 
-  const [loadout, setLoadout] = useState<ParsedItem[]>(initialLoadout);
-  const [priorityIds, setPriorityIds] = useState<string[]>([
-    OBJECTIVE_PRESETS[0]!.id,
-  ]);
-  const [floors, setFloors] = useState<Floor[]>([]);
-  const [lockedIds, setLockedIds] = useState<Set<string>>(new Set());
-  const [bannedIds, setBannedIds] = useState<Set<string>>(new Set());
+  const [loadout, setLoadout] = useState<ParsedItem[]>(seed.loadout);
+  const [priorityIds, setPriorityIds] = useState<string[]>(seed.priorityIds);
+  const [floors, setFloors] = useState<Floor[]>(seed.floors);
+  const [lockedIds, setLockedIds] = useState<Set<string>>(seed.lockedIds);
+  const [bannedIds, setBannedIds] = useState<Set<string>>(seed.bannedIds);
   const [pending, setPending] = useState(false);
   const [lastOptimizeStats, setLastOptimizeStats] = useState<{
     evaluated: number;
     elapsedMs: number;
   } | null>(null);
-  const [viewMode, setViewMode] = useState<"equipment" | "stats">("equipment");
+  const [viewMode, setViewMode] = useState<"equipment" | "stats">(seed.viewMode);
   const [frontierView, setFrontierView] = useState<FrontierView | null>(null);
   const [frontierPending, setFrontierPending] = useState(false);
   const [frontierElapsedMs, setFrontierElapsedMs] = useState<number | null>(
@@ -625,6 +707,12 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     return () => {
       workerRef.current?.terminate();
       workerRef.current = null;
+      // Requests posted to the terminated worker will never be answered.
+      // Forget them so a remount (StrictMode replays effects in dev) posts
+      // again instead of waiting on, or deduping against, a lost request.
+      lastFrontierRequestRef.current = null;
+      frontierPendingRef.current = false;
+      optimizePendingRef.current = false;
     };
     // spawnWorker reads only refs and state setters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -632,8 +720,13 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
   // When morgue changes, reset loadout, clear locks/bans, and
   // invalidate any in-flight optimize/frontier so a late result doesn't
-  // overwrite the new morgue's state with stale items.
+  // overwrite the new morgue's state with stale items. Compared against
+  // the mount-time loadout (not a first-run flag) so the URL-seeded
+  // state survives both the mount run and StrictMode's effect replay.
+  const seededLoadoutRef = useRef(initialLoadout);
   useEffect(() => {
+    if (seededLoadoutRef.current === initialLoadout) return;
+    seededLoadoutRef.current = initialLoadout;
     setLoadout(initialLoadout);
     setLockedIds(new Set());
     setBannedIds(new Set());
@@ -671,6 +764,44 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     () => buildObjective(priorityIds, floors),
     [priorityIds, floors],
   );
+
+  // Report settings upward (the page mirrors them into the URL). The
+  // default objective is reported as empty so an untouched optimizer
+  // leaves no trace in the link, unless the link itself named it: then
+  // `obj` stays, since its presence is what makes the link auto-run.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+  useEffect(() => {
+    const isDefaultPriority =
+      priorityIds.length === DEFAULT_PRIORITY_IDS.length &&
+      priorityIds.every((id, i) => id === DEFAULT_PRIORITY_IDS[i]);
+    onStateChangeRef.current?.({
+      priorities: isDefaultPriority && !seed.priorityFromLink ? [] : priorityIds,
+      floors: floors.map((f) => ({ prop: f.prop, value: f.value })),
+      lock: [...lockedIds].sort(),
+      ban: [...bannedIds].sort(),
+      view: viewMode,
+    });
+  }, [priorityIds, floors, lockedIds, bannedIds, viewMode, seed.priorityFromLink]);
+
+  // Auto-run once per page load when the link carried settings. Posted
+  // through a ref because runOptimize is defined after the early
+  // returns below; the `supported` guard mirrors those returns. No
+  // "already ran" ref on purpose: StrictMode replays this effect after
+  // terminating the first worker, and a request posted to a terminated
+  // worker is lost, so the replay must be allowed to post again. The
+  // parent flips `autoRun` off once notified, which ends the sequence.
+  const runOptimizeRef = useRef<(objectiveToUse: Objective) => void>(() => {});
+  const objectiveRef = useRef(objective);
+  objectiveRef.current = objective;
+  const onAutoRunStartedRef = useRef(onAutoRunStarted);
+  onAutoRunStartedRef.current = onAutoRunStarted;
+  const supported = inventoryItems !== null && rules !== null;
+  useEffect(() => {
+    if (!autoRun || !supported || !workerRef.current) return;
+    runOptimizeRef.current(objectiveRef.current);
+    onAutoRunStartedRef.current?.();
+  }, [autoRun, supported]);
 
   const relevant = useMemo(() => relevantProperties(objective), [objective]);
 
@@ -934,6 +1065,8 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
     worker.postMessage(request);
   };
 
+  runOptimizeRef.current = runOptimize;
+
   const handleOptimize = () => runOptimize(objective);
 
   // ─── Stat Explorer handlers ───────────────────────────────────────
@@ -1001,6 +1134,7 @@ export function OptimizerPanel({ data }: { data: MorgueData }) {
 
   return (
     <div className="space-y-4">
+      <FirstVisitHint id="morgue-optimizer">{tabHints.morgueOptimizer}</FirstVisitHint>
       <HeaderBar
         onClear={handleClear}
         onOptimize={handleOptimize}
@@ -1156,7 +1290,7 @@ function HeaderBar({
           </a>{" "}
           or{" "}
           <a
-            href="https://github.com/anthropics/crawl-crawler/issues"
+            href="https://github.com/henryci/crawl-crawler/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-amber-100"
@@ -1192,7 +1326,8 @@ function HeaderBar({
           <Sparkles className="w-5 h-5 text-gold" />
           Equipment Optimizer
         </h2>
-        <div className="flex items-end gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <HelpTip text={optimizerTooltips.viewToggle} side="bottom" />
           <div
             className="flex rounded border border-border overflow-hidden"
             role="tablist"
@@ -1227,6 +1362,7 @@ function HeaderBar({
               Stat Explorer
             </button>
           </div>
+          <CopyLinkButton className="h-9" />
           <Button
             variant="ghost"
             onClick={onClear}
@@ -1293,8 +1429,11 @@ function BackpackList({
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Inventory ({visibleItems.length})
           </span>
-          <span className="text-xs text-muted-foreground">
-            click to equip · pencil edits tags · ban excludes
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            click to equip · pencil edits tags
+            <HelpTip text={optimizerTooltips.editTags} />
+            · ban excludes
+            <HelpTip text={optimizerTooltips.ban} />
           </span>
         </div>
         <div className="space-y-1.5">
@@ -1947,8 +2086,9 @@ function WornEquipment({
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Worn Equipment
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
             click to unequip · lock icon pins through optimize
+            <HelpTip text={optimizerTooltips.lock} />
           </span>
         </div>
         <div
@@ -2203,8 +2343,9 @@ function ObjectivePanel({
     <Card className="bg-card border-border py-3 gap-2">
       <CardContent className="space-y-3">
         <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
             Maximize
+            <HelpTip text={optimizerTooltips.maximize} />
           </div>
           {hasMultiple && (
             <div className="text-xs text-muted-foreground italic">
@@ -2240,8 +2381,9 @@ function ObjectivePanel({
         </div>
 
         <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
             Require at least
+            <HelpTip text={optimizerTooltips.requireAtLeast} />
           </div>
           {floors.length === 0 ? (
             <div className="text-xs text-muted-foreground italic">
@@ -3100,6 +3242,16 @@ function UnsupportedMessage({
                   re-parse it.
                 </li>
               </ul>
+              <div className="mt-2">
+                Or{" "}
+                <Link
+                  href={morgueLink({ url: SAMPLE_CHARACTER_URL, tab: "optimizer" })}
+                  className="text-mana hover:underline"
+                >
+                  try the optimizer on a sample character
+                </Link>
+                .
+              </div>
             </>
           ) : (
             <>

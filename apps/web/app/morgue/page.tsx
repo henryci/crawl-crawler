@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, Suspense, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   FileText,
@@ -42,8 +42,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parseMorgue, type MorgueData, type ParseResult } from "dcss-morgue-parser";
 import { OptimizerPanel } from "@/components/optimizer-panel";
+import { CopyLinkButton } from "@/components/copy-link-button";
+import { questionsForPage } from "@/lib/questions";
+import {
+  OPTIMIZER_PARAM_KEYS,
+  optimizerToParams,
+  parseOptimizerParams,
+  hasOptimizerParams,
+  type MorgueTab,
+  type OptimizerLinkState,
+} from "@/lib/links";
 
 type LoadingState = "idle" | "loading" | "success" | "error";
+
+const MORGUE_TABS: readonly MorgueTab[] = ["overview", "skills", "dungeon", "optimizer", "debug"];
+
+function isMorgueTab(value: string | null): value is MorgueTab {
+  return value !== null && (MORGUE_TABS as readonly string[]).includes(value);
+}
+
+/** The optimizer's slice of the query string, as a comparable key. */
+function optimizerParamsKey(params: URLSearchParams): string {
+  return OPTIMIZER_PARAM_KEYS.map((k) => `${k}=${params.get(k) ?? ""}`).join("&");
+}
+
+/**
+ * True when `url` resolves to this site's own origin (the bundled sample).
+ * Compares origins rather than testing for a leading "/": "//host/x" and
+ * "/\host/x" start with one too but resolve to another host.
+ */
+function isSameOriginUrl(url: string): boolean {
+  try {
+    return new URL(url, window.location.href).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Format seconds to HH:MM:SS string.
@@ -105,12 +139,13 @@ const morgueGuide = (
     description="Parse and visualize DCSS morgues and ongoing-character dumps."
     icon={FileText}
     variant="mana"
+    questions={questionsForPage("morgue")}
     sections={[
       {
         icon: BookOpen,
         title: "What is this?",
         content:
-          "A parser and viewer for DCSS morgue files (end-of-game summaries) and character dumps (snapshots of an ongoing character). Paste a URL and get a breakdown of the character, their skills, equipment, spells, branch progression, etc. The Optimizer tab uses the parsed inventory to find your best legal equipment loadout against an objective you pick.",
+          "A parser and viewer for DCSS morgue files (end-of-game summaries) and character dumps (snapshots of an ongoing character). Paste a URL and get a breakdown of the character, their skills, equipment, spells, branch progression, etc.",
       },
       {
         icon: Target,
@@ -122,19 +157,19 @@ const morgueGuide = (
         icon: Target,
         title: "Loading a character dump (ongoing game)",
         content:
-          "Press # in-game to write a character dump. On WebTiles you'll get a chat message with the file path. On CAO the URL is https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt — for other servers it's the same pattern under their rawdata directory. Character dumps work with the Optimizer tab so you can plan equipment changes mid-run.",
+          "Press # in-game to write a character dump. On WebTiles you'll get a chat message with the file path. On CAO the URL is https://crawl.akrasiac.org/rawdata/USERNAME/USERNAME.txt — for other servers it's the same pattern under their rawdata directory. Character dumps parse the same way, so you can review an ongoing game before deciding what to do next.",
       },
       {
         icon: Lightbulb,
         title: "Tips",
         content:
-          "The Skills tab can break down specific action groups, so you can see which spells you leaned on and when. The Optimizer tab (0.33+ inventories only) lets you maximize objectives, add 'at least N' constraints, lock items you want to keep, and ban items you don't want suggested.",
+          "The Skills tab can break down specific action groups, so you can see which spells you leaned on and when. The Dungeon tab shows when each branch was entered and how deep you went.",
       },
       {
         icon: AlertTriangle,
         title: "Keep in mind",
         content:
-          "Very old morgue files (pre-0.28) may not parse fully — the format has changed across versions. The Optimizer specifically needs DCSS 0.33 or newer for its structured inventory data.",
+          "Very old morgue files (pre-0.28) may not parse fully — the format has changed across versions.",
       },
     ]}
   />
@@ -214,6 +249,43 @@ function MorgueViewerContent() {
 
   const urlFromParams = searchParams.get("url") || "";
   const hashFromParams = searchParams.get("hash") || "";
+  const tabParam = searchParams.get("tab");
+  const activeTab: MorgueTab = isMorgueTab(tabParam) ? tabParam : "overview";
+  const optimizerInitialState = useMemo(
+    () => parseOptimizerParams(searchParams),
+    [searchParams],
+  );
+  // Auto-run the optimizer when a link carrying optimizer settings
+  // arrives, so it opens on the result rather than the controls. Flipped
+  // off as soon as the panel starts the run. The panel reads its settings
+  // once per mount, so `optimizerLinkEpoch` keys it: it bumps when the
+  // optimizer params change from outside (a new link, back/forward) but
+  // not when the panel's own URL write lands. Two refs tell those apart:
+  // the last key this effect saw, and the last key the panel wrote (the
+  // panel's mount report can land before this effect first runs, so a
+  // single "last written" ref would misread the mount URL as external).
+  const [autoRunOptimizer, setAutoRunOptimizer] = useState(() =>
+    hasOptimizerParams(searchParams),
+  );
+  const [optimizerLinkEpoch, setOptimizerLinkEpoch] = useState(0);
+  const optimizerKey = optimizerParamsKey(searchParams);
+  const lastSeenOptimizerKeyRef = useRef(optimizerKey);
+  const lastWrittenOptimizerKeyRef = useRef<string | null>(null);
+  // The query string the panel's last write asked for, so a write still in
+  // flight can be superseded (see handleOptimizerStateChange).
+  const lastRequestedOptimizerQsRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (optimizerKey === lastSeenOptimizerKeyRef.current) return;
+    lastSeenOptimizerKeyRef.current = optimizerKey;
+    if (optimizerKey === lastWrittenOptimizerKeyRef.current) {
+      // The panel's own write landed. Forget it, so a later back/forward
+      // to the same settings still counts as an outside change.
+      lastWrittenOptimizerKeyRef.current = null;
+      return;
+    }
+    setOptimizerLinkEpoch((epoch) => epoch + 1);
+    setAutoRunOptimizer(hasOptimizerParams(searchParams));
+  }, [optimizerKey, searchParams]);
   const [url, setUrl] = useState(urlFromParams);
   const [loadingState, setLoadingState] = useState<LoadingState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -242,6 +314,9 @@ function MorgueViewerContent() {
       setMorgueData(result.data);
       setLoadingState("success");
       setLastLoadedHash(hash);
+      // The URL-loaded morgue is no longer on screen; returning to its
+      // ?url= (e.g. with Back) must load it again.
+      setLastLoadedUrl(null);
       setCachedAt(response.headers.get("x-crawl-cache-created-at"));
       // Update URL field if the morgue has a source URL
       if (result.data.sourceUrl) {
@@ -265,9 +340,13 @@ function MorgueViewerContent() {
     setCachedAt(null);
 
     try {
-      // Use the proxy route to fetch the morgue file (avoids CORS)
-      const proxyUrl = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
-      const response = await fetch(proxyUrl);
+      // Same-origin URLs (the bundled sample character) are fetched
+      // directly; everything else goes through the proxy, which avoids
+      // CORS and only allows DCSS servers.
+      const fetchUrl = isSameOriginUrl(targetUrl)
+        ? targetUrl
+        : `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+      const response = await fetch(fetchUrl);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -282,6 +361,8 @@ function MorgueViewerContent() {
       setMorgueData(result.data);
       setLoadingState("success");
       setLastLoadedUrl(targetUrl);
+      // Likewise for a hash-loaded morgue this one replaced.
+      setLastLoadedHash(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoadingState("error");
@@ -306,13 +387,55 @@ function MorgueViewerContent() {
   }, [urlFromParams, lastLoadedUrl, fetchAndParse, hashFromParams]);
 
   const handleParseMorgue = async () => {
-    // Update URL params when user clicks Parse
+    // Update URL params when user clicks Parse. Optimizer settings are
+    // dropped on purpose: they reference the previous morgue's items.
     const newParams = new URLSearchParams();
     newParams.set("url", url);
+    if (activeTab !== "overview") newParams.set("tab", activeTab);
     router.push(`/morgue?${newParams.toString()}`, { scroll: false });
 
     await fetchAndParse(url);
   };
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (isMorgueTab(value) && value !== "overview") next.set("tab", value);
+      else next.delete("tab");
+      const qs = next.toString();
+      router.replace(qs ? `/morgue?${qs}` : "/morgue", { scroll: false });
+    },
+    [searchParams, router],
+  );
+
+  // Mirror the optimizer's settings into the URL so the current
+  // objective, constraints, locks and bans can be shared as a link.
+  const handleOptimizerStateChange = useCallback(
+    (state: OptimizerLinkState) => {
+      const current = searchParams.toString();
+      const next = new URLSearchParams(current);
+      for (const key of OPTIMIZER_PARAM_KEYS) next.delete(key);
+      for (const [key, value] of Object.entries(optimizerToParams(state))) {
+        next.set(key, value);
+      }
+      const qs = next.toString();
+      // `current` is the URL as of the last render. While an earlier write
+      // is still in flight it is stale, and a state that matches it (e.g. a
+      // lock toggled on and straight back off) must still be written so it
+      // supersedes the pending one.
+      const requested = lastRequestedOptimizerQsRef.current;
+      if (qs === current && (requested === null || requested === current)) return;
+      lastRequestedOptimizerQsRef.current = qs;
+      // Only a write that changes the optimizer params is seen by the epoch
+      // effect, which consumes it; otherwise there is nothing to remember.
+      const key = optimizerParamsKey(next);
+      lastWrittenOptimizerKeyRef.current = key === optimizerParamsKey(searchParams) ? null : key;
+      router.replace(qs ? `/morgue?${qs}` : "/morgue", { scroll: false });
+    },
+    [searchParams, router],
+  );
+
+  const handleAutoRunStarted = useCallback(() => setAutoRunOptimizer(false), []);
 
   const [formExpanded, setFormExpanded] = useState(!morgueData);
 
@@ -458,7 +581,19 @@ function MorgueViewerContent() {
       </div>
 
       {/* Parsed Morgue Display */}
-      {morgueData && <MorgueDisplay data={morgueData} cachedAt={cachedAt} />}
+      {morgueData && (
+        <MorgueDisplay
+          data={morgueData}
+          cachedAt={cachedAt}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          optimizerInitialState={optimizerInitialState}
+          optimizerLinkEpoch={optimizerLinkEpoch}
+          autoRunOptimizer={autoRunOptimizer}
+          onOptimizerStateChange={handleOptimizerStateChange}
+          onOptimizerAutoRunStarted={handleAutoRunStarted}
+        />
+      )}
 
     </PageWrapper>
   );
@@ -467,26 +602,51 @@ function MorgueViewerContent() {
 /**
  * Main component to display parsed morgue data.
  */
-function MorgueDisplay({ data, cachedAt }: { data: MorgueData; cachedAt: string | null }) {
+function MorgueDisplay({
+  data,
+  cachedAt,
+  activeTab,
+  onTabChange,
+  optimizerInitialState,
+  optimizerLinkEpoch,
+  autoRunOptimizer,
+  onOptimizerStateChange,
+  onOptimizerAutoRunStarted,
+}: {
+  data: MorgueData;
+  cachedAt: string | null;
+  activeTab: MorgueTab;
+  onTabChange: (tab: string) => void;
+  optimizerInitialState: OptimizerLinkState;
+  optimizerLinkEpoch: number;
+  autoRunOptimizer: boolean;
+  onOptimizerStateChange: (state: OptimizerLinkState) => void;
+  onOptimizerAutoRunStarted: () => void;
+}) {
   return (
     <div className="space-y-6">
-      {/* Link to original morgue file */}
-      {data.sourceUrl && (
-        <div className="flex items-center gap-2 text-sm">
-          <FileText className="w-4 h-4 text-muted-foreground" />
-          <a
-            href={data.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-mana hover:text-mana/80 hover:underline flex items-center gap-1"
-          >
-            View original morgue file
-            <LinkIcon className="w-3 h-3" />
-          </a>
-        </div>
-      )}
+      {/* Link to original morgue file + share link for this view */}
+      <div className="flex items-center justify-between gap-3 flex-wrap text-sm">
+        {data.sourceUrl ? (
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            <a
+              href={data.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-mana hover:text-mana/80 hover:underline flex items-center gap-1"
+            >
+              View original morgue file
+              <LinkIcon className="w-3 h-3" />
+            </a>
+          </div>
+        ) : (
+          <span />
+        )}
+        <CopyLinkButton />
+      </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
         <TabsList className="bg-transparent gap-2 p-0 mb-6">
           <TabsTrigger
             value="overview"
@@ -509,13 +669,16 @@ function MorgueDisplay({ data, cachedAt }: { data: MorgueData; cachedAt: string 
             <Map className="w-4 h-4 mr-2" />
             Dungeon
           </TabsTrigger>
-          <TabsTrigger
-            value="optimizer"
-            className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Optimizer
-          </TabsTrigger>
+          {/* The Optimizer tab is unlisted until its launch; it stays reachable via ?tab=optimizer. */}
+          {activeTab === "optimizer" && (
+            <TabsTrigger
+              value="optimizer"
+              className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Optimizer
+            </TabsTrigger>
+          )}
           <TabsTrigger
             value="debug"
             className="border border-border bg-secondary/30 hover:bg-secondary/60 hover:border-foreground/30 data-[state=active]:bg-health/20 data-[state=active]:border-health/50 px-4 transition-colors"
@@ -538,7 +701,14 @@ function MorgueDisplay({ data, cachedAt }: { data: MorgueData; cachedAt: string 
         </TabsContent>
 
         <TabsContent value="optimizer" className="mt-6">
-          <OptimizerPanel data={data} />
+          <OptimizerPanel
+            key={optimizerLinkEpoch}
+            data={data}
+            initialState={optimizerInitialState}
+            autoRun={autoRunOptimizer}
+            onStateChange={onOptimizerStateChange}
+            onAutoRunStarted={onOptimizerAutoRunStarted}
+          />
         </TabsContent>
 
         <TabsContent value="debug" className="mt-6">

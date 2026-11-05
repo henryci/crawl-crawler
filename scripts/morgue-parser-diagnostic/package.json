@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "diagnose": "tsx diagnose.ts",
-    "diagnose:verbose": "tsx diagnose.ts --verbose"
+    "diagnose:verbose": "tsx diagnose.ts --verbose",
+    "lint": "eslint ."
   },
   "dependencies": {
     "dcss-morgue-parser": "workspace:*"

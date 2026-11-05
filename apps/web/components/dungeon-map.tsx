@@ -114,21 +114,25 @@ export function DungeonMap() {
   const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null)
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null)
   const [isMoving, setIsMoving] = useState(false)
-  const [showEnterPrompt, setShowEnterPrompt] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
 
   // Update current location when player moves
   useEffect(() => {
     const loc = getLocationAt(playerPos.x, playerPos.y)
     setCurrentLocation(loc)
-    setShowEnterPrompt(!!loc)
   }, [playerPos])
 
   // Handle keyboard movement
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Leave keys aimed at a focused control alone, so Space, Enter and the
+      // arrows keep their usual meaning on the links below the map.
+      if (e.target instanceof Element && e.target.closest("a, button, input, textarea, select, [contenteditable]")) {
+        return
+      }
+
       // Keys that we handle - prevent default immediately to stop page scroll
-      const navigationKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "h", "j", "k", "l", " "]
+      const navigationKeys =["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "h", "j", "k", "l", " "]
       if (navigationKeys.includes(e.key)) {
         e.preventDefault()
       }
