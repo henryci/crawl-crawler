@@ -49,6 +49,42 @@ describe('extractDefensesSummary', () => {
     const totals = extractDefensesSummary(block);
     expect(totals).toEqual({ rF: 3, Will: 3 });
   });
+  it('counts only the first column in pre-0.31 two-column blocks', () => {
+    // Regression: the pip count used to run on into the second column,
+    // so `rFire + + +  SeeInvis +` parsed as rF 4 with SInv missing.
+    const block = [
+      'rFire    + + +     SeeInvis +   a - +7 Spriggan\'s Knife {MR+ EV+4}',
+      'rCold    + + .     Gourm    .   D - +4 shield "Qivaunk" {rPois rF+ rN+}',
+      'rPois    +         Spirit   +   b - +2 hat {SInv}',
+      'rElec    .         Reflect  +   J - scarf {rC+ rF+}',
+      'MR       +++..                  (boots unavailable)',
+      'Stlth    ++........             K - amulet of regeneration',
+    ].join('\n');
+    expect(extractDefensesSummary(block)).toEqual({
+      rF: 3,
+      SInv: 1,
+      rC: 2,
+      rPois: 1,
+      rElec: 0,
+      Will: 3,
+      Stlth: 2,
+    });
+  });
+
+  it('reads the old SeeInvis column as 0 when absent', () => {
+    const block = 'rFire  + + +     SeeInvis .     a - +9 broad axe (holy)';
+    expect(extractDefensesSummary(block)).toEqual({ rF: 3, SInv: 0 });
+  });
+
+  it('treats ∞ as immunity (the property cap)', () => {
+    const block = 'rPois    ∞         Spirit   .   h - +2 helmet\nrNeg   ∞';
+    expect(extractDefensesSummary(block)).toEqual({ rPois: 1, rN: 3 });
+  });
+
+  it('counts x pips as vulnerability', () => {
+    const block = 'rFire   x . .  (100%)\nrCold   + + .  (20%)\nWill    x....';
+    expect(extractDefensesSummary(block)).toEqual({ rF: -1, rC: 2, Will: -1 });
+  });
 });
 
 describe('runtimeTotals on real morgues', () => {
@@ -112,5 +148,28 @@ describe('runtimeTotals on real morgues', () => {
     // worships Vehumet which doesn't grant rF).
     expect(rfFromEquipment).toBeGreaterThanOrEqual(2);
     expect(data.runtimeTotals!.rF).toBe(3);
+  });
+
+  it('pre-0.31 two-column morgue (0.22): reads MR, Stlth and SeeInvis', async () => {
+    const path = resolve(SAMPLE_DIR, 'morgue-0xDEADFACE-20180605-051901.txt');
+    const data = await parseMorgueData(readFileSync(path, 'utf-8'));
+    // From the morgue: rFire + + . / SeeInvis +, MR +++.., Stlth ++........
+    expect(data.runtimeTotals).toMatchObject({
+      rF: 2,
+      rC: 2,
+      rN: 1,
+      rPois: 1,
+      rElec: 1,
+      rCorr: 0,
+      SInv: 1,
+      Will: 3,
+      Stlth: 2,
+    });
+  });
+
+  it('poison-immune character: rPois ∞ reads as 1', async () => {
+    const path = resolve(SAMPLE_DIR, 'morgue-Bowmetheus-20230628-120831.txt');
+    const data = await parseMorgueData(readFileSync(path, 'utf-8'));
+    expect(data.runtimeTotals).toMatchObject({ rF: 1, rN: 3, rPois: 1, SInv: 1, Will: 4 });
   });
 });

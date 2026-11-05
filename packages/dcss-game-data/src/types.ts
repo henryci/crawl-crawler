@@ -72,6 +72,8 @@ export interface God {
   addedInVersion?: string;
   /** Version when this god was removed (null if still available) */
   removedInVersion?: string;
+  /** Older or misspelled names seen in morgues (e.g., "Ieoh Jian" for Wu Jian) */
+  aliases?: string[];
 }
 
 /**

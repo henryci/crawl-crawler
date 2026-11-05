@@ -16,9 +16,20 @@
  *   HPRegen 0.52/turn       n - ring of Suspicion {Fly Will+ Dex+5}
  *   MPRegen 0.70/turn
  *
+ * Pre-0.31 morgues print a second property column to the right of the
+ * first (`rFire  + + +     SeeInvis +   a - ...`) and call Willpower `MR`:
+ *
+ *   rFire    + + .     SeeInvis +   a - +7 Spriggan's Knife {...}
+ *   rPois    ∞         Spirit   .   h - +2 helmet of Tender Moments
+ *   MR       +++..                  (boots unavailable)
+ *
  * For each pip line: the property name maps to a PropertyKey and the
- * value is the pip count (# of '+' characters). The HPRegen / MPRegen
- * rate lines are intentionally skipped (see DISPLAY_NAME_TO_KEY below).
+ * value is the pip count: '+' counts 1, 'x' (vulnerability) counts -1,
+ * '.' counts 0, and '∞' (immunity) counts as the property's cap. Only the
+ * pip run right after the name is counted, so the second column and the
+ * item attribution column never leak into it. A recognized second-column
+ * property (SeeInvis) is parsed the same way. The HPRegen / MPRegen rate
+ * lines are intentionally skipped (see DISPLAY_NAME_TO_KEY below).
  * Unrecognized lines are skipped. Returns the totals as a sparse
  * ContributionMap matching the property registry's keys.
  *
@@ -28,6 +39,7 @@
  * the current equipment's contributions.
  */
 
+import { PROPERTIES } from 'dcss-game-data';
 import type { ContributionMap, PropertyKey } from 'dcss-game-data';
 
 /**
@@ -45,6 +57,9 @@ const DISPLAY_NAME_TO_KEY: Record<string, PropertyKey> = {
   SInv: 'SInv',
   Will: 'Will',
   Stlth: 'Stlth',
+  // Pre-0.31 names.
+  MR: 'Will',
+  SeeInvis: 'SInv',
 };
 
 // The defenses block also prints `HPRegen X.XX/turn` and `MPRegen X.XX/turn`,
@@ -59,6 +74,16 @@ const DISPLAY_NAME_TO_KEY: Record<string, PropertyKey> = {
 const KNOWN_LINE_PREFIX = new RegExp(
   '^(?:' + Object.keys(DISPLAY_NAME_TO_KEY).join('|') + ')\\b',
 );
+
+/**
+ * A pip run: pips separated by at most one space ("+ + .", "+++..", "∞"),
+ * ending at whitespace or end of line. Columns are separated by two or
+ * more spaces, so the run never reaches into the next column.
+ */
+const PIP_RUN = /^[+.x∞](?: ?[+.x∞])*(?=\s|$)/;
+
+/** A second-column property: `   SeeInvis +`. */
+const SECOND_COLUMN = /^\s{2,}(\w+)\s+([+.x∞](?: ?[+.x∞])*)(?=\s|$)/;
 
 /**
  * Extract the runtime defenses totals from the morgue header. Returns
@@ -87,8 +112,7 @@ export function extractDefensesSummary(content: string): ContributionMap | null 
     if (line.trim() === '') break;
     if (!KNOWN_LINE_PREFIX.test(line)) break;
 
-    const parsed = parseLine(line);
-    if (parsed) totals[parsed.key] = parsed.value;
+    for (const parsed of parseLine(line)) totals[parsed.key] = parsed.value;
   }
 
   return Object.keys(totals).length > 0 ? totals : null;
@@ -99,20 +123,34 @@ interface ParsedLine {
   value: number;
 }
 
-function parseLine(line: string): ParsedLine | null {
-  const m = /^(\w+)\s+(.+?)$/.exec(line);
-  if (!m) return null;
-  const displayName = m[1]!;
+function parseLine(line: string): ParsedLine[] {
+  const m = /^(\w+)\s+(.*)$/.exec(line);
+  if (!m) return [];
+  const key = DISPLAY_NAME_TO_KEY[m[1]!];
+  if (!key) return [];
+
   const rest = m[2]!;
+  const pips = PIP_RUN.exec(rest);
+  if (!pips) return [];
 
-  const key = DISPLAY_NAME_TO_KEY[displayName];
-  if (!key) return null;
+  const results: ParsedLine[] = [{ key, value: pipValue(key, pips[0]) }];
 
-  // Pip format: count '+' characters up to the (N%) percentage or the
-  // attribution column (item-letter dash).
-  let pipPart = rest;
-  const cutoff = /\(\d+%\)|\s{2,}[a-zA-Z]\s*-\s/.exec(pipPart);
-  if (cutoff) pipPart = pipPart.slice(0, cutoff.index);
-  const pipCount = (pipPart.match(/\+/g) ?? []).length;
-  return { key, value: pipCount };
+  const second = SECOND_COLUMN.exec(rest.slice(pips[0].length));
+  const secondKey = second ? DISPLAY_NAME_TO_KEY[second[1]!] : undefined;
+  if (second && secondKey) {
+    results.push({ key: secondKey, value: pipValue(secondKey, second[2]!) });
+  }
+  return results;
+}
+
+function pipValue(key: PropertyKey, pips: string): number {
+  // Immunity: report the property's maximum so "immune" reads as
+  // "fully resistant" (rPois ∞ -> 1, rN ∞ -> 3).
+  if (pips.includes('∞')) return PROPERTIES[key]?.cap?.max ?? 1;
+  let value = 0;
+  for (const ch of pips) {
+    if (ch === '+') value++;
+    else if (ch === 'x') value--;
+  }
+  return value;
 }

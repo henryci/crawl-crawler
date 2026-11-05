@@ -1,6 +1,6 @@
 {
   "name": "dcss-morgue-parser",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A TypeScript library for parsing Dungeon Crawl Stone Soup morgue files",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,7 +23,7 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "cli": "tsx src/cli.ts",
     "prepublishOnly": "npm run build"

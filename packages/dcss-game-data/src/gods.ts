@@ -17,7 +17,7 @@ export const GODS: God[] = [
   { name: 'Ashenzari', epithet: 'the Shackled' },
   { name: 'Beogh', epithet: 'the Shepherd', addedInVersion: '0.4' },
   { name: 'Cheibriados', epithet: 'the Contemplative', addedInVersion: '0.6' },
-  { name: 'Dithmenos', epithet: 'the Shadowed', addedInVersion: '0.14' },
+  { name: 'Dithmenos', epithet: 'the Shadowed', addedInVersion: '0.14', aliases: ['Dithmengos'] },
   { name: 'Elyvilon', epithet: 'the Healer' },
   { name: 'Fedhas', shortName: 'Fedhas', epithet: 'Madash', addedInVersion: '0.5' },
   { name: 'Gozag', epithet: 'Ym Sagoz the Greedy', addedInVersion: '0.16' },
@@ -34,9 +34,9 @@ export const GODS: God[] = [
   { name: 'Sif Muna', shortName: 'Sif', epithet: 'the Loreminder' },
   { name: 'the Shining One', shortName: 'TSO' },
   { name: 'Trog', epithet: 'the Wrathful' },
-  { name: 'Uskayaw', epithet: 'the Reveler', addedInVersion: '0.21' },
+  { name: 'Uskayaw', epithet: 'the Reveler', addedInVersion: '0.21', aliases: ['Ukayaw'] },
   { name: 'Vehumet' },
-  { name: 'Wu Jian', addedInVersion: '0.22' },
+  { name: 'Wu Jian', addedInVersion: '0.22', aliases: ['Ieoh Jian'] },
   { name: 'Xom', epithet: 'the Unpredictable' },
   { name: 'Yredelemnul', shortName: 'Yred', epithet: 'the Dark' },
   { name: 'Zin', epithet: 'the Law-giver' },
@@ -54,6 +54,9 @@ export const GODS_BY_NAME: Map<string, God> = new Map(
     const entries: [string, God][] = [[g.name.toLowerCase(), g]];
     if (g.shortName) {
       entries.push([g.shortName.toLowerCase(), g]);
+    }
+    for (const alias of g.aliases ?? []) {
+      entries.push([alias.toLowerCase(), g]);
     }
     // Add common variations
     if (g.name === 'the Shining One') {

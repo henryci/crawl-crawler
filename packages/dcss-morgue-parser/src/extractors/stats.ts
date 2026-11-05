@@ -17,6 +17,7 @@
 
 import type { CharacterStats } from '../types.js';
 import { PATTERNS, parseIntSafe } from '../utils.js';
+import { extractGodLine } from './gods.js';
 
 /**
  * Extract character stats from the morgue file.
@@ -180,26 +181,11 @@ function extractCommonStats(section: string, result: CharacterStats): void {
     result.gold = parseIntSafe(goldMatch[1]);
   }
 
-  // God and piety
-  // Look for patterns like "God: Makhleb [******]" or "God: Sif Muna [****]"
-  // The god name may have spaces, and piety is shown as [*] to [******]
-  // First try to match with piety
-  const godWithPietyMatch = /God:\s+([A-Za-z][A-Za-z ]+?)\s+\[([*]+)\]/.exec(section);
-  if (godWithPietyMatch) {
-    const godName = godWithPietyMatch[1]?.trim();
-    if (godName) {
-      result.god = godName;
-      result.piety = godWithPietyMatch[2]?.length ?? null;
-    }
-  } else {
-    // Try without piety (godless or no piety shown)
-    const godMatch = /God:\s+([A-Za-z][A-Za-z ]*?)(?:\s|$)/.exec(section);
-    if (godMatch) {
-      const godName = godMatch[1]?.trim();
-      if (godName) {
-        result.god = godName;
-      }
-    }
+  // God and piety: "God:    Sif Muna [***...]", "God: No God", ...
+  const godLine = extractGodLine(section);
+  if (godLine) {
+    result.god = godLine.god;
+    result.piety = godLine.piety;
   }
 }
 

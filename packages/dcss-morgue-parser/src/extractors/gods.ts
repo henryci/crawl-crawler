@@ -30,7 +30,7 @@ const BACKGROUND_STARTING_GODS: Record<string, string> = {
   // Removed backgrounds (for historical morgues)
   Healer: 'Elyvilon', // Removed in 0.14
   Priest: 'Zin', // Removed in 0.8
-  Paladin: 'The Shining One', // Removed in 0.8
+  Paladin: 'the Shining One', // Removed in 0.8
   'Death Knight': 'Yredelemnul', // Removed in 0.8
 };
 
@@ -72,6 +72,19 @@ export function extractGods(content: string): GodRecord[] | null {
       // Check for worship start
       const worshipMatch = PATTERNS.becameWorshipper.exec(message);
       if (worshipMatch) {
+        const godName = cleanGodName(worshipMatch[1]?.trim() ?? '');
+
+        // Newer morgues note "Reached * piety under X" just before
+        // "Became a worshipper of X" on the same turn. The piety note
+        // already started tracking X as an inferred starting god (turn 0);
+        // this is the real start, so correct it rather than recording a
+        // phantom turn-0 worship of the same god.
+        if (currentGod === godName && gods.length === 0 && currentGodStartTurn === 0 && !startingGod) {
+          currentGodStartTurn = turn;
+          currentGodStartLocation = location;
+          continue;
+        }
+
         // If we had a previous god, record when they ended
         if (currentGod) {
           gods.push({
@@ -82,10 +95,8 @@ export function extractGods(content: string): GodRecord[] | null {
           });
         }
 
-        // Start tracking new god
-        const godName = worshipMatch[1]?.trim() ?? '';
-        // Clean up god name (remove epithets like "the Destroyer")
-        currentGod = cleanGodName(godName);
+        // Start tracking new god (cleanGodName drops epithets like "the Destroyer")
+        currentGod = godName;
         currentGodStartTurn = turn;
         currentGodStartLocation = location;
         continue;
@@ -122,21 +133,19 @@ export function extractGods(content: string): GodRecord[] | null {
       }
 
       // Check for "Became the Champion of..." or similar advancement
-      const championMatch = /Became the Champion of\s+(\S+)/.exec(message);
+      const championMatch = /Became the Champion of\s+(.+)/.exec(message);
       if (championMatch && !currentGod) {
         // Started worship without a "Became a worshipper" message
-        const godName = championMatch[1] ?? '';
-        currentGod = godName;
+        currentGod = cleanGodName(championMatch[1]?.trim() ?? '');
         currentGodStartTurn = turn;
         currentGodStartLocation = location;
       }
 
       // Check for piety notes that indicate starting god (e.g., "Reached ** piety under Trog")
       // This helps detect starting gods for backgrounds we might not know about
-      const pietyMatch = /Reached \*+ piety under\s+(\S+)/.exec(message);
+      const pietyMatch = /Reached \*+ piety under\s+(.+)/.exec(message);
       if (pietyMatch && !currentGod && gods.length === 0) {
-        const godName = pietyMatch[1] ?? '';
-        currentGod = godName;
+        currentGod = cleanGodName(pietyMatch[1]?.trim() ?? '');
         currentGodStartTurn = 0;
         currentGodStartLocation = 'D:1';
       }
@@ -187,22 +196,9 @@ function detectStartingGod(content: string): string | null {
 }
 
 function detectCurrentGod(content: string): string | null {
-  const godLine = /^\s*God\s*:\s*(.+)$/mi.exec(content);
-  if (godLine?.[1]) {
-    const value = sanitizeGodLineValue(godLine[1]);
-    if (!value || /^no god$/i.test(value)) {
-      return '';
-    }
-    return cleanGodName(value);
-  }
-
-  const worshipLine = /^Worship\s*:\s*(.+)$/m.exec(content);
-  if (worshipLine?.[1]) {
-    const value = sanitizeGodLineValue(worshipLine[1]);
-    if (!value || /^no god$/i.test(value)) {
-      return '';
-    }
-    return cleanGodName(value);
+  const godLine = extractGodLine(content);
+  if (godLine) {
+    return godLine.god ?? '';
   }
 
   const youWorshipLine = /^You worship(?:ped)?\s+(.+?)\./mi.exec(content);
@@ -217,14 +213,56 @@ function detectCurrentGod(content: string): string | null {
   return null;
 }
 
+export interface GodLineValue {
+  /** Canonical god name, or null when the line says no god. */
+  god: string | null;
+  /** Number of filled piety stars (0-6), or null when no piety is shown. */
+  piety: number | null;
+}
+
+/**
+ * Find the character header's god line and parse it. Modern morgues print
+ * it mid-line ("Magic: 43/43  EV: 14  Int: 6  God:    Lugonu [......]");
+ * older ones start a line with it ("God       : Trog"), or use "Worship:". An empty value
+ * ("God:" with nothing after it) means no god. Returns null when there is
+ * no god line at all.
+ */
+export function extractGodLine(text: string): GodLineValue | null {
+  const godLine = /\bGod[ \t]*:[ \t]*([^\n]*)/.exec(text) ?? /^Worship[ \t]*:[ \t]*([^\n]*)/m.exec(text);
+  return godLine ? parseGodLineValue(godLine[1] ?? '') : null;
+}
+
+/**
+ * Parse the value after "God:" in the character header, e.g.
+ * "Sif Muna [***...]", "The Shining One ******", "No God", "Gozag".
+ */
+function parseGodLineValue(rawValue: string): GodLineValue {
+  const value = sanitizeGodLineValue(rawValue);
+  if (!value || /^no god$/i.test(value)) {
+    return { god: null, piety: null };
+  }
+  return { god: cleanGodName(value), piety: parsePiety(rawValue) };
+}
+
+/** Piety as "[****..]" (filled stars, unfilled dots) or legacy bare "****" (sometimes glued to the name). */
+function parsePiety(rawValue: string): number | null {
+  const bracketed = /\[([*.]+)\]/.exec(rawValue);
+  if (bracketed) return (bracketed[1]!.match(/\*/g) ?? []).length;
+  const bare = /(\*+)(?=\s|$)/.exec(rawValue);
+  return bare ? bare[1]!.length : null;
+}
+
 function sanitizeGodLineValue(rawValue: string): string {
   let value = rawValue.trim();
-  // Remove piety markers in either "[******]" or bare "******" legacy forms.
-  value = value.replace(/\[[*]+\]/g, ' ').replace(/\*{2,}/g, ' ');
-  // Old fixed-width morgues can spill into right-hand resistance columns.
+  // Remove piety markers: "[******]", "[***...]", or bare legacy "******".
+  // Two spaces keep the column gap when stars are glued to a spilled
+  // column ("The Shining****** Life Prot.: . . .").
+  value = value.replace(/\[[*.]+\]/g, '  ').replace(/\*+/g, '  ').trim();
+  // Old fixed-width morgues can spill into right-hand resistance columns,
+  // even when the god column is empty ("Worship    :     Life Prot.: . . .").
   value = value.replace(/\s{2,}[A-Za-z][A-Za-z .'-]*\s*:\s*.*$/u, '');
   value = value.replace(
-    /\s+(?:Life Prot\.?|Conserve|Res\.[A-Za-z]+|See Invis\.?|Warding|Acc\.)\s*:\s*.*$/iu,
+    /(?:^|\s+)(?:Life Prot\.?|Conserve|Res\.[A-Za-z]+|See Invis\.?|Warding|Acc\.)\s*:\s*.*$/iu,
     ''
   );
   value = value.replace(/[.,;:]+$/g, '').replace(/\s+/g, ' ').trim();
@@ -241,9 +279,6 @@ function sanitizeGodLineValue(rawValue: string): string {
   }
   if (/^wu$/i.test(value)) {
     return 'Wu Jian';
-  }
-  if (/^ukayaw$/i.test(value)) {
-    return 'Uskayaw';
   }
 
   return value;
