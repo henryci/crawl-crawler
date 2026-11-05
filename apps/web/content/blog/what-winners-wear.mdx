@@ -22,6 +22,12 @@ export const casters = [
 
 export const melee = ["Fighter", "Gladiator", "Berserker", "Monk"];
 
+export const handed = [
+  "Armataur", "Barachi", "Deep Elf", "Demigod", "Demonspawn", "Djinni", "Draconian", "Formicid",
+  "Gargoyle", "Gnoll", "Human", "Kobold", "Merfolk", "Minotaur", "Mountain Dwarf", "Mummy", "Naga",
+  "Octopode", "Oni", "Poltergeist", "Revenant", "Spriggan", "Tengu", "Troll", "Vine Stalker",
+];
+
 Every morgue records what the character was wearing when the game ended. Across the 9,787 streak
 wins on 0.30 or later, that is a large enough sample to ask a practical question: what does a winning character look like at the finish line, and how far does
 it vary by species and background?
@@ -36,66 +42,69 @@ different, I say so.
 ## Almost everyone carries a shield
 
 At the end of a winning game, 73% of characters have a shield in their off-hand, 4% an orb, and
-only 23% nothing. Tower shields are the most common single item (28%), ahead of kite shields (25%)
-and bucklers (11%).
+23% nothing. About two fifths of that 23% comes from two species that can't use a shield: Felids,
+who can't hold anything, and Coglins, who dual-wield instead. Together they are a tenth of all wins. Among the
+species that can, 81% finish with a shield, 5% with an orb and only 15% with nothing. Tower shields
+are the most common single item (32%), ahead of kite shields (27%) and bucklers (13%). The rest of
+this section leaves out Felids and Coglins. <ViewLink href={analyticsLink({ tab: "equipment", species: handed, ...since })}>Wins without Felids and Coglins</ViewLink>
 
-That is as true for spellcasters as for fighters. Across the 4,147 wins by caster backgrounds,
-75% finish with a shield and 8% with an orb, leaving 17% with an empty off-hand. The melee
-backgrounds (Fighter, Gladiator, Berserker and Monk) are at 76% shields and 23% empty, so casters
-are, if anything, less likely to go without. Winning casters train Shields to a median of 14.
-<ViewLink href={analyticsLink({ tab: "equipment", backgrounds: casters, ...since })}>Caster kit</ViewLink> <ViewLink href={analyticsLink({ tab: "skills", backgrounds: casters, ...since })}>Caster skills</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", backgrounds: melee, ...since })}>Melee kit</ViewLink>
+That is as true for spellcasters as for fighters. Across the 3,859 wins by caster backgrounds, 80%
+finish with a shield and 8% with an orb, leaving 11% with an empty off-hand. The melee backgrounds
+(Fighter, Gladiator, Berserker and Monk) are at 86% shields and 13% empty. Winning casters train
+Shields to a median of 15.
+<ViewLink href={analyticsLink({ tab: "equipment", species: handed, backgrounds: casters, ...since })}>Caster kit</ViewLink> <ViewLink href={analyticsLink({ tab: "skills", species: handed, backgrounds: casters, ...since })}>Caster skills</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", species: handed, backgrounds: melee, ...since })}>Melee kit</ViewLink>
 
-What differs is the shield. Melee winners carry a tower shield 47% of the time. Casters favour kite
-shields (29%) and bucklers (19%), with tower shields third at 18%.
+What differs is the shield. Melee winners carry a tower shield 54% of the time. Casters favour kite
+shields (31%), with bucklers and tower shields at 20% each.
 
 <PairedBarChart
   title="Off-hand at the end of winning games: casters and melee"
-  subtitle="Share of 4,147 caster and 2,575 melee wins on 0.30+."
+  subtitle="Share of 3,859 caster and 2,276 melee wins on 0.30+, excluding Felids and Coglins."
   seriesA="Casters"
   seriesB="Melee"
   rows={[
-    { label: "Tower shield", a: 18, b: 47 },
-    { label: "Kite shield", a: 29, b: 18 },
-    { label: "Buckler", a: 19, b: 3 },
+    { label: "Tower shield", a: 20, b: 54 },
+    { label: "Kite shield", a: 31, b: 20 },
+    { label: "Buckler", a: 20, b: 3 },
     { label: "Orb", a: 8, b: 1 },
-    { label: "Empty", a: 17, b: 23 },
+    { label: "Empty", a: 11, b: 13 },
   ]}
 />
 
 "Casters" here means Conjurer, Hedge Wizard, the four elementalists, Necromancer, Summoner,
 Enchanter, Alchemist, Hexslinger, Forgewright, Venom Mage and Transmuter. Hybrids such as Warper
-and Reaver are left out. By background, Fighters are the high point at 90% shields:
+and Reaver are left out. By background, Fighters are the high point at 92% shields, with Berserkers
+close behind at 89%:
 
 <ShareBarChart
   title="Off-hand at the end of winning games, by background"
-  subtitle="Share of wins on 0.30+, sorted by shield use. Hover a segment for its value."
+  subtitle="Share of wins on 0.30+ excluding Felids and Coglins, sorted by shield use."
   series={["Shield", "Orb", "Empty"]}
   rows={[
-    { label: "Fighter", parts: [90, 1, 9] },
-    { label: "Gladiator", parts: [79, 1, 20] },
-    { label: "Conjurer", parts: [79, 10, 11] },
-    { label: "Earth Elementalist", parts: [79, 9, 12] },
-    { label: "Fire Elementalist", parts: [78, 10, 12] },
-    { label: "Ice Elementalist", parts: [77, 6, 17] },
-    { label: "Necromancer", parts: [73, 5, 22] },
-    { label: "Warper", parts: [70, 4, 27] },
-    { label: "Enchanter", parts: [66, 19, 15] },
-    { label: "Monk", parts: [65, 2, 33] },
-    { label: "Berserker", parts: [58, 0, 41] },
-    { label: "Hunter", parts: [45, 1, 54] },
+    { label: "Fighter", parts: [92, 1, 7] },
+    { label: "Berserker", parts: [89, 1, 10] },
+    { label: "Necromancer", parts: [84, 6, 10] },
+    { label: "Gladiator", parts: [83, 1, 16] },
+    { label: "Ice Elementalist", parts: [83, 7, 11] },
+    { label: "Earth Elementalist", parts: [82, 9, 8] },
+    { label: "Conjurer", parts: [81, 10, 9] },
+    { label: "Fire Elementalist", parts: [81, 10, 9] },
+    { label: "Warper", parts: [75, 4, 21] },
+    { label: "Monk", parts: [72, 2, 26] },
+    { label: "Enchanter", parts: [71, 20, 8] },
+    { label: "Hunter", parts: [51, 1, 48] },
   ]}
 />
 
-The backgrounds that skip it are the ones whose weapon wants both hands. Hunters finish shieldless
-54% of the time, Berserkers 41%, and Monks, who are often fighting unarmed, 33%. Species matters at
+Only two backgrounds often go without. Hunters, whose bows and crossbows take both hands, finish
+with an empty off-hand 48% of the time, and Monks, who often fight unarmed, 26%. Species matters at
 least as much: Formicids finish with a shield 99% of the time, Minotaurs 91%, Gnolls 88%, Deep Elves
-74% plus 13% orbs. Coglins almost never do (3%), because they dual-wield instead, and Felids can't
-hold anything. Of the rest, the lowest are Spriggans at 62%, then Oni, Barachi and Demigods in the
-mid-60s. <ViewLink href={analyticsLink({ tab: "equipment", species: ["Formicid"], ...since })}>Formicid kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", species: ["Coglin"], ...since })}>Coglin kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", backgrounds: ["Hunter"], ...since })}>Hunter kit</ViewLink>
+74% plus 13% orbs. The lowest of the species that can hold one are Spriggans at 62%, then Oni,
+Barachi and Demigods in the mid-60s; Coglins are at 3% and Felids at 0%. <ViewLink href={analyticsLink({ tab: "equipment", species: ["Formicid"], ...since })}>Formicid kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", species: ["Coglin"], ...since })}>Coglin kit</ViewLink> <ViewLink href={analyticsLink({ tab: "equipment", species: handed, backgrounds: ["Hunter"], ...since })}>Hunter kit</ViewLink>
 
-Orbs are the one thing moving. On 0.34 alone they are in 9% of winning off-hands overall and about
-a fifth of caster and Deep Elf ones, and Berserkers go shieldless 65% of the time. The trend is
-towards "something in the off-hand", not towards nothing.
+Orbs are the one thing moving. On 0.34, shields fall to 75% from 86% on 0.33. Most of that went to
+orbs, which rose from 3% to 10% overall and to 18% of caster off-hands. Empty off-hands rose only
+from 11% to 15%. <ViewLink href={analyticsLink({ tab: "equipment", species: handed, minVersion: "0.34", maxVersion: "0.34" })}>0.34 wins</ViewLink>
 
 ## Body armour: gold dragon scales if you can, robe if you can't
 
