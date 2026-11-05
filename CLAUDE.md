@@ -159,4 +159,10 @@ part of the definition of done for any new page, interaction, or fetch:
 - Package manager: `pnpm` (workspace repo).
 - Main app env file: `apps/web/.env`.
 - Some root scripts may load env via `--env-file=apps/web/.env`.
-- Deployment target is Vercel with root directory `apps/web`.
+- Production (crawlcrawler.com) is a DigitalOcean App Platform app defined in
+  `.do/app.yaml`. It builds and deploys automatically on every push to `main`
+  (`pnpm install && pnpm build`, then `pnpm start`), so a push to `main` is a
+  production deploy. There is no CLI access to the build from this repo; verify a
+  deploy by checking the live site, and expect several minutes of build time.
+  Cloudflare fronts the app and caches HTML, so use a cache-busting query when
+  checking for fresh output.
