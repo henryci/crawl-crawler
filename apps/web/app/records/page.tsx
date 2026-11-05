@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { trackEvent, trackError, activeFilterKeys } from "@/lib/tracking";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -160,6 +161,7 @@ function RecordsContent() {
         setData(json);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
+        trackError("records", "load_records", err);
       } finally {
         setLoading(false);
       }
@@ -251,6 +253,22 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
   const searchParams = useSearchParams();
   const [filters, setFilters] = useState<RecordsFilters>(() => parseRecordsParams(searchParams));
 
+  // Report filter use once typing settles, skipping the state the page
+  // opened with.
+  const isFirstFilterRender = useRef(true);
+  useEffect(() => {
+    if (isFirstFilterRender.current) {
+      isFirstFilterRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      trackEvent("records_filters_applied", {
+        filters: activeFilterKeys(filters, DEFAULT_RECORDS_FILTERS),
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [filters]);
+
   // Keep the filters in the URL so a filtered table can be shared, and
   // adopt the URL when it changes from outside (guide links, back/forward).
   useQueryStateSync(
@@ -300,6 +318,11 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
     initialField: "score" as SortField,
     initialDirection: "desc",
   });
+
+  const sortBy = (field: SortField) => {
+    handleSort(field);
+    trackEvent("records_sorted", { field });
+  };
 
   const hasActiveFilters =
     filters.search || filters.player || filters.species !== "all" || filters.background !== "all" || !filters.hideLegacy;
@@ -448,49 +471,49 @@ function RecordsTable({ data }: { data: ComboRecordsWithAnalytics }) {
               <TableRow className="hover:bg-transparent">
                 <TableHead
                   className="cursor-pointer hover:text-foreground w-[70px]"
-                  onClick={() => handleSort("score" as SortField)}
+                  onClick={() => sortBy("score" as SortField)}
                 >
                   Score
                   <SortIcon active={isSortedBy("score" as SortField)} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("character" as SortField)}
+                  onClick={() => sortBy("character" as SortField)}
                 >
                   Combo
                   <SortIcon active={isSortedBy("character" as SortField)} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("player" as SortField)}
+                  onClick={() => sortBy("player" as SortField)}
                 >
                   Player
                   <SortIcon active={isSortedBy("player" as SortField)} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("runes" as SortField)}
+                  onClick={() => sortBy("runes" as SortField)}
                 >
                   Runes
                   <SortIcon active={isSortedBy("runes" as SortField)} direction={sortDir} />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("turns" as SortField)}
+                  onClick={() => sortBy("turns" as SortField)}
                 >
                         Turns
                   <SortIcon active={isSortedBy("turns" as SortField)} direction={sortDir} />
                       </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("god" as SortField)}
+                  onClick={() => sortBy("god" as SortField)}
                 >
                   God
                   <SortIcon active={isSortedBy("god" as SortField)} direction={sortDir} />
                       </TableHead>
                 <TableHead
                   className="cursor-pointer hover:text-foreground"
-                  onClick={() => handleSort("date" as SortField)}
+                  onClick={() => sortBy("date" as SortField)}
                 >
                         Date
                   <SortIcon active={isSortedBy("date" as SortField)} direction={sortDir} />

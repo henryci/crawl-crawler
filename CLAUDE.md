@@ -98,6 +98,32 @@ pnpm diagnose:morgue:verbose
 - Frontend pages use App Router and Tailwind.
 - `next.config.mjs` has `typescript.ignoreBuildErrors: true`; do not treat this as permission to ship type regressions.
 
+#### Google Analytics tagging (required for new UI work)
+
+Every user action, success path, and failure path in `apps/web` is tagged
+with a GA4 custom event via `apps/web/lib/tracking.ts`. Treat tagging as
+part of the definition of done for any new page, interaction, or fetch:
+
+- Call `trackEvent(name, params)` on user actions and successful outcomes
+  (a load, a query run, a tab or view change, a share).
+- Call `trackError(page, operation, err, params)` in every `catch` that
+  surfaces an error to the user or swallows one with `console.error`.
+- Add new event names to the `TrackingEventName` union in `lib/tracking.ts`.
+  Do not call `window.gtag` directly.
+- Reuse the existing parameter keys listed in that file's header comment
+  (`page`, `operation`, `source`, `tab`, `view`, `result`, `filters`, etc.).
+  A new parameter key is only reportable after it is registered as a custom
+  dimension (strings) or custom metric (numbers) in the GA property admin,
+  so prefer an existing key and say so in the PR when a new one is needed.
+- Keep parameter values low-cardinality: field names, tab names, hostnames,
+  counts. Never send user-entered text, full URLs, usernames or IDs.
+  Use `activeFilterKeys` to report which filters are set without their values.
+- Skip events that only replay URL state on mount (see the first-load guards
+  in `app/analytics/page.tsx` and `app/records/page.tsx`); track choices the
+  user makes on the page.
+- Events only fire in production builds with `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+  set. Verify new events in the GA Realtime report after deploy.
+
 ### `packages/game-data-db`
 
 - Migrations are numbered files in `packages/game-data-db/src/migrations/`.

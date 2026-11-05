@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { trackError } from "@/lib/tracking";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,7 @@ export function SkillsHeatmap({ queryString }: SkillsHeatmapProps) {
         setCapstoneSkills(data.capstoneSkills ?? []);
       } catch (err) {
         console.error("Failed to load skills:", err);
+        trackError("analytics", "skills_query", err);
       } finally {
         setLoading(false);
       }

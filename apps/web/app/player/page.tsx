@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { trackEvent, trackError, hostOf } from "@/lib/tracking";
 import {
   AlertCircle,
   Search,
@@ -178,8 +179,10 @@ function PlayerSummaryContent() {
       const data = parsePlayerPage(html);
       setPlayerData(data);
       setLastLoadedUrl(targetUrl);
+      trackEvent("player_loaded", { source: hostOf(targetUrl) });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+      trackError("player", "fetch_player", err, { source: hostOf(targetUrl) });
     } finally {
       setLoading(false);
     }

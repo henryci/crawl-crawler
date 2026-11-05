@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { trackEvent, trackError, hostOf } from "@/lib/tracking";
 import {
   FileText,
   LinkIcon,
@@ -314,6 +315,10 @@ function MorgueViewerContent() {
       setMorgueData(result.data);
       setLoadingState("success");
       setLastLoadedHash(hash);
+      trackEvent("morgue_loaded", {
+        source: "hash",
+        parse_errors: result.data.parseErrors?.length ?? 0,
+      });
       // The URL-loaded morgue is no longer on screen; returning to its
       // ?url= (e.g. with Back) must load it again.
       setLastLoadedUrl(null);
@@ -325,6 +330,7 @@ function MorgueViewerContent() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoadingState("error");
+      trackError("morgue", "fetch_hash", err);
     }
   }, []);
 
@@ -339,11 +345,14 @@ function MorgueViewerContent() {
     setMorgueData(null);
     setCachedAt(null);
 
+    const sameOrigin = isSameOriginUrl(targetUrl);
+    const source = sameOrigin ? "sample" : hostOf(targetUrl);
+    let operation = "fetch_morgue";
     try {
       // Same-origin URLs (the bundled sample character) are fetched
       // directly; everything else goes through the proxy, which avoids
       // CORS and only allows DCSS servers.
-      const fetchUrl = isSameOriginUrl(targetUrl)
+      const fetchUrl = sameOrigin
         ? targetUrl
         : `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
       const response = await fetch(fetchUrl);
@@ -356,6 +365,7 @@ function MorgueViewerContent() {
       const morgueText = await response.text();
 
       // Parse the morgue file client-side
+      operation = "parse_morgue";
       const result = await parseMorgue(morgueText, { sourceUrl: targetUrl });
       setParseResult(result);
       setMorgueData(result.data);
@@ -363,9 +373,15 @@ function MorgueViewerContent() {
       setLastLoadedUrl(targetUrl);
       // Likewise for a hash-loaded morgue this one replaced.
       setLastLoadedHash(null);
+      trackEvent("morgue_loaded", {
+        source,
+        result: result.success ? "ok" : "partial",
+        parse_errors: result.data.parseErrors.length,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoadingState("error");
+      trackError("morgue", operation, err, { source });
     }
   }, []);
 
@@ -402,6 +418,7 @@ function MorgueViewerContent() {
       const next = new URLSearchParams(searchParams.toString());
       if (isMorgueTab(value) && value !== "overview") next.set("tab", value);
       else next.delete("tab");
+      trackEvent("morgue_tab_changed", { tab: value });
       const qs = next.toString();
       router.replace(qs ? `/morgue?${qs}` : "/morgue", { scroll: false });
     },

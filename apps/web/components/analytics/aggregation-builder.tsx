@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { trackEvent, trackError } from "@/lib/tracking";
 import {
   Loader2,
   AlertCircle,
@@ -175,12 +176,27 @@ export function AggregationBuilder({
       setTotalGames(data.totalGames);
       setTotalWins(data.totalWins);
       setTotalGroups(data.totalGroups);
+      trackEvent("breakdown_run", {
+        dimensions: selectedDimensions.join(","),
+        metrics: selectedMetrics.join(","),
+        view: viewMode,
+        result_groups: data.totalGroups,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
+      trackError("analytics", "breakdown_query", err, {
+        dimensions: selectedDimensions.join(","),
+        metrics: selectedMetrics.join(","),
+      });
     } finally {
       setLoading(false);
     }
-  }, [aggregateQueryString, selectedDimensions.length]);
+  }, [aggregateQueryString, selectedDimensions, selectedMetrics, viewMode]);
+
+  const changeViewMode = (view: "table" | "chart" | "pivot") => {
+    setViewMode(view);
+    trackEvent("breakdown_view_changed", { view });
+  };
 
   // Auto-execute when config changes (with debounce)
   useEffect(() => {
@@ -312,7 +328,7 @@ export function AggregationBuilder({
             <Button
               variant={viewMode === "table" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode("table")}
+              onClick={() => changeViewMode("table")}
               className="h-8 px-2"
             >
               <Table2 className="w-4 h-4" />
@@ -328,7 +344,7 @@ export function AggregationBuilder({
               <Button
                 variant={viewMode === "pivot" ? "secondary" : "ghost"}
                 size="sm"
-                onClick={() => setViewMode("pivot")}
+                onClick={() => changeViewMode("pivot")}
                 disabled={selectedDimensions.length !== 2}
                 className="h-8 px-2"
               >
@@ -349,7 +365,7 @@ export function AggregationBuilder({
             <Button
               variant={viewMode === "chart" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode("chart")}
+              onClick={() => changeViewMode("chart")}
               className="h-8 px-2"
             >
               <BarChart3 className="w-4 h-4" />

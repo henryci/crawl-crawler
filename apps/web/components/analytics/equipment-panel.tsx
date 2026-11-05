@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackError } from "@/lib/tracking";
 import { Loader2, Shield, Shapes, CircleOff, FlaskConical } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EquipmentResult, EquipmentSlot, ResistRow } from "@/app/api/analytics/equipment/route";
@@ -29,7 +30,9 @@ export function EquipmentPanel({ queryString }: EquipmentPanelProps) {
         const json: EquipmentResult = await response.json();
         if (!cancelled) setData(json);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Unknown error");
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Unknown error");
+        trackError("analytics", "equipment_query", err);
       } finally {
         if (!cancelled) setLoading(false);
       }

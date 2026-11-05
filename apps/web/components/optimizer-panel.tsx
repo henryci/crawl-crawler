@@ -19,6 +19,7 @@
  */
 
 import { useMemo, useRef, useState, useEffect, type ReactNode } from "react";
+import { trackEvent, trackError } from "@/lib/tracking";
 import Link from "next/link";
 import type { MorgueData, ParsedItem } from "dcss-morgue-parser";
 import {
@@ -654,6 +655,11 @@ export function OptimizerPanel({
           evaluated: response.result.loadoutsEvaluated,
           elapsedMs: response.elapsedMs,
         });
+        trackEvent("optimizer_result", {
+          result: response.result.feasible ? "feasible" : "infeasible",
+          evaluated: response.result.loadoutsEvaluated,
+          elapsed_ms: Math.round(response.elapsedMs),
+        });
         // Infeasible: the floors can't be met, and best.items is just
         // the locked items — applying it would strip the player's worn
         // gear. Keep the loadout and explain instead.
@@ -691,6 +697,7 @@ export function OptimizerPanel({
       setPending(false);
       setFrontierPending(false);
       setWorkerError(detail);
+      trackError("morgue", "optimizer_worker", detail);
       spawnWorker();
     };
     worker.onerror = (event) => {
@@ -1051,6 +1058,11 @@ export function OptimizerPanel({
     setOptimizeInfeasible(false);
     setWorkerError(null);
 
+    trackEvent("optimizer_run", {
+      objective: objectiveToUse.kind,
+      locked: lockedItems.length,
+      banned: bannedIds.size,
+    });
     const request: WorkerRequest = {
       kind: "optimize",
       requestId,

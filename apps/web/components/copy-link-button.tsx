@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/tracking";
 
 interface CopyLinkButtonProps {
   /** URL to copy. Defaults to the page's current URL at click time. */
@@ -29,6 +30,7 @@ export function CopyLinkButton({ href, label = "Copy link", className }: CopyLin
     const target = href
       ? new URL(href, window.location.origin).toString()
       : window.location.href;
+    trackEvent("share_link_copied", { page: window.location.pathname });
     try {
       await navigator.clipboard.writeText(target);
       setCopied(true);

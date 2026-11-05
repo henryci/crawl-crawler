@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { trackError } from "@/lib/tracking";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function SpellsChart({ queryString }: SpellsChartProps) {
         setSpells(data.spells);
       } catch (err) {
         console.error("Failed to load spells:", err);
+        trackError("analytics", "spells_query", err);
       } finally {
         setLoading(false);
       }

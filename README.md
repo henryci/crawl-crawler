@@ -93,6 +93,14 @@ It is not used for ads or monetization.
 Google Analytics is only enabled in production when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set.
 It does not run in local development.
 
+Beyond page views, the app sends custom events for what people do (morgues
+and players loaded, analytics filters, breakdowns, trends, optimizer runs,
+share links) and for what fails (every caught fetch or parse error). All
+events go through `apps/web/lib/tracking.ts`, which documents the event
+names and the parameters that must be registered as custom dimensions and
+metrics in the GA property. Parameter values are limited to field names,
+hostnames, and counts; no user-entered text or URLs are sent.
+
 ## Load Data into the Database
 
 If your main question is "how do I actually populate the DB?", start here.

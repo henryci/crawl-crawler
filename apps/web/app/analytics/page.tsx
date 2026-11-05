@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { trackEvent, trackError, activeFilterKeys } from "@/lib/tracking";
 import {
   BarChart3,
   Loader2,
@@ -436,6 +437,7 @@ function AnalyticsContent() {
         setLookups(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
+        trackError("analytics", "load_lookups", err);
       }
     }
     loadLookups();
@@ -488,6 +490,10 @@ function AnalyticsContent() {
     return filtersToQueryParams(filters).toString();
   }, [filters]);
 
+  // Which filters are set, for tracking. Omits their values on purpose.
+  const activeFilters = useMemo(() => activeFilterKeys(filters), [filters]);
+  const isFirstCountLoad = useRef(true);
+
   // Load counts when filters change
   useEffect(() => {
     async function loadCounts() {
@@ -499,14 +505,25 @@ function AnalyticsContent() {
         setTotalCount(data.totalCount);
         setTotalGamesCount(data.totalGamesCount ?? data.totalCount);
         setError(null);
+        // The initial load reflects the URL, not a choice the user made here.
+        if (isFirstCountLoad.current) {
+          isFirstCountLoad.current = false;
+        } else {
+          trackEvent("analytics_filters_applied", {
+            filters: activeFilters,
+            result_count: data.totalCount,
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unknown error");
+        trackError("analytics", "load_counts", err, { filters: activeFilters });
       }
     }
     loadCounts();
-  }, [queryString]);
+  }, [queryString, activeFilters]);
 
   const applyPreset = useCallback((preset: "default" | "clear") => {
+    trackEvent("analytics_preset_applied", { preset });
     if (preset === "default") {
       setFilters(defaultFilters);
       setActivePreset("default");
@@ -520,6 +537,11 @@ function AnalyticsContent() {
   const updateFilters = useCallback((updater: (prev: Filters) => Filters) => {
     setFilters(updater);
     setActivePreset(null);
+  }, []);
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+    trackEvent("analytics_tab_changed", { tab });
   }, []);
 
   // Build options for multi-selects
@@ -996,7 +1018,7 @@ function AnalyticsContent() {
       </Card>
 
       {/* Results Count and Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Tabs */}
           <TooltipProvider>

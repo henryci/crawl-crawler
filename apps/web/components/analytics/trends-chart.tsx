@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { trackEvent, trackError } from "@/lib/tracking";
 import {
   Loader2,
   AlertCircle,
@@ -213,8 +214,10 @@ export function TrendsChart({
       }
 
       setData(result);
+      trackEvent("trends_run", { track, over, metric, top_n: topN });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
+      trackError("analytics", "trends_query", err, { track, over, metric });
     } finally {
       setLoading(false);
     }
