@@ -280,7 +280,7 @@ export function NestedBarChart({ title, subtitle, outerLabel, innerLabel, rows }
       <Legend items={[{ label: outerLabel, color: "1-light" }, { label: innerLabel, color: "1" }]} />
       <div className="space-y-1.5">
         {rows.map((row) => (
-          <div key={row.label} className="grid grid-cols-[8.5rem_1fr_2.5rem] items-center gap-2 text-xs">
+          <div key={row.label} className="grid grid-cols-[8.5rem_1fr_5.5rem] items-center gap-2 text-xs">
             <span className="truncate text-foreground">{row.label}</span>
             <div className="relative w-full" style={{ height: BAR_H }}>
               <div
@@ -297,7 +297,7 @@ export function NestedBarChart({ title, subtitle, outerLabel, innerLabel, rows }
               )}
             </div>
             <span className="text-right font-mono tabular-nums text-muted-foreground">
-              {row.inner !== undefined ? `${row.inner}%` : `${row.outer}%`}
+              {row.inner !== undefined ? `${row.outer}% · ${row.inner}%` : `${row.outer}%`}
             </span>
           </div>
         ))}
@@ -324,7 +324,7 @@ interface PairedBarChartProps {
   rows: PairRow[];
 }
 
-/** Grouped bars for two series. The second series is the story and gets the tip label. */
+/** Grouped bars for two series, each value printed beside its bar. */
 export function PairedBarChart({ title, subtitle, seriesA, seriesB, rows }: PairedBarChartProps) {
   return (
     <Figure
@@ -349,7 +349,10 @@ export function PairedBarChart({ title, subtitle, seriesA, seriesB, rows }: Pair
                 style={{ height: 8, width: `${row.b}%`, background: fill("2") }}
               />
             </div>
-            <span className="text-right font-mono tabular-nums text-muted-foreground">{row.b}%</span>
+            <span className="flex flex-col gap-0.5 text-right font-mono text-[10px] leading-[8px] tabular-nums text-muted-foreground">
+              <span>{row.a}%</span>
+              <span>{row.b}%</span>
+            </span>
           </div>
         ))}
       </div>
